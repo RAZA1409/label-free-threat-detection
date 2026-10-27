@@ -1,0 +1,12 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+dataset/
+*.csv
+*.pcap
+*.zip
+models/*
+!models/.gitkeep
+.ipynb_checkpoints/
