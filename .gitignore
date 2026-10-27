@@ -7,6 +7,9 @@ dataset/
 *.csv
 *.pcap
 *.zip
+*.parquet
 models/*
 !models/.gitkeep
 .ipynb_checkpoints/
+*.py[cod]
+outputs/
