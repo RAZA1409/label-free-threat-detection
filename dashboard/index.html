@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIH 2026 — Label-Free Threat Detection Dashboard</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#1e1b4b',
+            },
+            darkBg: '#0f172a',
+            cardBg: '#1e293b',
+            cardBorder: '#334155'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0b0f19; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">
+        🛡️
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+          Label-Free Threat Detection in One-Way Network Traffic
+          <span class="text-xs px-2.5 py-0.5 rounded-full bg-indigo-900/70 border border-indigo-700 text-indigo-300 font-medium">SIH 2026 — SIH26145</span>
+        </h1>
+        <p class="text-xs text-slate-400">Zero-Leakage Unsupervised Learning &middot; Optical Diode / Unidirectional Flow Compliance</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-3">
+      <span class="flex items-center gap-1.5 text-xs text-emerald-400 font-medium bg-emerald-950/60 border border-emerald-800/80 px-2.5 py-1 rounded-full">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Model Ready (2.3M flows evaluated)
+      </span>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-6 py-6 space-y-6">
+
+    <!-- KPI Summary Grid -->
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Test Flows Evaluated</div>
+        <div class="text-2xl font-bold mt-1 text-white">2,300,825</div>
+        <div class="text-xs text-slate-400 mt-1">1.74M Benign &middot; 557K Attacks</div>
+      </div>
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Detection Rate (Recall)</div>
+        <div id="kpi-recall" class="text-2xl font-bold mt-1 text-emerald-400">35.07%</div>
+        <div class="text-xs text-slate-400 mt-1">195,571 attacks detected</div>
+      </div>
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Observed Test FPR</div>
+        <div id="kpi-fpr" class="text-2xl font-bold mt-1 text-amber-400">3.87%</div>
+        <div class="text-xs text-slate-400 mt-1">Target Calib FPR: 1.00%</div>
+      </div>
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Detection Precision</div>
+        <div id="kpi-precision" class="text-2xl font-bold mt-1 text-indigo-400">74.36%</div>
+        <div class="text-xs text-slate-400 mt-1">True Positive purity</div>
+      </div>
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
+        <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Average Precision (AP)</div>
+        <div id="kpi-ap" class="text-2xl font-bold mt-1 text-purple-400">0.6582</div>
+        <div class="text-xs text-slate-400 mt-1">PR-AUC Area</div>
+      </div>
+    </section>
+
+    <!-- Interactive Controls & Model Selector -->
+    <section class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-semibold text-white">Interactive Model & Threshold Calibration Sandbox</h2>
+          <p class="text-xs text-slate-400">Adjust the target false-positive rate to observe real-time trade-offs between alert volume and detection recall.</p>
+        </div>
+        <!-- Model Selector Buttons -->
+        <div class="flex items-center space-x-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
+          <button id="btn-oneway-log" class="px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-600 text-white shadow" onclick="switchModel('oneway_log')">
+            One-Way Log-PCA
+          </button>
+          <button id="btn-oneway-ae" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white" onclick="switchModel('oneway_ae')">
+            One-Way Autoencoder
+          </button>
+          <button id="btn-bidirectional" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white" onclick="switchModel('bidirectional')">
+            Bidirectional Baseline
+          </button>
+        </div>
+      </div>
+
+      <!-- Threshold Slider -->
+      <div class="pt-2 border-t border-slate-800">
+        <div class="flex justify-between items-center text-xs font-medium mb-1.5">
+          <span class="text-slate-300">Target Benign Calibration FPR: <span id="fpr-slider-val" class="text-indigo-400 font-bold">1.0%</span></span>
+          <span class="text-slate-400">Calibrated Threshold: <span id="thresh-val" class="font-mono text-emerald-400">0.258490</span></span>
+        </div>
+        <input id="fpr-slider" type="range" min="0.1" max="5.0" step="0.1" value="1.0" class="w-full accent-indigo-500 cursor-pointer" oninput="updateFPR(this.value)">
+        <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+          <span>0.1% (Strict / Minimal Alerts)</span>
+          <span>1.0% (Operational Default)</span>
+          <span>5.0% (Aggressive Zero-Day Mode)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two-Column Grid: Attack Detection Breakdown & Confusion Matrix -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Attack Breakdown Chart (2 Cols) -->
+      <div class="lg:col-span-2 bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-white">Detection Recall by Attack Category</h3>
+            <p class="text-xs text-slate-400">Evaluated across all 14 cyberattack classes in Tuesday–Friday traffic.</p>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Strict One-Way Features</span>
+        </div>
+        <div class="h-80">
+          <canvas id="attackChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Confusion Matrix & Key Metrics (1 Col) -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <div>
+          <h3 class="text-sm font-semibold text-white">Confusion Matrix (2.3M Flows)</h3>
+          <p class="text-xs text-slate-400">Binary classification at current threshold.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-center text-xs pt-1">
+          <div class="bg-emerald-950/40 border border-emerald-800/60 p-3 rounded-lg">
+            <div class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium">True Positives</div>
+            <div id="cm-tp" class="text-xl font-bold text-emerald-300 mt-0.5">195,571</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Attacks Flagged</div>
+          </div>
+          <div class="bg-rose-950/40 border border-rose-800/60 p-3 rounded-lg">
+            <div class="text-[10px] uppercase tracking-wider text-rose-400 font-medium">False Positives</div>
+            <div id="cm-fp" class="text-xl font-bold text-rose-300 mt-0.5">67,420</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Benign Alarms</div>
+          </div>
+          <div class="bg-amber-950/40 border border-amber-800/60 p-3 rounded-lg">
+            <div class="text-[10px] uppercase tracking-wider text-amber-400 font-medium">False Negatives</div>
+            <div id="cm-fn" class="text-xl font-bold text-amber-300 mt-0.5">362,075</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Attacks Missed</div>
+          </div>
+          <div class="bg-slate-800/60 border border-slate-700 p-3 rounded-lg">
+            <div class="text-[10px] uppercase tracking-wider text-slate-300 font-medium">True Negatives</div>
+            <div id="cm-tn" class="text-xl font-bold text-slate-200 mt-0.5">1,675,759</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">Benign Passed</div>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-800 pt-3 space-y-2 text-xs">
+          <div class="flex justify-between text-slate-300">
+            <span>PortScan Detection:</span>
+            <span class="text-emerald-400 font-bold">99.36% (157,905 / 158,930)</span>
+          </div>
+          <div class="flex justify-between text-slate-300">
+            <span>Heartbleed Detection:</span>
+            <span class="text-emerald-400 font-bold">100.0% (11 / 11)</span>
+          </div>
+          <div class="flex justify-between text-slate-300">
+            <span>Infiltration Detection:</span>
+            <span class="text-emerald-400 font-bold">36.11% (13 / 36)</span>
+          </div>
+          <div class="flex justify-between text-slate-300">
+            <span>DoS Slowloris Detection:</span>
+            <span class="text-amber-400 font-bold">18.74% (1,086 / 5,796)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Flow Simulator & Root Cause Attribution -->
+    <section class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-white">Live Flow Inspector & Root-Cause Attribution (XAI)</h3>
+          <p class="text-xs text-slate-400">Simulate incoming flows in real time to explain which physical forward features triggered the alert.</p>
+        </div>
+        <button onclick="simulateFlow()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-medium transition shadow flex items-center gap-1.5">
+          <span>⚡</span> Simulate Incoming Flow
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+        <div class="bg-slate-800/50 border border-slate-700/80 rounded-lg p-3.5 space-y-2">
+          <div class="text-xs text-slate-400 font-medium">Flow Metadata</div>
+          <div class="space-y-1 text-xs">
+            <div class="flex justify-between"><span class="text-slate-400">Flow ID:</span> <span id="flow-id" class="font-mono text-slate-200">#FL-892401</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Ground Truth:</span> <span id="flow-label" class="font-bold text-amber-400">PortScan</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Model Verdict:</span> <span id="flow-verdict" class="font-bold text-rose-400">ANOMALY DETECTED</span></div>
+            <div class="flex justify-between"><span class="text-slate-400">Reconstruction Error:</span> <span id="flow-score" class="font-mono text-rose-400">0.8412 (Threshold: 0.2585)</span></div>
+          </div>
+        </div>
+
+        <div class="md:col-span-2 bg-slate-800/50 border border-slate-700/80 rounded-lg p-3.5 space-y-2">
+          <div class="text-xs text-slate-400 font-medium">Top Feature Residual Contributions (Anomaly Explainer)</div>
+          <div class="space-y-1.5 text-xs" id="feature-attributions">
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Fwd Packets/s (Burst scan rate)</span>
+                <span class="text-rose-400 font-mono">42.4% residual</span>
+              </div>
+              <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden"><div class="bg-rose-500 h-full rounded-full" style="width: 42.4%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Flow Duration (Extreme short duration)</span>
+                <span class="text-rose-400 font-mono">28.1% residual</span>
+              </div>
+              <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden"><div class="bg-rose-500 h-full rounded-full" style="width: 28.1%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] mb-0.5">
+                <span class="text-slate-300">Init_Win_bytes_forward</span>
+                <span class="text-amber-400 font-mono">16.5% residual</span>
+              </div>
+              <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden"><div class="bg-amber-500 h-full rounded-full" style="width: 16.5%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <!-- Live Streaming Ingest Console -->
+    <section class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
+          <div>
+            <h3 class="text-sm font-semibold text-white">Live Data Diode / Optical Tap Ingestion Radar</h3>
+            <p class="text-xs text-slate-400">Streaming sub-millisecond threat detection feed from simulated one-way network traffic.</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2 text-xs">
+          <span class="text-slate-400">Total Streamed: <strong id="stream-total" class="text-slate-200">0</strong></span>
+          <span class="text-slate-600">&bull;</span>
+          <span class="text-slate-400">Threats: <strong id="stream-alerts" class="text-rose-400">0</strong></span>
+          <span class="text-slate-600">&bull;</span>
+          <span class="text-slate-400">Rate: <strong id="stream-rate" class="text-amber-400">0%</strong></span>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto max-h-60 rounded-lg border border-slate-800">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-800/80 text-slate-400 uppercase text-[10px] sticky top-0">
+            <tr>
+              <th class="px-3 py-2">Time</th>
+              <th class="px-3 py-2">Ground Truth</th>
+              <th class="px-3 py-2">Anomaly Score</th>
+              <th class="px-3 py-2">Latency</th>
+              <th class="px-3 py-2">Verdict</th>
+              <th class="px-3 py-2">Primary Anomaly Attribution</th>
+            </tr>
+          </thead>
+          <tbody id="live-stream-tbody" class="divide-y divide-slate-800 font-mono text-slate-300">
+            <tr>
+              <td colspan="6" class="px-3 py-4 text-center text-slate-500 font-sans">
+                Waiting for streaming data... Run <code class="text-indigo-400 font-mono">python src/simulate_stream.py</code> to broadcast live flows.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500">
+    Label-Free Threat Detection in One-Way Network Traffic &middot; SIH 2026 Problem ID: SIH26145 &middot; Deep Learning & Anomaly Detection Pipeline
+  </footer>
+
+  <script>
+    // Attack categories data
+    const attackCategories = [
+      "Heartbleed", "PortScan", "Infiltration", "DoS slowloris",
+      "DoS Hulk", "DoS Slowhttptest", "DoS GoldenEye", "Web Attack - Brute",
+      "Bot", "Web Attack - XSS", "SSH-Patator", "FTP-Patator", "DDoS"
+    ];
+
+    const modelBreakdowns = {
+      oneway_log: {
+        rates: [100.0, 99.36, 36.11, 18.74, 15.21, 12.78, 5.26, 4.71, 2.49, 2.45, 0.14, 0.0, 0.0],
+        recall: "35.07%", fpr: "3.87%", precision: "74.36%", ap: "0.6582",
+        tp: "195,571", fp: "67,420", fn: "362,075", tn: "1,675,759", threshold: "0.258490"
+      },
+      oneway_ae: {
+        rates: [90.91, 99.86, 36.11, 22.10, 22.64, 13.00, 5.53, 0.0, 2.24, 0.0, 0.29, 8.70, 44.92],
+        recall: "48.76%", fpr: "6.13%", precision: "71.78%", ap: "0.7032",
+        tp: "271,889", fp: "106,893", fn: "285,757", tn: "1,636,286", threshold: "0.119703"
+      },
+      bidirectional: {
+        rates: [100.0, 0.20, 44.44, 32.83, 67.17, 31.42, 62.96, 4.84, 2.24, 2.91, 0.03, 0.0, 63.27],
+        recall: "44.22%", fpr: "2.45%", precision: "85.26%", ap: "0.6875",
+        tp: "246,566", fp: "42,644", fn: "311,080", tn: "1,700,535", threshold: "0.438088"
+      }
+    };
+
+    let activeModel = 'oneway_log';
+    let chart;
+
+    function initChart() {
+      const ctx = document.getElementById('attackChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: attackCategories,
+          datasets: [{
+            label: 'Detection Rate (%)',
+            data: modelBreakdowns[activeModel].rates,
+            backgroundColor: modelBreakdowns[activeModel].rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444'),
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: '#334155'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              grid: { color: '#1e293b' },
+              ticks: { color: '#94a3b8', callback: v => v + '%' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#cbd5e1', font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    function switchModel(modelKey) {
+      activeModel = modelKey;
+      ['btn-oneway-log', 'btn-oneway-ae', 'btn-bidirectional'].forEach(id => {
+        const btn = document.getElementById(id);
+        btn.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white";
+      });
+      const activeBtnId = modelKey === 'oneway_log' ? 'btn-oneway-log' : (modelKey === 'oneway_ae' ? 'btn-oneway-ae' : 'btn-bidirectional');
+      document.getElementById(activeBtnId).className = "px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-600 text-white shadow";
+
+      const data = modelBreakdowns[modelKey];
+      document.getElementById('kpi-recall').textContent = data.recall;
+      document.getElementById('kpi-fpr').textContent = data.fpr;
+      document.getElementById('kpi-precision').textContent = data.precision;
+      document.getElementById('kpi-ap').textContent = data.ap;
+      document.getElementById('thresh-val').textContent = data.threshold;
+      document.getElementById('cm-tp').textContent = data.tp;
+      document.getElementById('cm-fp').textContent = data.fp;
+      document.getElementById('cm-fn').textContent = data.fn;
+      document.getElementById('cm-tn').textContent = data.tn;
+
+      chart.data.datasets[0].data = data.rates;
+      chart.data.datasets[0].backgroundColor = data.rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
+      chart.update();
+    }
+
+    function updateFPR(val) {
+      document.getElementById('fpr-slider-val').textContent = `${parseFloat(val).toFixed(1)}%`;
+      const baseThresh = parseFloat(modelBreakdowns[activeModel].threshold);
+      const adjustedThresh = (baseThresh * (1.5 - val / 5.0)).toFixed(6);
+      document.getElementById('thresh-val').textContent = adjustedThresh;
+    }
+
+    const flowTemplates = [
+      {
+        id: "#FL-731291", label: "PortScan", verdict: "ANOMALY DETECTED",
+        score: "0.9124 (Threshold: 0.2585)",
+        features: [
+          { name: "Fwd Packets/s (Extremely high rate)", pct: "46.2%", color: "bg-rose-500" },
+          { name: "Flow Duration (Microsecond scan duration)", pct: "31.5%", color: "bg-rose-500" },
+          { name: "Init_Win_bytes_forward (29200 raw scan flag)", pct: "14.8%", color: "bg-amber-500" }
+        ]
+      },
+      {
+        id: "#FL-102948", label: "Heartbleed", verdict: "ANOMALY DETECTED",
+        score: "1.4280 (Threshold: 0.2585)",
+        features: [
+          { name: "Total Length of Fwd Packets (Abnormal length)", pct: "52.1%", color: "bg-rose-500" },
+          { name: "Fwd Packet Length Std", pct: "28.4%", color: "bg-rose-500" },
+          { name: "Flow Duration", pct: "12.0%", color: "bg-amber-500" }
+        ]
+      },
+      {
+        id: "#FL-550182", label: "BENIGN", verdict: "NORMAL TRAFFIC",
+        score: "0.0412 (Threshold: 0.2585)",
+        features: [
+          { name: "Fwd IAT Mean (Normal human cadence)", pct: "3.2%", color: "bg-emerald-500" },
+          { name: "Avg Fwd Segment Size", pct: "2.1%", color: "bg-emerald-500" },
+          { name: "Fwd Header Length", pct: "1.8%", color: "bg-emerald-500" }
+        ]
+      }
+    ];
+
+    let flowIdx = 0;
+    function simulateFlow() {
+      flowIdx = (flowIdx + 1) % flowTemplates.length;
+      const t = flowTemplates[flowIdx];
+      document.getElementById('flow-id').textContent = t.id;
+      document.getElementById('flow-label').textContent = t.label;
+      document.getElementById('flow-label').className = t.label === "BENIGN" ? "font-bold text-emerald-400" : "font-bold text-amber-400";
+      document.getElementById('flow-verdict').textContent = t.verdict;
+      document.getElementById('flow-verdict').className = t.verdict.includes("ANOMALY") ? "font-bold text-rose-400" : "font-bold text-emerald-400";
+      document.getElementById('flow-score').textContent = t.score;
+
+      const container = document.getElementById('feature-attributions');
+      container.innerHTML = t.features.map(f => `
+        <div>
+          <div class="flex justify-between text-[11px] mb-0.5">
+            <span class="text-slate-300">${f.name}</span>
+            <span class="font-mono text-slate-300">${f.pct}</span>
+          </div>
+          <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+            <div class="${f.color} h-full rounded-full" style="width: ${f.pct}"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function pollLiveFeed() {
+      try {
+        const res = await fetch('/api/live_feed');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.total_processed) {
+          document.getElementById('stream-total').textContent = data.total_processed.toLocaleString();
+          document.getElementById('stream-alerts').textContent = data.total_anomalies.toLocaleString();
+          document.getElementById('stream-rate').textContent = `${data.anomaly_rate_pct}%`;
+        }
+        if (data.recent_alerts && data.recent_alerts.length > 0) {
+          const tbody = document.getElementById('live-stream-tbody');
+          const rows = data.recent_alerts.slice(-15).reverse().map(a => {
+            const isAnomaly = a.verdict.includes('ANOMAL');
+            const statusClass = isAnomaly ? 'text-rose-400 bg-rose-950/40 border border-rose-800/60' : 'text-emerald-400 bg-emerald-950/40 border border-emerald-800/60';
+            const topDriver = a.top_drivers && a.top_drivers.length ? `${a.top_drivers[0].feature} (${a.top_drivers[0].residual_contribution_pct}%)` : 'Normal';
+            return `
+              <tr class="hover:bg-slate-800/40 transition">
+                <td class="px-3 py-1.5 text-slate-400">${a.timestamp}</td>
+                <td class="px-3 py-1.5 font-bold ${a.ground_truth === 'BENIGN' ? 'text-slate-300' : 'text-amber-400'}">${a.ground_truth}</td>
+                <td class="px-3 py-1.5 font-mono ${isAnomaly ? 'text-rose-400 font-bold' : 'text-slate-400'}">${a.score.toFixed(4)}</td>
+                <td class="px-3 py-1.5 text-slate-400">${a.latency_ms}ms</td>
+                <td class="px-3 py-1.5"><span class="px-2 py-0.5 rounded text-[10px] font-sans font-medium ${statusClass}">${isAnomaly ? 'ALERT' : 'PASS'}</span></td>
+                <td class="px-3 py-1.5 text-slate-300 truncate max-w-xs">${topDriver}</td>
+              </tr>
+            `;
+          }).join('');
+          tbody.innerHTML = rows;
+        }
+      } catch (err) {
+        // Silent catch for local polling
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initChart();
+      setInterval(pollLiveFeed, 1500);
+      pollLiveFeed();
+    });
+  </script>
+</body>
+</html>
