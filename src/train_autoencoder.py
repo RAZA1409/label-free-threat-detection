@@ -25,8 +25,8 @@ from features import (
     sanitize_labels,
     calibrate_threshold,
     evaluate_detection_performance,
+    LogPreprocessingPipeline,
 )
-from train_oneway_enhanced_detector import LogPreprocessingPipeline
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "outputs" / "experiment"
