@@ -73,23 +73,18 @@
     }
 
     /* Glow utilities */
-    .glow-cyan {
-      box-shadow: 0 0 20px -3px rgba(6, 182, 212, 0.25);
-    }
-    .glow-rose {
-      box-shadow: 0 0 20px -3px rgba(244, 63, 94, 0.25);
-    }
+    .glow-cyan { box-shadow: 0 0 20px -3px rgba(6, 182, 212, 0.25); }
+    .glow-rose { box-shadow: 0 0 20px -3px rgba(244, 63, 94, 0.25); }
 
     /* Active nav item */
+    .nav-item { cursor: pointer; }
     .nav-item.active {
       background: linear-gradient(90deg, rgba(6, 182, 212, 0.15) 0%, rgba(99, 102, 241, 0.05) 100%);
       border-left: 3px solid #06b6d4;
       color: #ffffff;
       font-weight: 600;
     }
-    .nav-item.active svg {
-      color: #06b6d4;
-    }
+    .nav-item.active svg { color: #06b6d4; }
 
     /* Subtle pulse animation for live radar */
     @keyframes radar-pulse {
@@ -98,6 +93,11 @@
       100% { transform: scale(0.95); opacity: 0.8; }
     }
     .animate-radar { animation: radar-pulse 3s infinite ease-in-out; }
+
+    /* Global clickability assurance */
+    button, input, select, a, [onclick] {
+      cursor: pointer;
+    }
   </style>
 </head>
 <body class="bg-soc-bg text-slate-100 font-sans antialiased min-h-screen flex overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
@@ -105,7 +105,7 @@
   <!-- ========================================================================= -->
   <!-- 1. COLLAPSIBLE SIDEBAR NAVIGATION -->
   <!-- ========================================================================= -->
-  <aside id="sidebar" class="w-64 bg-soc-surface border-r border-soc-border flex-shrink-0 flex flex-col justify-between transition-all duration-300 z-40 fixed md:static inset-y-0 -translate-x-full md:translate-x-0">
+  <aside id="sidebar" class="w-64 bg-soc-surface border-r border-soc-border flex-shrink-0 flex flex-col justify-between transition-transform duration-300 z-40 fixed md:static inset-y-0 -translate-x-full md:translate-x-0">
     <div>
       <!-- Brand & Product Header -->
       <div class="h-16 px-5 border-b border-soc-border flex items-center justify-between">
@@ -132,12 +132,12 @@
       <nav class="p-3 space-y-1">
         <div class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Command Center</div>
 
-        <button onclick="switchView('overview')" id="nav-overview" class="nav-item active w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition">
+        <button onclick="switchView('overview')" id="nav-overview" class="nav-item active w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
           <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
           <span>Executive Overview</span>
         </button>
 
-        <button onclick="switchView('live')" id="nav-live" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition">
+        <button onclick="switchView('live')" id="nav-live" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
           <div class="flex items-center space-x-3">
             <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             <span>Live Radar Ingest</span>
@@ -148,24 +148,24 @@
           </span>
         </button>
 
-        <button onclick="switchView('analytics')" id="nav-analytics" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition">
+        <button onclick="switchView('analytics')" id="nav-analytics" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
           <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
           <span>Threat Analytics</span>
         </button>
 
-        <button onclick="switchView('xai')" id="nav-xai" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition">
+        <button onclick="switchView('xai')" id="nav-xai" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
           <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
           <span>Forensic XAI Sandbox</span>
         </button>
 
         <div class="pt-4 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Model & Intelligence</div>
 
-        <button onclick="switchView('models')" id="nav-models" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition">
+        <button onclick="switchView('models')" id="nav-models" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
           <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
           <span>Model Calibration Sandbox</span>
         </button>
 
-        <button onclick="switchView('system')" id="nav-system" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition">
+        <button onclick="switchView('system')" id="nav-system" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
           <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
           <span>Diode Sensor Telemetry</span>
         </button>
@@ -215,7 +215,7 @@
       </div>
 
       <!-- Right Controls -->
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-3 sm:space-x-4">
         <!-- Live UTC Clock -->
         <div class="hidden sm:flex items-center space-x-2 text-xs font-mono text-slate-300 bg-soc-elevated px-3 py-1.5 rounded-lg border border-soc-border">
           <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -225,13 +225,13 @@
         <!-- Real-Time System Health Pill -->
         <div id="system-health-pill" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-800/80 text-emerald-400">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="system-health-text">HEALTHY (98.6%)</span>
+          <span id="system-health-text">SYSTEM OPERATIONAL</span>
         </div>
 
         <!-- Stream Radar Active Indicator -->
-        <div id="stream-radar-pill" class="hidden md:flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-cyan-950/40 border border-cyan-800/60 text-cyan-300">
-          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-          <span>RADAR READY</span>
+        <div id="stream-radar-pill" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400">
+          <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+          <span>RADAR STANDBY</span>
         </div>
 
         <!-- User Profile Pill -->
@@ -271,7 +271,7 @@
             </div>
           </div>
           <div class="flex items-center space-x-2">
-            <button onclick="switchView('live')" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-medium transition shadow flex items-center gap-1.5">
+            <button onclick="switchView('live')" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-medium transition shadow flex items-center gap-1.5">
               <span>Inspect Live Ingestion Feed</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </button>
@@ -514,30 +514,35 @@
             <div>
               <div class="flex items-center gap-2">
                 <h2 class="text-sm font-bold text-white">Live Optical Tap Ingestion Stream</h2>
-                <span id="live-polling-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400">POLLING ACTIVE (1.5s)</span>
+                <span id="live-polling-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 font-semibold">POLLING ACTIVE (1.5s)</span>
               </div>
               <p class="text-xs text-slate-400 mt-0.5">Capturing sub-millisecond anomaly scores and XAI root causes from live simulated diode feed.</p>
             </div>
           </div>
 
-          <!-- Controls: Pause/Resume, Filter, Search -->
+          <!-- Controls: Start/Stop Stream, Pause/Resume, Filter, Search -->
           <div class="flex flex-wrap items-center gap-2.5">
             <!-- Search -->
             <div class="relative">
-              <input id="live-search-input" type="text" placeholder="Filter alerts by attack / driver..." oninput="filterLiveTable()" class="bg-soc-elevated border border-soc-border focus:border-cyan-500 rounded-lg text-xs px-3 py-1.5 pl-8 text-white placeholder-slate-500 focus:outline-none w-56">
+              <input id="live-search-input" type="text" placeholder="Filter alerts by attack / driver..." oninput="filterLiveTable()" class="bg-soc-elevated border border-soc-border focus:border-cyan-500 rounded-lg text-xs px-3 py-1.5 pl-8 text-white placeholder-slate-500 focus:outline-none w-52 sm:w-60">
               <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </div>
 
             <!-- Severity Filter -->
-            <select id="live-severity-select" onchange="filterLiveTable()" class="bg-soc-elevated border border-soc-border text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500">
+            <select id="live-severity-select" onchange="filterLiveTable()" class="bg-soc-elevated border border-soc-border text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500 cursor-pointer">
               <option value="ALL">All Severities</option>
               <option value="HIGH">High / Critical Alerts</option>
               <option value="MEDIUM">Medium Alerts</option>
               <option value="LOW">Benign / Low</option>
             </select>
 
+            <!-- Trigger Stream Button -->
+            <button onclick="startLiveStream(500, 15)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow transition flex items-center gap-1.5 cursor-pointer">
+              <span>▶ Start Stream (500)</span>
+            </button>
+
             <!-- Pause / Resume Button -->
-            <button id="btn-pause-stream" onclick="toggleStreamPolling()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5">
+            <button id="btn-pause-stream" onclick="toggleStreamPolling()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 cursor-pointer">
               <span id="pause-icon">⏸️</span>
               <span id="pause-text">Pause Feed</span>
             </button>
@@ -590,7 +595,7 @@
                   <td colspan="8" class="px-4 py-8 text-center text-slate-500 font-sans">
                     <div class="flex flex-col items-center justify-center space-y-2">
                       <div class="w-8 h-8 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin"></div>
-                      <span>Waiting for live streaming feed... Run <code class="text-cyan-400 font-mono">python run_demo.py</code> to broadcast events.</span>
+                      <span>Waiting for live streaming feed... Click <strong>▶ Start Stream</strong> above or run <code class="text-cyan-400 font-mono">python run_demo.py</code>.</span>
                     </div>
                   </td>
                 </tr>
@@ -687,7 +692,7 @@
             <h2 class="text-sm font-bold text-white">Explainable AI (XAI) Forensic Root-Cause Sandbox</h2>
             <p class="text-xs text-slate-400 mt-0.5">Deconstruct mathematical Autoencoder residuals w_j(x_j - x̂_j)² into plain-English SOC analyst forensic reports.</p>
           </div>
-          <button onclick="simulateInteractiveFlow()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg transition flex items-center gap-2">
+          <button onclick="simulateInteractiveFlow()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg transition flex items-center gap-2 cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
             <span>Simulate Random Test Flow</span>
           </button>
@@ -761,16 +766,16 @@
 
             <!-- Model Switcher Buttons -->
             <div class="flex flex-wrap items-center gap-1.5 bg-soc-elevated p-1 rounded-lg border border-soc-border">
-              <button id="btn-temporal-ae" class="px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-600 text-white shadow" onclick="switchModel('temporal_ae')">
+              <button id="btn-temporal-ae" class="px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-600 text-white shadow cursor-pointer" onclick="switchModel('temporal_ae')">
                 Temporal Autoencoder (93.1%)
               </button>
-              <button id="btn-oneway-ae" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white" onclick="switchModel('oneway_ae')">
+              <button id="btn-oneway-ae" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer" onclick="switchModel('oneway_ae')">
                 Flow Autoencoder (48.8%)
               </button>
-              <button id="btn-oneway-log" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white" onclick="switchModel('oneway_log')">
+              <button id="btn-oneway-log" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer" onclick="switchModel('oneway_log')">
                 One-Way Log-PCA (35.1%)
               </button>
-              <button id="btn-bidirectional" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white" onclick="switchModel('bidirectional')">
+              <button id="btn-bidirectional" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer" onclick="switchModel('bidirectional')">
                 Bidirectional Baseline
               </button>
             </div>
@@ -938,11 +943,11 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- 3. SLIDE-OVER EVENT FORENSIC DRAWER -->
+  <!-- 3. SLIDE-OVER EVENT FORENSIC DRAWER (HIDDEN BY DEFAULT TO PREVENT OVERLAY BLOCKS) -->
   <!-- ========================================================================= -->
-  <div id="event-drawer" class="fixed inset-0 z-50 overflow-hidden pointer-events-none transition-opacity duration-300 opacity-0">
-    <!-- Backdrop -->
-    <div id="drawer-backdrop" onclick="closeDrawer()" class="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto"></div>
+  <div id="event-drawer" class="hidden fixed inset-0 z-50 overflow-hidden">
+    <!-- Backdrop with click-to-close -->
+    <div id="drawer-backdrop" onclick="closeDrawer()" class="absolute inset-0 bg-black/70 backdrop-blur-sm cursor-pointer"></div>
 
     <!-- Drawer Surface -->
     <div class="fixed inset-y-0 right-0 max-w-full flex pl-10 pointer-events-auto">
@@ -956,12 +961,12 @@
             <div>
               <h3 class="text-sm font-bold text-white flex items-center gap-2">
                 <span>Forensic Event Dossier</span>
-                <span id="drawer-severity-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-950 text-rose-400 border border-rose-800">ALERT</span>
+                <span id="drawer-severity-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-950 text-rose-400 border border-rose-800 font-bold">ALERT</span>
               </h3>
               <p class="text-xs text-slate-400 font-mono" id="drawer-flow-id">#FL-000000</p>
             </div>
           </div>
-          <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+          <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
@@ -1020,13 +1025,16 @@
 
         <!-- Drawer Footer -->
         <div class="p-4 border-t border-soc-border bg-soc-surface flex items-center justify-between">
-          <button onclick="closeDrawer()" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition">
+          <button onclick="closeDrawer()" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition cursor-pointer">
             Close Dossier
           </button>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-auto max-w-sm"></div>
 
   <!-- ========================================================================= -->
   <!-- 4. CORE APPLICATION JAVASCRIPT & STATE MANAGEMENT -->
@@ -1069,6 +1077,29 @@
     let analyticsChartInstance = null;
     let liveAlertsCache = [];
 
+    // Toast Notification helper
+    function showToast(message, type = "info") {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      const colors = {
+        info: 'bg-slate-900 border-cyan-500/50 text-cyan-200',
+        success: 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200',
+        warning: 'bg-amber-950/90 border-amber-500/50 text-amber-200',
+        error: 'bg-rose-950/90 border-rose-500/50 text-rose-200',
+      };
+      toast.className = `p-3 rounded-lg border text-xs shadow-xl backdrop-blur flex items-center justify-between gap-3 transform transition-all duration-300 translate-y-2 opacity-0 ${colors[type] || colors.info}`;
+      toast.innerHTML = `<span>${message}</span><button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white">&times;</button>`;
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
     // View Switching
     function switchView(viewKey) {
       const views = ['overview', 'live', 'analytics', 'xai', 'models', 'system'];
@@ -1094,9 +1125,21 @@
       };
       document.getElementById('breadcrumb-active').textContent = titleMap[viewKey] || 'Command Center';
 
-      // Re-render chart if switching to analytics
-      if (viewKey === 'analytics' && analyticsChartInstance) {
-        analyticsChartInstance.resize();
+      // Auto close sidebar on mobile if clicked
+      if (window.innerWidth < 768) {
+        document.getElementById('sidebar').classList.add('-translate-x-full');
+      }
+
+      // Handle chart resizing on view activation
+      if (viewKey === 'overview') {
+        setTimeout(() => {
+          if (overviewChartInstance) overviewChartInstance.resize();
+          if (donutChartInstance) donutChartInstance.resize();
+        }, 50);
+      } else if (viewKey === 'analytics') {
+        setTimeout(() => {
+          if (analyticsChartInstance) analyticsChartInstance.resize();
+        }, 50);
       }
     }
 
@@ -1110,11 +1153,11 @@
       activeModel = modelKey;
       ['btn-temporal-ae', 'btn-oneway-ae', 'btn-oneway-log', 'btn-bidirectional'].forEach(id => {
         const btn = document.getElementById(id);
-        if (btn) btn.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white";
+        if (btn) btn.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer";
       });
       const activeBtnId = modelKey === 'temporal_ae' ? 'btn-temporal-ae' : (modelKey === 'oneway_ae' ? 'btn-oneway-ae' : (modelKey === 'oneway_log' ? 'btn-oneway-log' : 'btn-bidirectional'));
       if (document.getElementById(activeBtnId)) {
-        document.getElementById(activeBtnId).className = "px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-600 text-white shadow";
+        document.getElementById(activeBtnId).className = "px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-600 text-white shadow cursor-pointer";
       }
 
       const data = modelBreakdowns[modelKey];
@@ -1130,6 +1173,8 @@
         analyticsChartInstance.data.datasets[0].backgroundColor = data.rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
         analyticsChartInstance.update();
       }
+
+      showToast(`Switched active detector to ${modelKey.replace('_', ' ').toUpperCase()}`, "info");
     }
 
     function updateFPR(val) {
@@ -1152,7 +1197,6 @@
           document.getElementById('stream-total').textContent = data.total_processed.toLocaleString();
           document.getElementById('stream-alerts').textContent = data.total_anomalies.toLocaleString();
           document.getElementById('stream-rate').textContent = `${data.anomaly_rate_pct}%`;
-          document.getElementById('stream-radar-pill').classList.remove('hidden');
         }
 
         if (data.recent_alerts && data.recent_alerts.length > 0) {
@@ -1165,6 +1209,19 @@
       }
     }
 
+    // Trigger Stream from UI
+    async function startLiveStream(events = 500, eps = 15) {
+      showToast(`Starting live stream of ${events} flows at ${eps} EPS...`, "info");
+      try {
+        const res = await fetch(`/api/start_stream?events=${events}&eps=${eps}`);
+        const data = await res.json();
+        showToast(data.message || "Stream broadcast started", "success");
+        pollLiveFeed();
+      } catch (err) {
+        showToast("Error starting live stream", "error");
+      }
+    }
+
     function toggleStreamPolling() {
       isStreamPollingPaused = !isStreamPollingPaused;
       const badge = document.getElementById('live-polling-badge');
@@ -1173,14 +1230,16 @@
 
       if (isStreamPollingPaused) {
         badge.textContent = "POLLING PAUSED";
-        badge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-950 border border-amber-800 text-amber-400";
+        badge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-950 border border-amber-800 text-amber-400 font-semibold";
         pauseText.textContent = "Resume Feed";
         pauseIcon.textContent = "▶️";
+        showToast("Live radar polling paused", "warning");
       } else {
         badge.textContent = "POLLING ACTIVE (1.5s)";
-        badge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400";
+        badge.className = "text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 font-semibold";
         pauseText.textContent = "Pause Feed";
         pauseIcon.textContent = "⏸️";
+        showToast("Live radar polling resumed", "info");
         pollLiveFeed();
       }
     }
@@ -1294,15 +1353,20 @@
         featureList.innerHTML = `<div class="text-xs text-slate-500 italic">No anomalous residual deviation recorded.</div>`;
       }
 
-      // Show drawer
+      // Show drawer by removing hidden
       const drawer = document.getElementById('event-drawer');
-      drawer.classList.remove('pointer-events-none', 'opacity-0');
+      drawer.classList.remove('hidden');
     }
 
     function closeDrawer() {
       const drawer = document.getElementById('event-drawer');
-      drawer.classList.add('pointer-events-none', 'opacity-0');
+      drawer.classList.add('hidden');
     }
+
+    // Close drawer on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDrawer();
+    });
 
     // Interactive XAI Sandbox
     const interactiveSamplePool = [
@@ -1506,15 +1570,56 @@
       document.getElementById('clock-utc').textContent = `${now.toUTCString().slice(17, 25)} UTC`;
     }
 
+    async function fetchOverviewData() {
+      try {
+        const res = await fetch('/api/overview');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.kpi) return;
+
+        document.getElementById('ov-kpi-total').textContent = data.kpi.total_network_events.toLocaleString();
+        document.getElementById('ov-kpi-recall').textContent = `${data.kpi.overall_recall_pct}%`;
+        document.getElementById('ov-kpi-ap').textContent = data.kpi.average_precision;
+        document.getElementById('ov-kpi-prec').textContent = `${data.kpi.precision_pct}%`;
+        document.getElementById('ov-kpi-lat').textContent = `${data.kpi.average_inference_ms} ms`;
+
+        // Update donut chart with real severity counts
+        if (donutChartInstance && data.severity_distribution) {
+          const s = data.severity_distribution;
+          donutChartInstance.data.datasets[0].data = [s.Critical || 0, s.High || 0, s.Medium || 0, s.Low || 0];
+          donutChartInstance.update();
+        }
+      } catch (err) {
+        console.error("Overview data fetch error:", err);
+      }
+    }
+
     async function fetchSystemStatus() {
       try {
         const res = await fetch('/api/system_status');
         if (!res.ok) return;
         const data = await res.json();
+
         if (data.uptime_seconds) {
           const mins = Math.floor(data.uptime_seconds / 60);
           const secs = data.uptime_seconds % 60;
           document.getElementById('sidebar-uptime').textContent = `Up: ${mins}m ${secs}s`;
+        }
+
+        const healthPill = document.getElementById('system-health-pill');
+        const healthText = document.getElementById('system-health-text');
+        const radarPill = document.getElementById('stream-radar-pill');
+
+        if (data.streaming_active) {
+          healthPill.className = "flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-700 text-emerald-300";
+          healthText.textContent = "INGESTION ACTIVE (99.2%)";
+          radarPill.className = "flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-cyan-950/80 border border-cyan-700 text-cyan-300";
+          radarPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span><span>STREAMING (15 EPS)</span>`;
+        } else {
+          healthPill.className = "flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-300";
+          healthText.textContent = "SYSTEM OPERATIONAL";
+          radarPill.className = "flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400";
+          radarPill.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-500"></span><span>RADAR STANDBY</span>`;
         }
       } catch (e) {
         // Silent local fallback
@@ -1528,10 +1633,13 @@
       setInterval(updateClock, 1000);
       updateClock();
 
+      fetchOverviewData();
+      setInterval(fetchOverviewData, 5000);
+
       setInterval(pollLiveFeed, 1500);
       pollLiveFeed();
 
-      setInterval(fetchSystemStatus, 5000);
+      setInterval(fetchSystemStatus, 3000);
       fetchSystemStatus();
     });
   </script>

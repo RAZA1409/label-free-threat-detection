@@ -31,13 +31,30 @@ sys.path.append(str(SRC_DIR))
 
 PORT = 8501
 SERVER_START_TIME = time.time()
+STREAM_PROCESS = None
+EXPLAINER = None
+
+
+def get_explainer():
+    global EXPLAINER
+    if EXPLAINER is None:
+        try:
+            from explainability import ThreatExplainer
+            EXPLAINER = ThreatExplainer()
+        except Exception as e:
+            print(f"[!] Warning: Could not initialize ThreatExplainer: {e}")
+    return EXPLAINER
 
 
 class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(DASHBOARD_DIR), **kwargs)
 
+    def do_POST(self):
+        self.do_GET()
+
     def do_GET(self):
+        global STREAM_PROCESS
         parsed = urlparse(self.path)
         path = parsed.path
 
@@ -104,7 +121,7 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             )
 
             overview = {
-                "system_name": "Label-Free One-Way Network Threat Detection System",
+                "system_name": "AEGIS // Label-Free One-Way Network Threat Defense",
                 "problem_id": "SIH26145",
                 "diode_mode": "Strict Optical Tap / Forward-Only Unidirectional",
                 "uptime_seconds": int(time.time() - SERVER_START_TIME),
@@ -171,7 +188,9 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             live_path = EVAL_DIR / "live_stream_feed.json"
             stream_active = False
             last_event_time = "N/A"
-            if live_path.exists():
+            if STREAM_PROCESS is not None and STREAM_PROCESS.poll() is None:
+                stream_active = True
+            elif live_path.exists():
                 try:
                     mtime = os.path.getmtime(live_path)
                     stream_active = (time.time() - mtime) < 15.0
@@ -183,7 +202,7 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
 
             status = {
                 "status": "OPERATIONAL",
-                "health_score": 98.6,
+                "health_score": 99.2 if stream_active else 98.6,
                 "uptime_seconds": int(time.time() - SERVER_START_TIME),
                 "data_diode_link": "CONNECTED (Receive-Only Optical Tap)",
                 "streaming_active": stream_active,
@@ -203,6 +222,57 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(status).encode("utf-8"))
             return
 
+        elif path == "/api/start_stream":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+
+            query = parse_qs(parsed.query)
+            events = int(query.get("events", ["500"])[0])
+            eps = float(query.get("eps", ["15"])[0])
+
+            if STREAM_PROCESS is not None and STREAM_PROCESS.poll() is None:
+                self.wfile.write(json.dumps({
+                    "status": "already_running",
+                    "pid": STREAM_PROCESS.pid,
+                    "message": "Stream simulation is already actively running."
+                }).encode("utf-8"))
+                return
+
+            sim_script = SRC_DIR / "simulate_stream.py"
+            try:
+                STREAM_PROCESS = subprocess.Popen(
+                    [str(_VENV_PYTHON), str(sim_script), "--events", str(events), "--eps", str(eps)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                self.wfile.write(json.dumps({
+                    "status": "started",
+                    "pid": STREAM_PROCESS.pid,
+                    "events": events,
+                    "eps": eps,
+                    "message": f"Broadcasting {events} network flows at {eps} EPS."
+                }).encode("utf-8"))
+            except Exception as e:
+                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode("utf-8"))
+            return
+
+        elif path == "/api/stop_stream":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+
+            if STREAM_PROCESS is not None and STREAM_PROCESS.poll() is None:
+                STREAM_PROCESS.terminate()
+                STREAM_PROCESS = None
+                self.wfile.write(json.dumps({"status": "stopped", "message": "Stream simulation terminated."}).encode("utf-8"))
+            else:
+                STREAM_PROCESS = None
+                self.wfile.write(json.dumps({"status": "not_running", "message": "No active stream to stop."}).encode("utf-8"))
+            return
+
         return super().do_GET()
 
 
@@ -215,6 +285,8 @@ def main():
     print("  • /api/metrics        (Model evaluation comparisons)", flush=True)
     print("  • /api/live_feed      (Real-time optical diode threat stream)", flush=True)
     print("  • /api/system_status  (Sensor telemetry & link health)", flush=True)
+    print("  • /api/start_stream   (Launch real-time streaming simulator)", flush=True)
+    print("  • /api/stop_stream    (Halt active streaming simulator)", flush=True)
     print("=" * 70, flush=True)
 
     server_address = ("127.0.0.1", PORT)
