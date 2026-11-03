@@ -7,13 +7,22 @@ Decomposes the reconstruction error into individual feature residual contributio
 Translates mathematical residuals into actionable SOC forensic incident reports.
 """
 
+import sys
+import os
+import subprocess
 from pathlib import Path
+
+# Automatically re-execute inside project .venv if invoked with system python
+_ROOT = Path(__file__).resolve().parents[1]
+_VENV_PYTHON = _ROOT / ".venv" / "Scripts" / "python.exe"
+if _VENV_PYTHON.exists() and Path(sys.executable).resolve() != _VENV_PYTHON.resolve():
+    _res = subprocess.run([str(_VENV_PYTHON)] + sys.argv)
+    sys.exit(_res.returncode)
+
 from typing import Dict, Any, List, Tuple
 import joblib
 import numpy as np
 import pandas as pd
-
-import sys
 sys.path.append(str(Path(__file__).resolve().parent))
 from features import (
     ONE_WAY_FEATURES,

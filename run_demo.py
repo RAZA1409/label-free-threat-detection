@@ -11,13 +11,23 @@ When executed:
 """
 
 import sys
+import os
+import subprocess
+from pathlib import Path
+
+# Automatically re-execute inside project .venv if invoked with system python
+_ROOT = Path(__file__).resolve().parent
+_VENV_PYTHON = _ROOT / ".venv" / "Scripts" / "python.exe"
+if _VENV_PYTHON.exists() and Path(sys.executable).resolve() != _VENV_PYTHON.resolve():
+    _res = subprocess.run([str(_VENV_PYTHON)] + sys.argv)
+    sys.exit(_res.returncode)
+
 import time
 import socket
 import threading
 import webbrowser
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+ROOT = _ROOT
 sys.path.append(str(ROOT / "src"))
 
 PORT = 8501
@@ -84,3 +94,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

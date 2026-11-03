@@ -4,10 +4,20 @@ Zero-dependency Python HTTP server for the SIH 2026 Threat Detection Dashboard.
 Runs locally on http://localhost:8501
 """
 
+import sys
+import os
+import subprocess
+from pathlib import Path
+
+# Automatically re-execute inside project .venv if invoked with system python
+_ROOT = Path(__file__).resolve().parents[1]
+_VENV_PYTHON = _ROOT / ".venv" / "Scripts" / "python.exe"
+if _VENV_PYTHON.exists() and Path(sys.executable).resolve() != _VENV_PYTHON.resolve():
+    _res = subprocess.run([str(_VENV_PYTHON)] + sys.argv)
+    sys.exit(_res.returncode)
+
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import json
-from pathlib import Path
-import sys
 
 DASHBOARD_DIR = Path(__file__).resolve().parent
 ROOT_DIR = DASHBOARD_DIR.parent
