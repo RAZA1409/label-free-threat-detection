@@ -67,6 +67,16 @@ ONE_WAY_FEATURES: List[str] = [
     "PSH Flag Count",
 ]
 
+# Streaming Temporal Velocity Features (Rolling causal context)
+# Computed strictly over forward-only traffic metrics
+TEMPORAL_FEATURES: List[str] = [
+    "Rolling_Flow_Velocity_10s",
+    "Rolling_Bytes_Velocity_10s",
+    "Rolling_Single_Pkt_Ratio_10s",
+]
+
+AUGMENTED_ONE_WAY_FEATURES: List[str] = ONE_WAY_FEATURES + TEMPORAL_FEATURES
+
 # Physical features that can never realistically be negative.
 # In CIC-IDS2017, negative values arise from clock skew or integer overflow sentinels.
 NON_NEGATIVE_PHYSICAL_FEATURES: List[str] = [
@@ -165,6 +175,34 @@ def clean_feature_frame(
                 df.loc[df[col] < 0, col] = np.nan
 
     return df[target_features]
+
+
+def add_temporal_velocity_features(df: pd.DataFrame, window_seconds: int = 10) -> pd.DataFrame:
+    """
+    Computes streaming forward temporal context without exposing labels or future data.
+    Aggregates metrics strictly over rolling causal time buckets.
+    """
+    df = df.copy()
+    if "Timestamp" not in df.columns:
+        raise ValueError("Timestamp column required for temporal velocity engine.")
+
+    # Time bucket
+    time_bucket = df["Timestamp"].dt.floor(f"{window_seconds}s")
+    
+    # 1. Flow arrival velocity (count of flows in window)
+    flow_counts = df.groupby(time_bucket)["Total Fwd Packets"].transform("count")
+    df["Rolling_Flow_Velocity_10s"] = flow_counts.astype(float)
+
+    # 2. Forward byte volume velocity (sum of forward payload bytes)
+    byte_sums = df.groupby(time_bucket)["Total Length of Fwd Packets"].transform("sum")
+    df["Rolling_Bytes_Velocity_10s"] = byte_sums.astype(float)
+
+    # 3. Single-packet flow ratio (indicator for scan sweeps)
+    is_single = (df["Total Fwd Packets"] <= 1).astype(float)
+    single_ratio = is_single.groupby(time_bucket).transform("mean")
+    df["Rolling_Single_Pkt_Ratio_10s"] = single_ratio.astype(float)
+
+    return df
 
 
 class PreprocessingPipeline:

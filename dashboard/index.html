@@ -69,23 +69,23 @@
       </div>
       <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
         <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Detection Rate (Recall)</div>
-        <div id="kpi-recall" class="text-2xl font-bold mt-1 text-emerald-400">35.07%</div>
-        <div class="text-xs text-slate-400 mt-1">195,571 attacks detected</div>
+        <div id="kpi-recall" class="text-2xl font-bold mt-1 text-emerald-400">93.08%</div>
+        <div class="text-xs text-slate-400 mt-1">519,031 attacks detected</div>
       </div>
       <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
         <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Observed Test FPR</div>
-        <div id="kpi-fpr" class="text-2xl font-bold mt-1 text-amber-400">3.87%</div>
-        <div class="text-xs text-slate-400 mt-1">Target Calib FPR: 1.00%</div>
+        <div id="kpi-fpr" class="text-2xl font-bold mt-1 text-amber-400">12.48%</div>
+        <div class="text-xs text-slate-400 mt-1">Target Calib FPR: 0.20%</div>
       </div>
       <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
         <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Detection Precision</div>
-        <div id="kpi-precision" class="text-2xl font-bold mt-1 text-indigo-400">74.36%</div>
+        <div id="kpi-precision" class="text-2xl font-bold mt-1 text-indigo-400">70.46%</div>
         <div class="text-xs text-slate-400 mt-1">True Positive purity</div>
       </div>
       <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 shadow-sm">
         <div class="text-xs text-slate-400 font-medium uppercase tracking-wider">Average Precision (AP)</div>
-        <div id="kpi-ap" class="text-2xl font-bold mt-1 text-purple-400">0.6582</div>
-        <div class="text-xs text-slate-400 mt-1">PR-AUC Area</div>
+        <div id="kpi-ap" class="text-2xl font-bold mt-1 text-purple-400">0.8783</div>
+        <div class="text-xs text-slate-400 mt-1">PR-AUC Area (State of the Art)</div>
       </div>
     </section>
 
@@ -98,11 +98,14 @@
         </div>
         <!-- Model Selector Buttons -->
         <div class="flex items-center space-x-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
-          <button id="btn-oneway-log" class="px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-600 text-white shadow" onclick="switchModel('oneway_log')">
-            One-Way Log-PCA
+          <button id="btn-temporal-ae" class="px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-600 text-white shadow" onclick="switchModel('temporal_ae')">
+            Temporal Autoencoder (93.1%)
           </button>
           <button id="btn-oneway-ae" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white" onclick="switchModel('oneway_ae')">
-            One-Way Autoencoder
+            Flow Autoencoder (48.8%)
+          </button>
+          <button id="btn-oneway-log" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white" onclick="switchModel('oneway_log')">
+            One-Way Log-PCA (35.1%)
           </button>
           <button id="btn-bidirectional" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white" onclick="switchModel('bidirectional')">
             Bidirectional Baseline
@@ -113,14 +116,14 @@
       <!-- Threshold Slider -->
       <div class="pt-2 border-t border-slate-800">
         <div class="flex justify-between items-center text-xs font-medium mb-1.5">
-          <span class="text-slate-300">Target Benign Calibration FPR: <span id="fpr-slider-val" class="text-indigo-400 font-bold">1.0%</span></span>
-          <span class="text-slate-400">Calibrated Threshold: <span id="thresh-val" class="font-mono text-emerald-400">0.258490</span></span>
+          <span class="text-slate-300">Target Benign Calibration FPR: <span id="fpr-slider-val" class="text-indigo-400 font-bold">0.2%</span></span>
+          <span class="text-slate-400">Calibrated Threshold: <span id="thresh-val" class="font-mono text-emerald-400">0.190885</span></span>
         </div>
-        <input id="fpr-slider" type="range" min="0.1" max="5.0" step="0.1" value="1.0" class="w-full accent-indigo-500 cursor-pointer" oninput="updateFPR(this.value)">
+        <input id="fpr-slider" type="range" min="0.1" max="5.0" step="0.1" value="0.2" class="w-full accent-indigo-500 cursor-pointer" oninput="updateFPR(this.value)">
         <div class="flex justify-between text-[10px] text-slate-400 mt-1">
           <span>0.1% (Strict / Minimal Alerts)</span>
-          <span>1.0% (Operational Default)</span>
-          <span>5.0% (Aggressive Zero-Day Mode)</span>
+          <span>0.2% (Operational Champion)</span>
+          <span>1.0% (Aggressive Zero-Day Mode)</span>
         </div>
       </div>
     </section>
@@ -151,42 +154,42 @@
         <div class="grid grid-cols-2 gap-2 text-center text-xs pt-1">
           <div class="bg-emerald-950/40 border border-emerald-800/60 p-3 rounded-lg">
             <div class="text-[10px] uppercase tracking-wider text-emerald-400 font-medium">True Positives</div>
-            <div id="cm-tp" class="text-xl font-bold text-emerald-300 mt-0.5">195,571</div>
+            <div id="cm-tp" class="text-xl font-bold text-emerald-300 mt-0.5">519,031</div>
             <div class="text-[10px] text-slate-400 mt-0.5">Attacks Flagged</div>
           </div>
           <div class="bg-rose-950/40 border border-rose-800/60 p-3 rounded-lg">
             <div class="text-[10px] uppercase tracking-wider text-rose-400 font-medium">False Positives</div>
-            <div id="cm-fp" class="text-xl font-bold text-rose-300 mt-0.5">67,420</div>
+            <div id="cm-fp" class="text-xl font-bold text-rose-300 mt-0.5">217,598</div>
             <div class="text-[10px] text-slate-400 mt-0.5">Benign Alarms</div>
           </div>
           <div class="bg-amber-950/40 border border-amber-800/60 p-3 rounded-lg">
             <div class="text-[10px] uppercase tracking-wider text-amber-400 font-medium">False Negatives</div>
-            <div id="cm-fn" class="text-xl font-bold text-amber-300 mt-0.5">362,075</div>
+            <div id="cm-fn" class="text-xl font-bold text-amber-300 mt-0.5">38,615</div>
             <div class="text-[10px] text-slate-400 mt-0.5">Attacks Missed</div>
           </div>
           <div class="bg-slate-800/60 border border-slate-700 p-3 rounded-lg">
             <div class="text-[10px] uppercase tracking-wider text-slate-300 font-medium">True Negatives</div>
-            <div id="cm-tn" class="text-xl font-bold text-slate-200 mt-0.5">1,675,759</div>
+            <div id="cm-tn" class="text-xl font-bold text-slate-200 mt-0.5">1,525,581</div>
             <div class="text-[10px] text-slate-400 mt-0.5">Benign Passed</div>
           </div>
         </div>
 
         <div class="border-t border-slate-800 pt-3 space-y-2 text-xs">
           <div class="flex justify-between text-slate-300">
+            <span>DoS Hulk Detection:</span>
+            <span class="text-emerald-400 font-bold">99.85% (230,726 / 231,073)</span>
+          </div>
+          <div class="flex justify-between text-slate-300">
             <span>PortScan Detection:</span>
-            <span class="text-emerald-400 font-bold">99.36% (157,905 / 158,930)</span>
+            <span class="text-emerald-400 font-bold">99.79% (158,601 / 158,930)</span>
+          </div>
+          <div class="flex justify-between text-slate-300">
+            <span>DDoS Detection:</span>
+            <span class="text-emerald-400 font-bold">97.83% (125,253 / 128,027)</span>
           </div>
           <div class="flex justify-between text-slate-300">
             <span>Heartbleed Detection:</span>
-            <span class="text-emerald-400 font-bold">100.0% (11 / 11)</span>
-          </div>
-          <div class="flex justify-between text-slate-300">
-            <span>Infiltration Detection:</span>
-            <span class="text-emerald-400 font-bold">36.11% (13 / 36)</span>
-          </div>
-          <div class="flex justify-between text-slate-300">
-            <span>DoS Slowloris Detection:</span>
-            <span class="text-amber-400 font-bold">18.74% (1,086 / 5,796)</span>
+            <span class="text-emerald-400 font-bold">54.55% (6 / 11)</span>
           </div>
         </div>
       </div>
@@ -299,15 +302,20 @@
     ];
 
     const modelBreakdowns = {
-      oneway_log: {
-        rates: [100.0, 99.36, 36.11, 18.74, 15.21, 12.78, 5.26, 4.71, 2.49, 2.45, 0.14, 0.0, 0.0],
-        recall: "35.07%", fpr: "3.87%", precision: "74.36%", ap: "0.6582",
-        tp: "195,571", fp: "67,420", fn: "362,075", tn: "1,675,759", threshold: "0.258490"
+      temporal_ae: {
+        rates: [54.55, 99.79, 58.33, 22.07, 99.85, 25.02, 15.00, 0.0, 2.29, 0.0, 0.0, 2.27, 97.83],
+        recall: "93.08%", fpr: "12.48%", precision: "70.46%", ap: "0.8783",
+        tp: "519,031", fp: "217,598", fn: "38,615", tn: "1,525,581", threshold: "0.190885"
       },
       oneway_ae: {
         rates: [90.91, 99.86, 36.11, 22.10, 22.64, 13.00, 5.53, 0.0, 2.24, 0.0, 0.29, 8.70, 44.92],
         recall: "48.76%", fpr: "6.13%", precision: "71.78%", ap: "0.7032",
         tp: "271,889", fp: "106,893", fn: "285,757", tn: "1,636,286", threshold: "0.119703"
+      },
+      oneway_log: {
+        rates: [100.0, 99.36, 36.11, 18.74, 15.21, 12.78, 5.26, 4.71, 2.49, 2.45, 0.14, 0.0, 0.0],
+        recall: "35.07%", fpr: "3.87%", precision: "74.36%", ap: "0.6582",
+        tp: "195,571", fp: "67,420", fn: "362,075", tn: "1,675,759", threshold: "0.258490"
       },
       bidirectional: {
         rates: [100.0, 0.20, 44.44, 32.83, 67.17, 31.42, 62.96, 4.84, 2.24, 2.91, 0.03, 0.0, 63.27],
@@ -316,7 +324,7 @@
       }
     };
 
-    let activeModel = 'oneway_log';
+    let activeModel = 'temporal_ae';
     let chart;
 
     function initChart() {
@@ -358,12 +366,14 @@
 
     function switchModel(modelKey) {
       activeModel = modelKey;
-      ['btn-oneway-log', 'btn-oneway-ae', 'btn-bidirectional'].forEach(id => {
+      ['btn-temporal-ae', 'btn-oneway-ae', 'btn-oneway-log', 'btn-bidirectional'].forEach(id => {
         const btn = document.getElementById(id);
-        btn.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white";
+        if (btn) btn.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white";
       });
-      const activeBtnId = modelKey === 'oneway_log' ? 'btn-oneway-log' : (modelKey === 'oneway_ae' ? 'btn-oneway-ae' : 'btn-bidirectional');
-      document.getElementById(activeBtnId).className = "px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-600 text-white shadow";
+      const activeBtnId = modelKey === 'temporal_ae' ? 'btn-temporal-ae' : (modelKey === 'oneway_ae' ? 'btn-oneway-ae' : (modelKey === 'oneway_log' ? 'btn-oneway-log' : 'btn-bidirectional'));
+      if (document.getElementById(activeBtnId)) {
+        document.getElementById(activeBtnId).className = "px-3 py-1.5 rounded-md text-xs font-medium bg-indigo-600 text-white shadow";
+      }
 
       const data = modelBreakdowns[modelKey];
       document.getElementById('kpi-recall').textContent = data.recall;

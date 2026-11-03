@@ -63,6 +63,8 @@ def plot_attack_category_detection():
     """Horizontal bar chart showing detection recall per attack category."""
     # Check if any attack comparison file exists
     candidate_files = [
+        EVAL_DIR / "temporal_autoencoder_breakdown.csv",
+        EVAL_DIR / "oneway_autoencoder_breakdown.csv",
         EVAL_DIR / "reduced_pca_category_detection.csv",
         EVAL_DIR / "all_model_attack_comparison.csv",
         EVAL_DIR / "oneway_pca_attack_breakdown.csv",

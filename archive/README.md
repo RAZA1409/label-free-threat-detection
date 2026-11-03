@@ -32,6 +32,8 @@ Exploratory model iterations prior to converging on the Deep One-Way Autoencoder
 - `train_reduced_pca_detector.py`: 39-feature bidirectional PCA experiment.
 - `train_targeted_isolation_forest.py`: 5-feature targeted tree experiment.
 - `train_transformed_pca_detector.py`: Early feature transformation prototype.
+- `train_hybrid_ensemble.py`: Dual-head autoencoder + log-PCA prototype.
+- `train_subspace_autoencoder.py`: Multi-subspace functional decomposition prototype.
 
 ### 3. `analysis/`
 Terminal reporting and error-distribution scripts superseded by the unified XAI engine (`src/explainability.py`), the model leaderboard (`src/create_model_report.py`), and the interactive dashboard:
@@ -43,3 +45,4 @@ Terminal reporting and error-distribution scripts superseded by the unified XAI 
 - `analyze_pca_missed_attacks.py` & `analyze_reduced_pca_missed_attacks.py`: Residual error audits on missed attacks.
 - `analyze_targeted_if_scores.py` & `analyze_thresholds.py`: Quantile distribution checks.
 - `compare_all_model_attacks.py`, `compare_attack_detection.py`, `compare_models.py`, `compare_pca_feature_detector.py`: Ad-hoc comparison scripts.
+

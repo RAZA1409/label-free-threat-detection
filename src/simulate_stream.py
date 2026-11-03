@@ -19,7 +19,12 @@ import numpy as np
 
 import sys
 sys.path.append(str(Path(__file__).resolve().parent))
-from features import ONE_WAY_FEATURES, sanitize_labels
+from features import (
+    ONE_WAY_FEATURES,
+    AUGMENTED_ONE_WAY_FEATURES,
+    sanitize_labels,
+    add_temporal_velocity_features,
+)
 from explainability import ThreatExplainer
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -49,6 +54,7 @@ def run_stream_simulation(
     print("2. Sampling stream sequence from Tuesday-Friday test capture...")
     df = pd.read_parquet(TEST_FILE)
     df["Clean_Label"] = sanitize_labels(df["Label"])
+    df = add_temporal_velocity_features(df)
 
     if inject_attacks:
         # Sample realistic sequence: mostly benign with interspersed attack bursts
@@ -68,7 +74,7 @@ def run_stream_simulation(
     total_anomalies = 0
 
     for idx, row in stream_pool.iterrows():
-        flow_dict = row[ONE_WAY_FEATURES].to_dict()
+        flow_dict = row[explainer.feature_names].to_dict()
         true_label = str(row["Clean_Label"])
 
         # Real-time inference & attribution

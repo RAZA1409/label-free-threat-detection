@@ -17,6 +17,8 @@ import sys
 sys.path.append(str(Path(__file__).resolve().parent))
 from features import (
     ONE_WAY_FEATURES,
+    TEMPORAL_FEATURES,
+    AUGMENTED_ONE_WAY_FEATURES,
     clean_feature_frame,
     LogPreprocessingPipeline,
 )
@@ -28,6 +30,11 @@ MODELS_DIR = ROOT / "models"
 
 # Human-readable feature descriptions for SOC analysts
 FEATURE_DESCRIPTIONS: Dict[str, str] = {
+    # Temporal streaming context features
+    "Rolling_Flow_Velocity_10s": "Rolling 10s forward flow arrival velocity (burst / DDoS flood indicator)",
+    "Rolling_Bytes_Velocity_10s": "Rolling 10s forward payload byte volume (volumetric flood indicator)",
+    "Rolling_Single_Pkt_Ratio_10s": "Rolling 10s single-packet flow ratio (reconnaissance / sweep indicator)",
+    # Forward Flow Features
     "Fwd Packets/s": "Forward packet transmission rate (burst/flooding indicator)",
     "Flow Duration": "Connection hold duration",
     "Fwd IAT Mean": "Mean inter-arrival time between forward packets",
@@ -55,21 +62,28 @@ FEATURE_DESCRIPTIONS: Dict[str, str] = {
 
 
 class ThreatExplainer:
-    """Explains why a given flow was flagged as an anomaly."""
+    """Explains why a given flow was flagged as an anomaly using feature residual attribution."""
 
-    def __init__(self):
-        # Load trained pipeline and autoencoder
-        self.pipeline_path = MODELS_DIR / "oneway_log_pipeline.joblib"
-        self.model_path = MODELS_DIR / "oneway_autoencoder_model.joblib"
-        self.weights_path = MODELS_DIR / "oneway_autoencoder_weights.joblib"
-        self.threshold_path = MODELS_DIR / "oneway_autoencoder_threshold.json"
+    def __init__(self, model_type: str = "temporal"):
+        self.model_type = model_type
+        if model_type == "temporal":
+            self.pipeline_path = MODELS_DIR / "temporal_autoencoder_pipeline.joblib"
+            self.model_path = MODELS_DIR / "temporal_autoencoder_model.joblib"
+            self.weights_path = MODELS_DIR / "temporal_autoencoder_weights.joblib"
+            self.threshold_path = MODELS_DIR / "temporal_autoencoder_threshold.json"
+        else:
+            self.pipeline_path = MODELS_DIR / "oneway_log_pipeline.joblib"
+            self.model_path = MODELS_DIR / "oneway_autoencoder_model.joblib"
+            self.weights_path = MODELS_DIR / "oneway_autoencoder_weights.joblib"
+            self.threshold_path = MODELS_DIR / "oneway_autoencoder_threshold.json"
 
         if not self.model_path.exists():
-            raise FileNotFoundError("Autoencoder model not found. Run train_autoencoder.py first.")
+            raise FileNotFoundError(f"Autoencoder model not found at {self.model_path}.")
 
         self.pipeline = joblib.load(self.pipeline_path)
         self.model = joblib.load(self.model_path)
-        self.weights = joblib.load(self.weights_path) if self.weights_path.exists() else np.ones(len(ONE_WAY_FEATURES))
+        self.feature_names = list(self.pipeline.features)
+        self.weights = joblib.load(self.weights_path) if self.weights_path.exists() else np.ones(len(self.feature_names))
 
         import json
         with open(self.threshold_path, encoding="utf-8") as f:
@@ -84,6 +98,11 @@ class ThreatExplainer:
         # Convert single dict to DataFrame
         df = pd.DataFrame([flow_dict])
         
+        # Ensure all required features are present
+        for col in self.feature_names:
+            if col not in df.columns:
+                df[col] = 0.0
+
         # Transform through the pipeline
         X_scaled = self.pipeline.transform(df)
 
@@ -107,7 +126,7 @@ class ThreatExplainer:
 
         top_features = []
         for idx in ranked_indices[:top_n]:
-            feat_name = ONE_WAY_FEATURES[idx]
+            feat_name = self.feature_names[idx]
             raw_val = float(flow_dict.get(feat_name, 0.0))
             pct = float(pct_contributions[idx])
             desc = FEATURE_DESCRIPTIONS.get(feat_name, feat_name)

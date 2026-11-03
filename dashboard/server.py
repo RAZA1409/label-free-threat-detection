@@ -34,6 +34,12 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             # Load actual evaluated metrics
             models_data = {}
 
+            # 0. Temporal One-Way Autoencoder (State of the Art)
+            temporal_path = EVAL_DIR / "temporal_autoencoder_metrics.json"
+            if temporal_path.exists():
+                with open(temporal_path, encoding="utf-8") as f:
+                    models_data["temporal_autoencoder"] = json.load(f)
+
             # 1. One-Way Autoencoder
             ae_path = EVAL_DIR / "oneway_autoencoder_metrics.json"
             if ae_path.exists():

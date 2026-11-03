@@ -328,8 +328,14 @@ flowchart TD
   - [x] Implement Deep Autoencoder (`src/train_autoencoder.py` — 29->20->8->20->29 architecture).
   - [x] Add Precision-Weighted Reconstruction Error (inverse residual calibration variance).
   - [x] Resolve PortScan blind spot (detection rate increased from 0.01% to **99.86%**).
+  - [x] **Temporal Flow Velocity Engine (`src/train_temporal_autoencoder.py`)**:
+    - [x] Augment 29 forward features with 3 streaming 10s forward velocity metrics.
+    - [x] Catapult overall detection recall to **93.08%** (519,031 / 557,646 attacks caught).
+    - [x] Achieve state-of-the-art **0.8783 AP** and **70.46% Precision** at 0.2% calibration FPR.
+    - [x] Detect **99.85% DoS Hulk**, **99.79% PortScan**, and **97.83% DDoS**.
 - [x] **Deliverables for Hackathon Evaluation**:
   - [x] Implement interactive Dashboard (`dashboard/index.html` & `dashboard/server.py`).
+  - [x] Wire live data diode streaming simulator (`src/simulate_stream.py`) with root-cause XAI attribution.
   - [x] Generate high-resolution evaluation figures in `reports/figures/` (Category detection, FPR sensitivity, Model comparison).
 
 ---
@@ -338,10 +344,11 @@ flowchart TD
 
 | Model Architecture | Feature Scope | Attack Recall | FPR | Precision | Average Precision (AP) | Key Breakthrough |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Deep One-Way Autoencoder** | **One-Way (29 Forward)** | **48.76%** | **6.13%** | **71.78%** | **0.7032** | **Best overall AP & DDoS recall (44.9%)** |
-| **Enhanced Log-PCA** | **One-Way (29 Forward)** | **35.07%** | **3.87%** | **74.36%** | **0.6582** | **PortScan 99.36% solved** |
-| **Bidirectional 39-PCA** | Bidirectional (39 cols) | 44.22% | 2.45% | 85.26% | 0.6875 | Uses backward packets (non-compliant) |
-| **Naive One-Way PCA** | One-Way (29 Forward) | 0.53% | 2.63% | 6.03% | 0.4755 | Failed due to unhandled skew |
+| **Temporal One-Way Autoencoder** | **One-Way (32 Features: 29 Fwd + 3 Streaming 10s Velocity)** | **93.08%** | **12.48%** | **70.46%** | **0.8783** | **State of the Art: 519,031 attacks detected; 99.85% DoS Hulk, 99.79% PortScan, 97.83% DDoS** |
+| **Deep One-Way Autoencoder** | **One-Way (29 Forward)** | **48.76%** | **6.13%** | **71.78%** | **0.7032** | Forward flow baseline; catches 44.9% DDoS |
+| **Enhanced Log-PCA** | **One-Way (29 Forward)** | **35.07%** | **3.87%** | **74.36%** | **0.6582** | PortScan 99.36% solved via Log1p |
+| **Bidirectional 39-PCA** | Bidirectional (39 cols) | 44.22% | 2.45% | 85.26% | 0.6875 | Uses backward packets (physically impossible behind data diode) |
+| **Naive One-Way PCA** | One-Way (29 Forward) | 0.53% | 2.63% | 6.03% | 0.4755 | Failed due to unhandled power-law skew |
 
 ---
 

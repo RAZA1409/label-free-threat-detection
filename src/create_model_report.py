@@ -7,6 +7,7 @@ EVALUATION = ROOT / "outputs" / "evaluation"
 
 metric_files = {
     # --- Strict One-Way / Unidirectional Models (SIH26145) ---
+    "Temporal One-Way Autoencoder": "temporal_autoencoder_metrics.json",
     "Deep One-Way Autoencoder": "oneway_autoencoder_metrics.json",
     "Enhanced One-Way Log-PCA": "oneway_log_pca_metrics.json",
     "One-Way Isolation Forest": "oneway_iforest_metrics.json",
