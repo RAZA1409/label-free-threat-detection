@@ -599,7 +599,7 @@
           </div>
 
           <div class="px-5 py-3 border-t border-soc-border bg-soc-elevated/50 flex items-center justify-between text-xs text-slate-400 font-sans">
-            <span>Showing recent streaming events buffer (Rolling window of 50 flows)</span>
+            <span>Showing recent streaming events buffer (Rolling window of 150 flows)</span>
             <span class="font-mono text-slate-300" id="live-last-updated">Last ping: --:--:--</span>
           </div>
         </div>
@@ -1214,7 +1214,7 @@
         return;
       }
 
-      const rows = alerts.slice(-25).reverse().map((a, idx) => {
+      const rows = alerts.slice(-100).reverse().map((a, idx) => {
         const isAnomaly = a.verdict.includes('ANOMAL');
         const badgeColor = isAnomaly
           ? (a.score > a.threshold * 5 ? 'text-rose-400 bg-rose-950/60 border border-rose-800' : 'text-amber-400 bg-amber-950/60 border border-amber-800')

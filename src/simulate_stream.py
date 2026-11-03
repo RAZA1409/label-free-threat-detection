@@ -46,7 +46,7 @@ LIVE_FEED_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 def run_stream_simulation(
     speed_eps: float = 20.0,
-    max_events: int = 500,
+    max_events: int = 700,
     inject_attacks: bool = True,
 ):
     """
@@ -69,8 +69,10 @@ def run_stream_simulation(
 
     if inject_attacks:
         # Sample realistic sequence: mostly benign with interspersed attack bursts
-        benign_pool = df[df["Clean_Label"] == "BENIGN"].sample(n=min(len(df), int(max_events * 0.75)), random_state=42)
-        attack_pool = df[df["Clean_Label"] != "BENIGN"].sample(n=min(len(df), int(max_events * 0.25)), random_state=42)
+        benign_count = int(max_events * 0.75)
+        attack_count = max_events - benign_count
+        benign_pool = df[df["Clean_Label"] == "BENIGN"].sample(n=min(len(df), benign_count), random_state=42)
+        attack_pool = df[df["Clean_Label"] != "BENIGN"].sample(n=min(len(df), attack_count), random_state=42)
         stream_pool = pd.concat([benign_pool, attack_pool]).sample(frac=1.0, random_state=42).reset_index(drop=True)
     else:
         stream_pool = df.sample(n=min(len(df), max_events), random_state=42).reset_index(drop=True)
@@ -121,7 +123,7 @@ def run_stream_simulation(
             "narrative": explanation["analyst_narrative"],
         }
         recent_alerts.append(alert_record)
-        if len(recent_alerts) > 50:
+        if len(recent_alerts) > 150:
             recent_alerts.pop(0)
 
         # Write latest state to shared live feed for Dashboard consumption
@@ -146,8 +148,8 @@ def run_stream_simulation(
 
 def main():
     parser = argparse.ArgumentParser(description="One-Way Network Traffic Streaming Simulator")
-    parser.add_argument("--eps", type=float, default=25.0, help="Events per second (simulation speed)")
-    parser.add_argument("--events", type=int, default=50, help="Total events to simulate (default: 50 for quick demo)")
+    parser.add_argument("--eps", type=float, default=20.0, help="Events per second (simulation speed)")
+    parser.add_argument("--events", type=int, default=700, help="Total events to simulate (default: 700)")
     args = parser.parse_args()
 
     run_stream_simulation(speed_eps=args.eps, max_events=args.events)
