@@ -399,3 +399,60 @@ def test_11_temporal_causality_no_future_leakage():
     assert res_unordered.loc[2, "Rolling_Flow_Velocity_10s"] == iso_flow
     assert res_unordered.loc[2, "Rolling_Bytes_Velocity_10s"] == iso_bytes
     assert res_unordered.loc[2, "Rolling_Single_Pkt_Ratio_10s"] == iso_single
+
+
+# -----------------------------------------------------------------------------
+# TEST 12: Cross-partition boundary policy & historical continuity
+# -----------------------------------------------------------------------------
+def test_12_cross_partition_boundary_policy():
+    """
+    Verifies that:
+    1. Independent partition calculation has a controlled cold-start transient at boundary.
+    2. Events occurring >= 10s after boundary are 100% identical between isolated and continuous stream.
+    3. When optional historical context is supplied, boundary events seamlessly match full continuous stream.
+    """
+    times_p1 = [
+        pd.Timestamp("2026-11-04 10:00:00"),
+        pd.Timestamp("2026-11-04 10:00:05"),
+        pd.Timestamp("2026-11-04 10:00:08"),  # 2s before boundary
+    ]
+    df_p1 = pd.DataFrame({
+        "Timestamp": times_p1,
+        "Total Fwd Packets": [1.0, 2.0, 3.0],
+        "Total Length of Fwd Packets": [64.0, 128.0, 256.0],
+    })
+
+    times_p2 = [
+        pd.Timestamp("2026-11-04 10:00:10"),  # 2s after boundary (within 10s of p1[2])
+        pd.Timestamp("2026-11-04 10:00:12"),  # 4s after boundary
+        pd.Timestamp("2026-11-04 10:00:25"),  # 15s after boundary (> 10s after p1, independent of p1)
+    ]
+    df_p2 = pd.DataFrame({
+        "Timestamp": times_p2,
+        "Total Fwd Packets": [4.0, 5.0, 6.0],
+        "Total Length of Fwd Packets": [512.0, 1024.0, 2048.0],
+    })
+
+    # Continuous stream
+    df_continuous = pd.concat([df_p1, df_p2], ignore_index=True)
+    out_continuous = add_temporal_velocity_features(df_continuous, window_seconds=10)
+
+    # Isolated partition 2 (cold start at boundary)
+    out_isolated_p2 = add_temporal_velocity_features(df_p2, window_seconds=10)
+
+    # Event >= 10s after boundary (index 2 of p2) MUST be identical in isolated vs continuous
+    assert out_isolated_p2.loc[2, "Rolling_Flow_Velocity_10s"] == out_continuous.loc[5, "Rolling_Flow_Velocity_10s"]
+    assert out_isolated_p2.loc[2, "Rolling_Bytes_Velocity_10s"] == out_continuous.loc[5, "Rolling_Bytes_Velocity_10s"]
+
+    # Partition 2 with historical context from partition 1
+    out_hist_p2 = add_temporal_velocity_features(df_p2, window_seconds=10, historical_context=df_p1)
+
+    # All rows in out_hist_p2 must 100% match out_continuous rows 3, 4, 5
+    np.testing.assert_array_equal(
+        out_hist_p2["Rolling_Flow_Velocity_10s"].values,
+        out_continuous.iloc[3:]["Rolling_Flow_Velocity_10s"].values,
+    )
+    np.testing.assert_array_equal(
+        out_hist_p2["Rolling_Bytes_Velocity_10s"].values,
+        out_continuous.iloc[3:]["Rolling_Bytes_Velocity_10s"].values,
+    )

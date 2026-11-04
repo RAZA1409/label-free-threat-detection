@@ -236,7 +236,11 @@ def clean_feature_frame(
     return df[target_features]
 
 
-def add_temporal_velocity_features(df: pd.DataFrame, window_seconds: int = 10) -> pd.DataFrame:
+def add_temporal_velocity_features(
+    df: pd.DataFrame,
+    window_seconds: int = 10,
+    historical_context: Optional[pd.DataFrame] = None,
+) -> pd.DataFrame:
     """
     Computes streaming forward temporal context without exposing labels or future data.
     Aggregates metrics strictly over causal, backward-looking rolling time windows (t - window, t].
@@ -245,6 +249,8 @@ def add_temporal_velocity_features(df: pd.DataFrame, window_seconds: int = 10) -
     - Pure temporal causality: An event at timestamp t is never affected by any events with timestamps > t.
     - Preserves input order: Preserves the original DataFrame index and row sequence.
     - Robust edge case handling: Empty dataframes, duplicate timestamps, missing/infinite values.
+    - Partition & streaming continuity: Supports optional historical_context buffer to eliminate
+      cold-start artifacts across partition boundaries while maintaining 100% causal isolation.
     """
     if len(df) == 0:
         res = df.copy()
@@ -261,9 +267,26 @@ def add_temporal_velocity_features(df: pd.DataFrame, window_seconds: int = 10) -
     if not pd.api.types.is_datetime64_any_dtype(df["Timestamp"]):
         df["Timestamp"] = pd.to_datetime(df["Timestamp"])
 
-    # Track original row sequence using stable position identifier
+    df["_is_hist"] = False
     df["_row_pos"] = np.arange(len(df))
-    sorted_df = df.sort_values(["Timestamp", "_row_pos"], kind="stable").copy()
+
+    # Prepend relevant historical context if provided (events within window_seconds of df.min)
+    if historical_context is not None and len(historical_context) > 0:
+        hist = historical_context.copy()
+        if not pd.api.types.is_datetime64_any_dtype(hist["Timestamp"]):
+            hist["Timestamp"] = pd.to_datetime(hist["Timestamp"])
+        min_time = df["Timestamp"].min()
+        hist_tail = hist[hist["Timestamp"] >= (min_time - pd.Timedelta(seconds=window_seconds))].copy()
+        if len(hist_tail) > 0:
+            hist_tail["_is_hist"] = True
+            hist_tail["_row_pos"] = -1 - np.arange(len(hist_tail))
+            combined_df = pd.concat([hist_tail, df], ignore_index=True)
+        else:
+            combined_df = df
+    else:
+        combined_df = df
+
+    sorted_df = combined_df.sort_values(["Timestamp", "_row_pos"], kind="stable").copy()
 
     # Pre-clean inputs for numerical aggregation
     fwd_pkts = sorted_df.get("Total Fwd Packets", pd.Series(0, index=sorted_df.index))
@@ -290,9 +313,9 @@ def add_temporal_velocity_features(df: pd.DataFrame, window_seconds: int = 10) -
     sorted_df["Rolling_Bytes_Velocity_10s"] = sorted_df.groupby("Timestamp")["_rb"].transform("last")
     sorted_df["Rolling_Single_Pkt_Ratio_10s"] = sorted_df.groupby("Timestamp")["_rs"].transform("last")
 
-    # Restore original row ordering and clean up temporary helper columns
-    result = sorted_df.sort_values("_row_pos").drop(
-        columns=["_row_pos", "_fwd_pkts", "_fwd_bytes", "_is_single", "_rf", "_rb", "_rs"]
+    # Filter back to non-historical rows and restore original row ordering
+    result = sorted_df[~sorted_df["_is_hist"]].sort_values("_row_pos").drop(
+        columns=["_is_hist", "_row_pos", "_fwd_pkts", "_fwd_bytes", "_is_single", "_rf", "_rb", "_rs"]
     )
     return result
 
