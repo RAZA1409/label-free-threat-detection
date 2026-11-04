@@ -1,6 +1,6 @@
 """
 src/streaming_features.py
-AEGIS Phase 3 Stage 4A: Pure One-Way Causal Streaming Feature Engine.
+AEGIS Phase 3 Stage 4A & Stage 4B.1: Pure One-Way Causal Streaming Feature Engine & Safe Buffer Capacity.
 
 SIH Problem ID: SIH26145
 Compliance: 26-dimensional forward-feature-only design; reverse-direction feature information excluded.
@@ -16,11 +16,14 @@ Provides:
 3. Causal Rolling Context Engine (StreamingCausalContext):
    - Sliding causal window: (t - 10s, t] closed on right.
    - Microsecond deque-based eviction of expired entries (t_k <= t - 10s).
-   - Multi-batch continuity and warm-up buffer support.
-   - Simultaneous timestamp group finalization matching offline transform("last").
+   - Configurable memory safety ceiling (max_buffer_capacity, default: 10,000 entries).
+   - Buffer overflow detection and explicit degraded state transition (is_degraded, is_valid).
+   - Safe event-time recovery: t > last_overflow_timestamp + 10s.
+   - Multi-batch continuity, simultaneous timestamp group finalization, and warm-up buffer.
 4. High-Performance Streaming Feature Engine (StreamingFeatureEngine):
    - Single-flow microsecond feature extraction and fast NumPy standardization.
    - Vectorized batch feature extraction matching offline features.py bit-for-bit.
+   - Explicit feature validity and context state signaling for downstream inference safety.
 """
 
 import math
@@ -218,10 +221,12 @@ class StreamingCausalContext:
         self,
         window_seconds: int = STREAMING_WINDOW_SECONDS,
         max_late_seconds: float = 10.0,
+        max_buffer_capacity: int = 10_000,
     ):
         self.window_seconds: int = int(window_seconds)
         self.window_delta: pd.Timedelta = pd.Timedelta(seconds=self.window_seconds)
         self.max_late_delta: pd.Timedelta = pd.Timedelta(seconds=max_late_seconds)
+        self.max_buffer_capacity: int = int(max_buffer_capacity)
 
         # Deque of (timestamp: pd.Timestamp, fwd_pkts: float, fwd_bytes: float, is_single: float)
         self.buffer: deque = deque()
@@ -231,17 +236,35 @@ class StreamingCausalContext:
         self.total_processed: int = 0
         self.total_late_events: int = 0
 
+        # Memory safety and degradation tracking
+        self.is_degraded: bool = False
+        self.last_overflow_timestamp: Optional[pd.Timestamp] = None
+        self.total_dropped_overflow_events: int = 0
+
         # Pending group buffer for multi-batch simultaneous group finalization
         # List of (row_idx, timestamp_pd, fwd_pkts, fwd_bytes, is_single, raw_dict)
         self.pending_group: List[Tuple[int, pd.Timestamp, float, float, float, Dict[str, Any]]] = []
 
+    @property
+    def is_valid(self) -> bool:
+        """Returns True if the causal window is complete and uncompromised by buffer overflow."""
+        return not self.is_degraded
+
+    @property
+    def context_state(self) -> str:
+        """Returns 'HEALTHY' if buffer has full rolling integrity, or 'DEGRADED' if capacity overflowed."""
+        return "DEGRADED" if self.is_degraded else "HEALTHY"
+
     def reset(self) -> None:
-        """Clears all historical buffer state."""
+        """Clears all historical buffer state and degradation status."""
         self.buffer.clear()
         self.pending_group.clear()
         self.latest_timestamp = None
         self.total_processed = 0
         self.total_late_events = 0
+        self.is_degraded = False
+        self.last_overflow_timestamp = None
+        self.total_dropped_overflow_events = 0
 
     def warm_up(self, historical_df: pd.DataFrame) -> int:
         """
@@ -263,12 +286,31 @@ class StreamingCausalContext:
 
         hist = hist.sort_values("Timestamp", kind="stable")
         max_ts = hist["Timestamp"].max()
-        cutoff = max_ts - self.window_delta
+
+        if self.latest_timestamp is not None and self.latest_timestamp > max_ts:
+            effective_ts = self.latest_timestamp
+        else:
+            effective_ts = max_ts
+            self.latest_timestamp = max_ts
+
+        cutoff = effective_ts - self.window_delta
+
+        # Evict expired entries from existing buffer first
+        self._evict_expired(effective_ts)
 
         # Only retain tail within window_seconds
         tail = hist[hist["Timestamp"] > cutoff].copy()
         if len(tail) == 0:
-            return 0
+            self._enforce_capacity(effective_ts)
+            return len(self.buffer)
+
+        # If tail alone exceeds capacity, truncate tail to capacity first
+        if len(tail) > self.max_buffer_capacity:
+            excess = len(tail) - self.max_buffer_capacity
+            tail = tail.iloc[excess:].copy()
+            self.total_dropped_overflow_events += excess
+            self.last_overflow_timestamp = effective_ts
+            self.is_degraded = True
 
         pkts = tail.get("Total Fwd Packets", pd.Series(0, index=tail.index)).replace([np.inf, -np.inf], np.nan).fillna(0).values
         bytes_ = tail.get("Total Length of Fwd Packets", pd.Series(0, index=tail.index)).replace([np.inf, -np.inf], np.nan).fillna(0).values
@@ -279,14 +321,88 @@ class StreamingCausalContext:
             ts_pd = pd.Timestamp(ts_vals[i])
             self.buffer.append((ts_pd, float(pkts[i]), float(bytes_[i]), float(singles[i])))
 
-        self.latest_timestamp = max_ts
-        return len(tail)
+        # Ensure chronological ordering if buffer already had entries
+        if len(self.buffer) > len(tail):
+            sorted_buf = sorted(self.buffer, key=lambda x: x[0])
+            self.buffer = deque(sorted_buf)
+
+        # Enforce capacity across all retained structures
+        self._enforce_capacity(effective_ts)
+
+        return len(self.buffer)
+
+    def _check_recovery(self, current_ts: pd.Timestamp) -> None:
+        """
+        Evaluates event-time safe recovery from degraded buffer state.
+        Recovery condition:
+        The context can only clear degraded status when the current event timestamp
+        strictly exceeds last_overflow_timestamp + window_delta.
+        At that point, the entire 10-second causal window consists purely of
+        uncompromised post-overflow events.
+        """
+        if self.is_degraded and self.last_overflow_timestamp is not None:
+            if current_ts > self.last_overflow_timestamp + self.window_delta:
+                self.is_degraded = False
 
     def _evict_expired(self, current_ts: pd.Timestamp) -> None:
         """Evicts buffer entries strictly <= (current_ts - window_delta)."""
         cutoff = current_ts - self.window_delta
         while self.buffer and self.buffer[0][0] <= cutoff:
             self.buffer.popleft()
+
+    def _enforce_capacity(
+        self,
+        current_ts: pd.Timestamp,
+        emitted_rows: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
+        """
+        Enforces max_buffer_capacity across all retained internal memory structures.
+        Total retained entries = len(self.buffer) + len(self.pending_group).
+
+        When capacity is exceeded:
+        1. Evicts oldest entries from self.buffer (FIFO).
+        2. If self.buffer is empty and pending_group still exceeds capacity, evicts
+           oldest entries from pending_group.
+        3. Increments total_dropped_overflow_events for each discarded in-window event.
+        4. Records last_overflow_timestamp = current_ts.
+        5. Sets is_degraded = True.
+        """
+        total_retained = len(self.buffer) + len(self.pending_group)
+        excess = total_retained - self.max_buffer_capacity
+        if excess <= 0:
+            return
+
+        # Buffer capacity exceeded -> enter degraded state
+        self.is_degraded = True
+        self.last_overflow_timestamp = current_ts
+
+        # 1. Evict from self.buffer first
+        if self.buffer:
+            evict_from_buffer = min(excess, len(self.buffer))
+            for _ in range(evict_from_buffer):
+                self.buffer.popleft()
+            self.total_dropped_overflow_events += evict_from_buffer
+            excess -= evict_from_buffer
+
+        # 2. If excess remains, evict from self.pending_group
+        if excess > 0 and self.pending_group:
+            evict_from_pending = min(excess, len(self.pending_group))
+            for k in range(evict_from_pending):
+                item = self.pending_group[k]
+                if emitted_rows is not None:
+                    row_dict = dict(item[5])
+                    row_dict["Rolling_Flow_Velocity_10s"] = float(len(self.buffer) + len(self.pending_group))
+                    row_dict["Rolling_Bytes_Velocity_10s"] = float(
+                        sum(b[2] for b in self.buffer) + sum(p[3] for p in self.pending_group)
+                    )
+                    row_dict["Rolling_Single_Pkt_Ratio_10s"] = 0.0
+                    row_dict["_is_valid"] = False
+                    row_dict["_context_state"] = "DEGRADED"
+                    row_dict["_overflow_events"] = self.total_dropped_overflow_events + k + 1
+                    emitted_rows.append(row_dict)
+            self.pending_group = self.pending_group[evict_from_pending:]
+            self.total_dropped_overflow_events += evict_from_pending
+            excess -= evict_from_pending
 
     def update(
         self,
@@ -310,6 +426,9 @@ class StreamingCausalContext:
         b = float(fwd_bytes) if not math.isnan(fwd_bytes) and not math.isinf(fwd_bytes) and fwd_bytes >= 0 else 0.0
         s = 1.0 if p <= 1.0 else 0.0
 
+        # Safe event-time recovery check
+        self._check_recovery(ts_pd)
+
         if self.latest_timestamp is not None and ts_pd < self.latest_timestamp:
             # Late arrival check
             if ts_pd <= (self.latest_timestamp - self.window_delta):
@@ -329,6 +448,7 @@ class StreamingCausalContext:
             self.buffer.append((ts_pd, p, b, s))
 
         self._evict_expired(ts_pd)
+        self._enforce_capacity(ts_pd)
         self.total_processed += 1
 
         cnt = float(len(self.buffer))
@@ -341,7 +461,7 @@ class StreamingCausalContext:
         """
         Processes a single flow record dictionary, augmenting it with pure forward rates
         and rolling temporal velocities.
-        Returns a dictionary containing all 26 PURE_ONE_WAY_FEATURES.
+        Returns a dictionary containing all 26 PURE_ONE_WAY_FEATURES plus metadata.
         """
         out = dict(flow)
 
@@ -361,6 +481,11 @@ class StreamingCausalContext:
         out["Rolling_Flow_Velocity_10s"] = rf
         out["Rolling_Bytes_Velocity_10s"] = rb
         out["Rolling_Single_Pkt_Ratio_10s"] = rs
+
+        # 3. Buffer health metadata
+        out["_is_valid"] = self.is_valid
+        out["_context_state"] = self.context_state
+        out["_overflow_events"] = self.total_dropped_overflow_events
 
         return out
 
@@ -391,6 +516,9 @@ class StreamingCausalContext:
             res["Rolling_Flow_Velocity_10s"] = pd.Series(dtype=float)
             res["Rolling_Bytes_Velocity_10s"] = pd.Series(dtype=float)
             res["Rolling_Single_Pkt_Ratio_10s"] = pd.Series(dtype=float)
+            res["_is_valid"] = pd.Series(dtype=bool)
+            res["_context_state"] = pd.Series(dtype=str)
+            res["_overflow_events"] = pd.Series(dtype=int)
             return res
 
         df = df.copy()
@@ -418,16 +546,25 @@ class StreamingCausalContext:
             rf = np.zeros(n, dtype=float)
             rb = np.zeros(n, dtype=float)
             rs = np.zeros(n, dtype=float)
+            val = np.zeros(n, dtype=bool)
+            cstate: List[str] = []
+            overflow_evs = np.zeros(n, dtype=int)
 
             for i in range(n):
                 r_flow, r_bytes, r_single = self.update(timestamps[i], fwd_pkts[i], fwd_bytes[i])
                 rf[i] = r_flow
                 rb[i] = r_bytes
                 rs[i] = r_single
+                val[i] = self.is_valid
+                cstate.append(self.context_state)
+                overflow_evs[i] = self.total_dropped_overflow_events
 
             df["Rolling_Flow_Velocity_10s"] = rf
             df["Rolling_Bytes_Velocity_10s"] = rb
             df["Rolling_Single_Pkt_Ratio_10s"] = rs
+            df["_is_valid"] = val
+            df["_context_state"] = cstate
+            df["_overflow_events"] = overflow_evs
             return df
 
         elif causal_mode == "simultaneous":
@@ -440,14 +577,21 @@ class StreamingCausalContext:
                 if self.pending_group and curr_ts_pd > self.pending_group[0][1]:
                     self._finalize_pending(emitted_rows)
 
+                # Evict buffer entries expired relative to current event time before capacity check
+                self._evict_expired(curr_ts_pd)
+
+                self._check_recovery(curr_ts_pd)
+
+                row_dict = df.iloc[i].to_dict()
                 self.pending_group.append((
                     i,
                     curr_ts_pd,
                     float(fwd_pkts[i]),
                     float(fwd_bytes[i]),
                     float(is_single[i]),
-                    df.iloc[i].to_dict(),
+                    row_dict,
                 ))
+                self._enforce_capacity(curr_ts_pd, emitted_rows=emitted_rows)
 
             if flush and self.pending_group:
                 self._finalize_pending(emitted_rows)
@@ -455,7 +599,14 @@ class StreamingCausalContext:
             if not emitted_rows:
                 # Return empty frame with expected columns if all rows are still pending
                 cols = list(df.columns)
-                for col in ["Rolling_Flow_Velocity_10s", "Rolling_Bytes_Velocity_10s", "Rolling_Single_Pkt_Ratio_10s"]:
+                for col in [
+                    "Rolling_Flow_Velocity_10s",
+                    "Rolling_Bytes_Velocity_10s",
+                    "Rolling_Single_Pkt_Ratio_10s",
+                    "_is_valid",
+                    "_context_state",
+                    "_overflow_events",
+                ]:
                     if col not in cols:
                         cols.append(col)
                 return pd.DataFrame(columns=cols)
@@ -473,8 +624,12 @@ class StreamingCausalContext:
         group_ts = self.pending_group[0][1]
         cutoff = group_ts - self.window_delta
 
+        # Detach pending group items so capacity enforcement only evaluates buffer
+        group_items = self.pending_group
+        self.pending_group = []
+
         # Add all simultaneous events in group to sliding buffer
-        for _, ts, pkts, bytes_, single, _ in self.pending_group:
+        for _, ts, pkts, bytes_, single, _ in group_items:
             self.buffer.append((ts, pkts, bytes_, single))
             self.total_processed += 1
 
@@ -484,18 +639,22 @@ class StreamingCausalContext:
         while self.buffer and self.buffer[0][0] <= cutoff:
             self.buffer.popleft()
 
+        # Enforce buffer capacity if buffer alone exceeds max_buffer_capacity
+        self._enforce_capacity(group_ts)
+
         cnt = float(len(self.buffer))
         tot_bytes = float(sum(item[2] for item in self.buffer))
         ratio = float(sum(item[3] for item in self.buffer) / cnt if cnt > 0 else 0.0)
 
-        for _, _, _, _, _, orig_dict in self.pending_group:
+        for _, _, _, _, _, orig_dict in group_items:
             row_dict = dict(orig_dict)
             row_dict["Rolling_Flow_Velocity_10s"] = cnt
             row_dict["Rolling_Bytes_Velocity_10s"] = tot_bytes
             row_dict["Rolling_Single_Pkt_Ratio_10s"] = ratio
+            row_dict["_is_valid"] = self.is_valid
+            row_dict["_context_state"] = self.context_state
+            row_dict["_overflow_events"] = self.total_dropped_overflow_events
             emitted_rows.append(row_dict)
-
-        self.pending_group = []
 
     def flush(self) -> pd.DataFrame:
         """
@@ -505,18 +664,36 @@ class StreamingCausalContext:
         emitted_rows: List[Dict[str, Any]] = []
         if self.pending_group:
             self._finalize_pending(emitted_rows)
+        if not emitted_rows:
+            cols = [
+                "Rolling_Flow_Velocity_10s",
+                "Rolling_Bytes_Velocity_10s",
+                "Rolling_Single_Pkt_Ratio_10s",
+                "_is_valid",
+                "_context_state",
+                "_overflow_events",
+            ]
+            return pd.DataFrame(columns=cols)
         return pd.DataFrame(emitted_rows)
 
     def get_metrics(self) -> Dict[str, Any]:
-        """Returns diagnostic buffer metrics."""
+        """Returns diagnostic buffer metrics and degradation status."""
+        total_retained = len(self.buffer) + len(self.pending_group)
         return {
             "window_seconds": self.window_seconds,
+            "max_buffer_capacity": self.max_buffer_capacity,
             "buffer_length": len(self.buffer),
             "pending_group_length": len(self.pending_group),
+            "total_retained_entries": total_retained,
+            "is_degraded": self.is_degraded,
+            "is_valid": self.is_valid,
+            "context_state": self.context_state,
             "latest_timestamp": str(self.latest_timestamp) if self.latest_timestamp else None,
+            "last_overflow_timestamp": str(self.last_overflow_timestamp) if self.last_overflow_timestamp else None,
             "total_processed": self.total_processed,
             "total_late_events": self.total_late_events,
-            "estimated_memory_bytes": len(self.buffer) * 64,  # Approx 64 bytes per tuple
+            "total_dropped_overflow_events": self.total_dropped_overflow_events,
+            "estimated_memory_bytes": total_retained * 64,  # Approx 64 bytes per tuple
         }
 
 
@@ -529,7 +706,7 @@ class StreamingFeatureEngine:
     Complete end-to-end Pure One-Way Streaming Feature Engine.
 
     Coordinates:
-    - StreamingCausalContext: Rolling velocity generation.
+    - StreamingCausalContext: Rolling velocity generation and buffer capacity safety.
     - Pure Rate Calculation: Fwd_Bytes_Per_Sec, Fwd_Packets_Per_Sec.
     - Feature Extraction: Strictly 26 PURE_ONE_WAY_FEATURES in canonical order.
     - High-Performance NumPy Standardization: Pre-extracts fitted pipeline parameters
@@ -541,8 +718,12 @@ class StreamingFeatureEngine:
         self,
         pipeline: Optional[PureOneWayLogPreprocessingPipeline] = None,
         window_seconds: int = STREAMING_WINDOW_SECONDS,
+        max_buffer_capacity: int = 10_000,
     ):
-        self.context: StreamingCausalContext = StreamingCausalContext(window_seconds=window_seconds)
+        self.context: StreamingCausalContext = StreamingCausalContext(
+            window_seconds=window_seconds,
+            max_buffer_capacity=max_buffer_capacity,
+        )
         self.pipeline: Optional[PureOneWayLogPreprocessingPipeline] = pipeline
         self.feature_names: List[str] = list(PURE_ONE_WAY_FEATURES)
 
@@ -554,6 +735,35 @@ class StreamingFeatureEngine:
 
         if self.pipeline is not None and getattr(self.pipeline, "is_fitted", False):
             self._compile_fast_transforms()
+
+    @property
+    def is_degraded(self) -> bool:
+        """Returns True if engine causal context is degraded due to capacity overflow."""
+        return self.context.is_degraded
+
+    @property
+    def is_valid(self) -> bool:
+        """Returns True if engine causal context is complete and valid."""
+        return self.context.is_valid
+
+    @property
+    def context_state(self) -> str:
+        """Returns 'HEALTHY' or 'DEGRADED'."""
+        return self.context.context_state
+
+    @property
+    def total_dropped_overflow_events(self) -> int:
+        """Total cumulative dropped events due to buffer capacity overflow."""
+        return self.context.total_dropped_overflow_events
+
+    @property
+    def max_buffer_capacity(self) -> int:
+        """Configured maximum buffer capacity."""
+        return self.context.max_buffer_capacity
+
+    def get_metrics(self) -> Dict[str, Any]:
+        """Returns diagnostic metrics from underlying causal context."""
+        return self.context.get_metrics()
 
     def _compile_fast_transforms(self) -> None:
         """Pre-extracts pipeline parameters into contiguous NumPy arrays."""
@@ -579,21 +789,34 @@ class StreamingFeatureEngine:
         df: pd.DataFrame,
         causal_mode: str = "simultaneous",
         flush: bool = True,
+        include_metadata: bool = False,
     ) -> pd.DataFrame:
         """
         Generates and extracts the 26 PURE_ONE_WAY_FEATURES as a DataFrame.
         Guarantees exact column ordering and naming.
+        If include_metadata is True, also includes '_is_valid', '_context_state',
+        and '_overflow_events' columns.
         """
         augmented = self.context.process_batch(df, causal_mode=causal_mode, flush=flush)
         if len(augmented) == 0:
-            return pd.DataFrame(columns=self.feature_names)
+            cols = self.feature_names + (["_is_valid", "_context_state", "_overflow_events"] if include_metadata else [])
+            return pd.DataFrame(columns=cols)
+
+        if include_metadata:
+            cols = self.feature_names + ["_is_valid", "_context_state", "_overflow_events"]
+            return augmented[cols].copy()
         return augmented[self.feature_names].copy()
 
-    def transform_flow_fast(self, flow: Dict[str, Any]) -> np.ndarray:
+    def transform_flow_fast(
+        self,
+        flow: Dict[str, Any],
+        return_status: bool = False,
+    ) -> Union[np.ndarray, Tuple[np.ndarray, bool, str]]:
         """
         Fast path: Preprocesses a single flow in microsecond pure NumPy.
         Bypasses Pandas DataFrame creation, achieving >60x speedup over standard pipeline.
         Returns standardized array of shape (1, 26).
+        If return_status is True, returns (scaled_array, is_valid, context_state).
         """
         if self._medians is None or self._means is None or self._scales is None:
             raise RuntimeError(
@@ -654,16 +877,28 @@ class StreamingFeatureEngine:
         raw_vals[nan_mask] = self._medians[nan_mask]
 
         # 5. Standard scale
-        scaled = (raw_vals - self._means) / self._scales
-        return scaled.reshape(1, 26)
+        scaled = ((raw_vals - self._means) / self._scales).reshape(1, 26)
 
-    def transform_batch(self, df: pd.DataFrame, causal_mode: str = "simultaneous") -> np.ndarray:
+        if return_status:
+            return scaled, self.is_valid, self.context_state
+        return scaled
+
+    def transform_batch(
+        self,
+        df: pd.DataFrame,
+        causal_mode: str = "simultaneous",
+        return_status: bool = False,
+    ) -> Union[np.ndarray, Tuple[np.ndarray, bool, str]]:
         """
         Batch path: Transforms a DataFrame using the underlying pipeline.
         Returns standardized array of shape (N, 26).
+        If return_status is True, returns (scaled_array, is_valid, context_state).
         """
         if self.pipeline is None:
             raise RuntimeError("Engine requires a fitted pipeline to perform transform_batch().")
 
         features_df = self.extract_features_df(df, causal_mode=causal_mode, flush=True)
-        return self.pipeline.transform(features_df)
+        scaled = self.pipeline.transform(features_df)
+        if return_status:
+            return scaled, self.is_valid, self.context_state
+        return scaled
