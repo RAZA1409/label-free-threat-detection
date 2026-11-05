@@ -23,6 +23,7 @@ if _VENV_PYTHON.exists() and Path(sys.executable).resolve() != _VENV_PYTHON.reso
     sys.exit(_res.returncode)
 
 import json
+import math
 import time
 import argparse
 from typing import Dict, Any, List, Optional, Tuple, Union
@@ -45,6 +46,8 @@ from model_adapters import LegacyModelAdapter, PureOneWayV2Adapter
 from streaming_features import (
     StreamingFeatureEngine,
     StreamingCausalContext,
+    FlowQuarantineManager,
+    validate_and_sanitize_flow_record,
     prepare_chronological_stream,
 )
 
@@ -52,6 +55,31 @@ ROOT = Path(__file__).resolve().parents[1]
 TEST_FILE = ROOT / "outputs" / "experiment" / "test_tue_fri.parquet"
 LIVE_FEED_FILE = ROOT / "outputs" / "evaluation" / "live_stream_feed.json"
 LIVE_FEED_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+
+def _parse_valid_threshold(val: Any, name: str) -> Tuple[bool, Optional[float], Optional[str]]:
+    """
+    Safely validates that a threshold value is a real, non-negative, finite number.
+    Rejects None, booleans, NaN, Inf, non-numeric strings, and negative values.
+
+    Returns:
+        (is_valid: bool, parsed_value: Optional[float], error_message: Optional[str])
+    """
+    if val is None:
+        return False, None, f"{name} threshold is None"
+    if isinstance(val, bool):
+        return False, None, f"{name} threshold cannot be boolean ({val})"
+    try:
+        f_val = float(val)
+    except (ValueError, TypeError) as e:
+        return False, None, f"{name} threshold could not be converted to float: {e}"
+    if math.isnan(f_val):
+        return False, None, f"{name} threshold is NaN"
+    if math.isinf(f_val):
+        return False, None, f"{name} threshold is infinite ({f_val})"
+    if f_val < 0.0:
+        return False, None, f"{name} threshold is negative ({f_val})"
+    return True, f_val, None
 
 
 def score_v2_shadow(
@@ -70,78 +98,243 @@ def score_v2_shadow(
     - Exactly 26 forward-only features are used.
     - Top drivers is set to None for this stage.
     """
-    is_valid = bool(flow_record.get("_is_valid", True))
-    context_state = str(flow_record.get("_context_state", "HEALTHY"))
-    overflow_events = int(flow_record.get("_overflow_events", 0))
-
-    p_thresh = float(v2_adapter.primary_threshold) if v2_adapter else 0.314036
-    r_thresh = float(v2_adapter.reference_threshold) if v2_adapter else 0.099018
-
-    # 1. Check context degradation
-    if not is_valid or context_state == "DEGRADED":
-        return {
-            "status": "DEGRADED_CONTEXT_OVERFLOW",
-            "score": None,
-            "primary_threshold": p_thresh,
-            "primary_is_anomaly": None,
-            "primary_verdict": None,
-            "reference_threshold": r_thresh,
-            "reference_is_anomaly": None,
-            "reference_verdict": None,
-            "inference_latency_ms": None,
-            "latency_ms": None,
-            "context_validity": False,
-            "context_state": "DEGRADED",
-            "overflow_event_count": overflow_events,
-            "top_drivers": None,
-            "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
-            "primary": {
-                "threshold": p_thresh,
-                "is_anomaly": None,
-                "verdict": None,
-            },
-            "reference": {
-                "threshold": r_thresh,
-                "is_anomaly": None,
-                "verdict": None,
-            },
-        }
-
-    # 2. Check model availability
-    if v2_adapter is None or not getattr(v2_adapter, "is_available", False):
-        err_msg = getattr(v2_adapter, "load_error", "v2 adapter not initialized")
-        return {
-            "status": "UNAVAILABLE",
-            "error": "MODEL_UNAVAILABLE",
-            "error_message": str(err_msg),
-            "score": None,
-            "primary_threshold": p_thresh,
-            "primary_is_anomaly": None,
-            "primary_verdict": None,
-            "reference_threshold": r_thresh,
-            "reference_is_anomaly": None,
-            "reference_verdict": None,
-            "inference_latency_ms": None,
-            "latency_ms": None,
-            "context_validity": is_valid,
-            "context_state": context_state,
-            "overflow_event_count": overflow_events,
-            "top_drivers": None,
-            "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
-            "primary": {
-                "threshold": p_thresh,
-                "is_anomaly": None,
-                "verdict": None,
-            },
-            "reference": {
-                "threshold": r_thresh,
-                "is_anomaly": None,
-                "verdict": None,
-            },
-        }
-
-    # 3. Perform v2 shadow inference inside isolated try-except block
     try:
+        is_valid = bool(flow_record.get("_is_valid", True))
+        context_state = str(flow_record.get("_context_state", "HEALTHY"))
+        overflow_events = int(flow_record.get("_overflow_events", 0))
+
+        # 1. Check model availability first
+        if v2_adapter is None:
+            return {
+                "status": "UNAVAILABLE",
+                "error": "MODEL_UNAVAILABLE",
+                "error_message": "v2 adapter not initialized",
+                "score": None,
+                "primary_threshold": 0.314036,
+                "primary_is_anomaly": None,
+                "primary_verdict": None,
+                "reference_threshold": 0.099018,
+                "reference_is_anomaly": None,
+                "reference_verdict": None,
+                "inference_latency_ms": None,
+                "latency_ms": None,
+                "context_validity": is_valid,
+                "context_state": context_state,
+                "overflow_event_count": overflow_events,
+                "top_drivers": None,
+                "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
+                "primary": {
+                    "threshold": 0.314036,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+                "reference": {
+                    "threshold": 0.099018,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+            }
+
+        if not getattr(v2_adapter, "is_available", False):
+            err_msg = getattr(v2_adapter, "load_error", "v2 adapter not available")
+            p_val = getattr(v2_adapter, "primary_threshold", 0.314036)
+            p_ok, p_thresh, _ = _parse_valid_threshold(p_val, "primary")
+            if not p_ok:
+                p_thresh = 0.314036
+            r_val = getattr(v2_adapter, "reference_threshold", 0.099018)
+            r_ok, r_thresh, _ = _parse_valid_threshold(r_val, "reference")
+            if not r_ok:
+                r_thresh = 0.099018
+            return {
+                "status": "UNAVAILABLE",
+                "error": "MODEL_UNAVAILABLE",
+                "error_message": str(err_msg),
+                "score": None,
+                "primary_threshold": p_thresh,
+                "primary_is_anomaly": None,
+                "primary_verdict": None,
+                "reference_threshold": r_thresh,
+                "reference_is_anomaly": None,
+                "reference_verdict": None,
+                "inference_latency_ms": None,
+                "latency_ms": None,
+                "context_validity": is_valid,
+                "context_state": context_state,
+                "overflow_event_count": overflow_events,
+                "top_drivers": None,
+                "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
+                "primary": {
+                    "threshold": p_thresh,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+                "reference": {
+                    "threshold": r_thresh,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+            }
+
+        # 2. Strict threshold extraction and validation for active adapter
+        if not hasattr(v2_adapter, "primary_threshold"):
+            return {
+                "status": "UNAVAILABLE",
+                "error": "INVALID_THRESHOLD",
+                "error_message": "v2 adapter missing 'primary_threshold' attribute",
+                "score": None,
+                "primary_threshold": None,
+                "primary_is_anomaly": None,
+                "primary_verdict": None,
+                "reference_threshold": None,
+                "reference_is_anomaly": None,
+                "reference_verdict": None,
+                "inference_latency_ms": None,
+                "latency_ms": None,
+                "context_validity": is_valid,
+                "context_state": context_state,
+                "overflow_event_count": overflow_events,
+                "top_drivers": None,
+                "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
+                "primary": {
+                    "threshold": None,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+                "reference": {
+                    "threshold": None,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+            }
+
+        p_raw = getattr(v2_adapter, "primary_threshold")
+        p_ok, p_thresh, p_err = _parse_valid_threshold(p_raw, "primary")
+        if not p_ok:
+            return {
+                "status": "UNAVAILABLE",
+                "error": "INVALID_THRESHOLD",
+                "error_message": p_err,
+                "score": None,
+                "primary_threshold": None,
+                "primary_is_anomaly": None,
+                "primary_verdict": None,
+                "reference_threshold": None,
+                "reference_is_anomaly": None,
+                "reference_verdict": None,
+                "inference_latency_ms": None,
+                "latency_ms": None,
+                "context_validity": is_valid,
+                "context_state": context_state,
+                "overflow_event_count": overflow_events,
+                "top_drivers": None,
+                "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
+                "primary": {
+                    "threshold": None,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+                "reference": {
+                    "threshold": None,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+            }
+
+        if not hasattr(v2_adapter, "reference_threshold"):
+            return {
+                "status": "UNAVAILABLE",
+                "error": "INVALID_THRESHOLD",
+                "error_message": "v2 adapter missing 'reference_threshold' attribute",
+                "score": None,
+                "primary_threshold": p_thresh,
+                "primary_is_anomaly": None,
+                "primary_verdict": None,
+                "reference_threshold": None,
+                "reference_is_anomaly": None,
+                "reference_verdict": None,
+                "inference_latency_ms": None,
+                "latency_ms": None,
+                "context_validity": is_valid,
+                "context_state": context_state,
+                "overflow_event_count": overflow_events,
+                "top_drivers": None,
+                "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
+                "primary": {
+                    "threshold": p_thresh,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+                "reference": {
+                    "threshold": None,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+            }
+
+        r_raw = getattr(v2_adapter, "reference_threshold")
+        r_ok, r_thresh, r_err = _parse_valid_threshold(r_raw, "reference")
+        if not r_ok:
+            return {
+                "status": "UNAVAILABLE",
+                "error": "INVALID_THRESHOLD",
+                "error_message": r_err,
+                "score": None,
+                "primary_threshold": p_thresh,
+                "primary_is_anomaly": None,
+                "primary_verdict": None,
+                "reference_threshold": None,
+                "reference_is_anomaly": None,
+                "reference_verdict": None,
+                "inference_latency_ms": None,
+                "latency_ms": None,
+                "context_validity": is_valid,
+                "context_state": context_state,
+                "overflow_event_count": overflow_events,
+                "top_drivers": None,
+                "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
+                "primary": {
+                    "threshold": p_thresh,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+                "reference": {
+                    "threshold": None,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+            }
+
+        # 3. Check context degradation
+        if not is_valid or context_state == "DEGRADED":
+            return {
+                "status": "DEGRADED_CONTEXT_OVERFLOW",
+                "score": None,
+                "primary_threshold": p_thresh,
+                "primary_is_anomaly": None,
+                "primary_verdict": None,
+                "reference_threshold": r_thresh,
+                "reference_is_anomaly": None,
+                "reference_verdict": None,
+                "inference_latency_ms": None,
+                "latency_ms": None,
+                "context_validity": False,
+                "context_state": "DEGRADED",
+                "overflow_event_count": overflow_events,
+                "top_drivers": None,
+                "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
+                "primary": {
+                    "threshold": p_thresh,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+                "reference": {
+                    "threshold": r_thresh,
+                    "is_anomaly": None,
+                    "verdict": None,
+                },
+            }
+
+        # 4. Perform v2 shadow inference inside isolated execution block
         t0_v2 = time.perf_counter()
 
         # Validate and extract exactly 26 features in canonical order
@@ -216,31 +409,33 @@ def score_v2_shadow(
         }
 
     except Exception as e:
+        safe_p = p_thresh if "p_thresh" in locals() and p_thresh is not None else None
+        safe_r = r_thresh if "r_thresh" in locals() and r_thresh is not None else None
         return {
             "status": "UNAVAILABLE",
             "error": type(e).__name__,
             "error_message": str(e),
             "score": None,
-            "primary_threshold": p_thresh,
+            "primary_threshold": safe_p,
             "primary_is_anomaly": None,
             "primary_verdict": None,
-            "reference_threshold": r_thresh,
+            "reference_threshold": safe_r,
             "reference_is_anomaly": None,
             "reference_verdict": None,
             "inference_latency_ms": None,
             "latency_ms": None,
-            "context_validity": is_valid,
-            "context_state": context_state,
-            "overflow_event_count": overflow_events,
+            "context_validity": flow_record.get("_is_valid", True) if isinstance(flow_record, dict) else False,
+            "context_state": flow_record.get("_context_state", "UNKNOWN") if isinstance(flow_record, dict) else "UNKNOWN",
+            "overflow_event_count": flow_record.get("_overflow_events", 0) if isinstance(flow_record, dict) else 0,
             "top_drivers": None,
             "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
             "primary": {
-                "threshold": p_thresh,
+                "threshold": safe_p,
                 "is_anomaly": None,
                 "verdict": None,
             },
             "reference": {
-                "threshold": r_thresh,
+                "threshold": safe_r,
                 "is_anomaly": None,
                 "verdict": None,
             },
@@ -295,26 +490,33 @@ def run_stream_simulation(
             print("2. Initializing Pure One-Way v2 Shadow Adapter (26-dim)...")
         v2_adapter = PureOneWayV2Adapter()
         if v2_adapter.is_available:
-            pipe = v2_adapter.pipeline
-            v2_scaler_params = {
-                "medians": np.asarray(pipe.imputer.statistics_, dtype=np.float64),
-                "means": np.asarray(pipe.scaler.mean_, dtype=np.float64),
-                "scales": np.asarray(pipe.scaler.scale_, dtype=np.float64),
-                "log_indices": [i for i, f in enumerate(v2_adapter.feature_names) if f in PURE_LOG_FEATURES],
-            }
+            pipe = getattr(v2_adapter, "pipeline", None)
+            if pipe is not None and hasattr(pipe, "imputer") and hasattr(pipe, "scaler"):
+                v2_scaler_params = {
+                    "medians": np.asarray(pipe.imputer.statistics_, dtype=np.float64),
+                    "means": np.asarray(pipe.scaler.mean_, dtype=np.float64),
+                    "scales": np.asarray(pipe.scaler.scale_, dtype=np.float64),
+                    "log_indices": [i for i, f in enumerate(v2_adapter.feature_names) if f in PURE_LOG_FEATURES],
+                }
             if verbose:
-                print(f"   v2 primary threshold:   {v2_adapter.primary_threshold:.6f}")
-                print(f"   v2 reference threshold: {v2_adapter.reference_threshold:.6f}")
+                p_raw = getattr(v2_adapter, "primary_threshold", None)
+                r_raw = getattr(v2_adapter, "reference_threshold", None)
+                p_disp = f"{p_raw:.6f}" if isinstance(p_raw, (int, float)) and not isinstance(p_raw, bool) else "None"
+                r_disp = f"{r_raw:.6f}" if isinstance(r_raw, (int, float)) and not isinstance(r_raw, bool) else "None"
+                print(f"   v2 primary threshold:   {p_disp}")
+                print(f"   v2 reference threshold: {r_disp}")
         else:
             if verbose:
                 print(f"   [!] PureOneWayV2Adapter unavailable: {v2_adapter.load_error}")
 
     # 3. Initialize Streaming Feature Engine
     v2_pipe = v2_adapter.pipeline if (v2_adapter and v2_adapter.is_available) else None
+    quarantine_manager = FlowQuarantineManager(max_diagnostic_samples=100)
     engine = StreamingFeatureEngine(
         pipeline=v2_pipe,
         window_seconds=10,
         max_buffer_capacity=max_buffer_capacity,
+        quarantine_manager=quarantine_manager,
     )
 
     # 4. Prepare Chronological Stream
@@ -359,25 +561,68 @@ def run_stream_simulation(
         # v1 inference & attribution (preserves exact 32-dim pipeline)
         v1_features = {f: flow_row.get(f, 0.0) for f in explainer.feature_names}
         t0_v1 = time.perf_counter()
-        explanation = explainer.explain_flow(v1_features)
-        v1_latency_ms = (time.perf_counter() - t0_v1) * 1000.0
-
-        is_alert = explanation["is_anomaly"]
-        score = explanation["anomaly_score"]
-        top_driver = explanation["top_attributions"][0]["feature"] if explanation["top_attributions"] else "None"
-        driver_pct = explanation["top_attributions"][0]["residual_contribution_pct"] if explanation["top_attributions"] else 0.0
+        v1_error = None
+        try:
+            explanation = explainer.explain_flow(v1_features)
+            v1_latency_ms = (time.perf_counter() - t0_v1) * 1000.0
+            is_alert = explanation["is_anomaly"]
+            score = explanation["anomaly_score"]
+            threshold = explanation["threshold"]
+            verdict = explanation["verdict"]
+            severity = explanation["severity"]
+            top_drivers = explanation["top_attributions"][:3]
+            top_driver = explanation["top_attributions"][0]["feature"] if explanation["top_attributions"] else "None"
+            driver_pct = explanation["top_attributions"][0]["residual_contribution_pct"] if explanation["top_attributions"] else 0.0
+            narrative = explanation["analyst_narrative"]
+        except Exception as e:
+            v1_latency_ms = (time.perf_counter() - t0_v1) * 1000.0
+            v1_error = f"{type(e).__name__}: {str(e)}"
+            is_alert = False
+            score = None
+            threshold = getattr(explainer, "threshold", 0.190885)
+            verdict = "UNAVAILABLE (PROCESSING_ERROR)"
+            severity = "UNAVAILABLE"
+            top_drivers = None
+            top_driver = "None"
+            driver_pct = 0.0
+            narrative = f"Champion v1 inference failure: {v1_error}"
 
         total_processed += 1
         if is_alert:
             total_anomalies += 1
-            status_str = f"\033[91mALERT [{explanation['severity']}]\033[0m"
+            status_str = f"\033[91mALERT [{severity}]\033[0m"
+        elif v1_error is not None:
+            status_str = "\033[93mUNAVAILABLE (PROCESSING_ERROR)\033[0m"
         else:
             status_str = "\033[92mPASS [NORMAL]\033[0m"
 
         # v2 shadow inference (isolated, non-blocking)
         v2_shadow = None
         if not v1_only and v2_adapter is not None:
-            v2_shadow = score_v2_shadow(flow_row, v2_adapter, v2_scaler_params)
+            try:
+                v2_shadow = score_v2_shadow(flow_row, v2_adapter, v2_scaler_params)
+            except Exception as e:
+                v2_shadow = {
+                    "status": "UNAVAILABLE",
+                    "error": f"CALLER_FAULT_{type(e).__name__}",
+                    "error_message": str(e),
+                    "score": None,
+                    "primary_threshold": None,
+                    "primary_is_anomaly": None,
+                    "primary_verdict": None,
+                    "reference_threshold": None,
+                    "reference_is_anomaly": None,
+                    "reference_verdict": None,
+                    "inference_latency_ms": None,
+                    "latency_ms": None,
+                    "context_validity": bool(flow_row.get("_is_valid", True)),
+                    "context_state": str(flow_row.get("_context_state", "HEALTHY")),
+                    "overflow_event_count": int(flow_row.get("_overflow_events", 0)),
+                    "top_drivers": None,
+                    "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
+                    "primary": {"threshold": None, "is_anomaly": None, "verdict": None},
+                    "reference": {"threshold": None, "is_anomaly": None, "verdict": None},
+                }
             v2_status = v2_shadow.get("status")
             if v2_status == "EXPERIMENTAL / RESEARCH CANDIDATE":
                 if v2_shadow.get("latency_ms") is not None:
@@ -405,20 +650,23 @@ def run_stream_simulation(
             v2_info = f"v2: {v2_shadow.get('status')[:18]}"
 
         if verbose:
-            print(f"{curr_time:<10} | {true_label:<18} | {score:<7.4f} {status_str:<22} | {v2_info:<22} | {top_driver} ({driver_pct:.1f}%)")
+            score_disp = f"{score:<7.4f}" if score is not None else "None   "
+            print(f"{curr_time:<10} | {true_label:<18} | {score_disp} {status_str:<22} | {v2_info:<22} | {top_driver} ({driver_pct:.1f}%)")
 
         alert_record = {
             "timestamp": curr_time,
             "flow_index": total_processed,
             "ground_truth": true_label,
             "score": score,
-            "threshold": explanation["threshold"],
-            "verdict": explanation["verdict"],
-            "severity": explanation["severity"],
+            "threshold": threshold,
+            "verdict": verdict,
+            "severity": severity,
             "latency_ms": round(v1_latency_ms, 2),
-            "top_drivers": explanation["top_attributions"][:3],
-            "narrative": explanation["analyst_narrative"],
+            "top_drivers": top_drivers,
+            "narrative": narrative,
         }
+        if v1_error is not None:
+            alert_record["v1_error"] = v1_error
         if v2_shadow is not None:
             alert_record["v2_shadow"] = v2_shadow
 
@@ -433,6 +681,7 @@ def run_stream_simulation(
                 "total_processed": total_processed,
                 "total_anomalies": total_anomalies,
                 "anomaly_rate_pct": round((total_anomalies / total_processed) * 100, 2) if total_processed > 0 else 0.0,
+                "quarantine_summary": quarantine_manager.get_metrics(),
                 "recent_alerts": recent_alerts,
             }
             if not v1_only and v2_adapter is not None:
@@ -470,8 +719,111 @@ def run_stream_simulation(
         for chunk_df in chunks:
             if stop_early:
                 break
+
+            valid_rows = []
+            for _, row in chunk_df.iterrows():
+                row_dict = row.to_dict()
+                is_val, reason, sanitized_row = validate_and_sanitize_flow_record(row_dict)
+                if is_val:
+                    valid_rows.append(sanitized_row)
+                else:
+                    # Malformed record quarantined: never enters causal context
+                    quarantine_manager.quarantine(row_dict, reason)
+                    total_processed += 1
+                    curr_time = time.strftime("%H:%M:%S")
+                    true_label = str(row_dict.get("Clean_Label", row_dict.get("Label", "MALFORMED")))
+
+                    if verbose:
+                        print(f"{curr_time:<10} | {true_label:<18} | {'N/A':<7} \033[93mQUARANTINED [{reason[:12]}]\033[0m | {'v2: UNAVAILABLE':<22} | None")
+
+                    q_alert = {
+                        "timestamp": curr_time,
+                        "flow_index": total_processed,
+                        "ground_truth": true_label,
+                        "score": None,
+                        "threshold": getattr(explainer, "threshold", 0.190885),
+                        "verdict": "QUARANTINED",
+                        "severity": "UNAVAILABLE",
+                        "latency_ms": 0.0,
+                        "top_drivers": None,
+                        "narrative": f"Flow quarantined before causal context: {reason}",
+                        "quarantine_reason": reason,
+                    }
+                    if not v1_only and v2_adapter is not None:
+                        q_p_raw = getattr(v2_adapter, "primary_threshold", None)
+                        q_r_raw = getattr(v2_adapter, "reference_threshold", None)
+                        q_p_safe = q_p_raw if isinstance(q_p_raw, (int, float)) and not isinstance(q_p_raw, bool) else 0.314036
+                        q_r_safe = q_r_raw if isinstance(q_r_raw, (int, float)) and not isinstance(q_r_raw, bool) else 0.099018
+                        q_alert["v2_shadow"] = {
+                            "status": "UNAVAILABLE",
+                            "error": "QUARANTINED_INPUT",
+                            "error_message": f"Input quarantined: {reason}",
+                            "score": None,
+                            "primary_threshold": q_p_safe,
+                            "primary_is_anomaly": None,
+                            "primary_verdict": None,
+                            "reference_threshold": q_r_safe,
+                            "reference_is_anomaly": None,
+                            "reference_verdict": None,
+                            "inference_latency_ms": None,
+                            "latency_ms": None,
+                            "context_validity": False,
+                            "context_state": "QUARANTINED",
+                            "overflow_event_count": engine.total_dropped_overflow_events,
+                            "top_drivers": None,
+                            "compliance_scope": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
+                            "primary": {
+                                "threshold": q_p_safe,
+                                "is_anomaly": None,
+                                "verdict": None,
+                            },
+                            "reference": {
+                                "threshold": q_r_safe,
+                                "is_anomaly": None,
+                                "verdict": None,
+                            },
+                        }
+                    recent_alerts.append(q_alert)
+                    if len(recent_alerts) > 150:
+                        recent_alerts.pop(0)
+
+                    if write_feed:
+                        feed_state = {
+                            "last_updated": curr_time,
+                            "total_processed": total_processed,
+                            "total_anomalies": total_anomalies,
+                            "anomaly_rate_pct": round((total_anomalies / total_processed) * 100, 2) if total_processed > 0 else 0.0,
+                            "quarantine_summary": quarantine_manager.get_metrics(),
+                            "recent_alerts": recent_alerts,
+                        }
+                        if not v1_only and v2_adapter is not None:
+                            concordance = round(((v2_both_alert + v2_both_pass) / max(total_processed, 1)) * 100, 2)
+                            mean_v2_lat = round(float(np.mean(v2_latencies)), 3) if v2_latencies else 0.0
+                            feed_state["v2_shadow_summary"] = {
+                                "status": "EXPERIMENTAL / RESEARCH CANDIDATE",
+                                "primary_anomalies": v2_primary_anomalies,
+                                "primary_anomaly_rate_pct": round((v2_primary_anomalies / max(total_processed, 1)) * 100, 2),
+                                "reference_anomalies": v2_reference_anomalies,
+                                "reference_anomaly_rate_pct": round((v2_reference_anomalies / max(total_processed, 1)) * 100, 2),
+                                "degraded_flows": v2_degraded_count,
+                                "unavailable_flows": v2_unavailable_count,
+                                "total_dropped_overflow_events": engine.total_dropped_overflow_events,
+                                "concordance_rate_pct": concordance,
+                                "mean_latency_ms": mean_v2_lat,
+                            }
+                        with open(feed_path, "w", encoding="utf-8") as f:
+                            json.dump(feed_state, f, indent=2)
+
+                    if max_events and total_processed >= max_events:
+                        stop_early = True
+                        break
+
+            if not valid_rows:
+                continue
+
+            valid_chunk_df = pd.DataFrame(valid_rows)
             augmented_chunk = engine.context.process_batch(
-                chunk_df,
+                valid_chunk_df,
                 causal_mode="simultaneous",
                 flush=False,
             )
@@ -505,6 +857,7 @@ def run_stream_simulation(
         "v2_degraded_count": v2_degraded_count,
         "v2_unavailable_count": v2_unavailable_count,
         "total_dropped_overflow_events": engine.total_dropped_overflow_events,
+        "quarantine_summary": quarantine_manager.get_metrics(),
         "recent_alerts": recent_alerts,
     }
     return summary_result

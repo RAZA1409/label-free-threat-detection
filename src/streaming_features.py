@@ -188,6 +188,189 @@ def prepare_chronological_stream(
 
 
 # --------------------------------------------------------------------------
+# 2.5 Input Sanitization & Malformed-Flow Quarantine (Stage 4B.3A)
+# --------------------------------------------------------------------------
+
+def validate_and_sanitize_flow_record(
+    record: Any,
+) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
+    """
+    Validates and sanitizes a raw network flow record before ingestion into
+    the causal streaming feature context.
+
+    Rejection Policies:
+    - Non-mapping types: Rejection reason 'INVALID_RECORD_TYPE'.
+    - Missing or null timestamp: Rejection reason 'MISSING_TIMESTAMP'.
+    - Invalid, NaT, or unparseable timestamp: Rejection reason 'INVALID_TIMESTAMP'.
+    - Missing packet or byte counters: Rejection reason 'MISSING_REQUIRED_FIELD'.
+    - Non-numeric or unparseable counter: Rejection reason 'NON_NUMERIC_FEATURE'.
+    - NaN counter: Rejection reason 'INVALID_COUNTER'.
+    - Infinite counter (+inf, -inf): Rejection reason 'INFINITE_COUNTER'.
+    - Negative packet or byte counter: Rejection reason 'NEGATIVE_COUNTER'.
+      CRITICAL: Strictly rejects without silently clamping negative counters to zero!
+    - Non-numeric corrupted strings in features: Rejection reason 'NON_NUMERIC_FEATURE'.
+    - Unexpected nested data structures (list, dict, set, tuple): Rejection reason 'UNEXPECTED_DATA_TYPE'.
+
+    Sanitization Guarantees:
+    - Coerces parseable numeric string values (e.g. "123.45") to float.
+    - Replaces infinite values in non-counter features with np.nan for pipeline imputation.
+    - Preserves metadata fields (Timestamp, Label, Clean_Label, etc.).
+
+    Returns:
+        (is_valid: bool, rejection_reason: Optional[str], sanitized_record: Optional[Dict[str, Any]])
+    """
+    if not isinstance(record, (dict, pd.Series)):
+        return False, "INVALID_RECORD_TYPE", None
+
+    rec: Dict[str, Any] = record.to_dict() if isinstance(record, pd.Series) else dict(record)
+
+    # 1. Timestamp validation
+    if "Timestamp" not in rec or rec["Timestamp"] is None:
+        return False, "MISSING_TIMESTAMP", None
+
+    raw_ts = rec["Timestamp"]
+    if pd.isna(raw_ts):
+        return False, "INVALID_TIMESTAMP", None
+
+    try:
+        ts_pd = pd.Timestamp(raw_ts)
+        if pd.isna(ts_pd):
+            return False, "INVALID_TIMESTAMP", None
+    except Exception:
+        return False, "INVALID_TIMESTAMP", None
+
+    # 2. Required packet and byte counters
+    for counter_field in ["Total Fwd Packets", "Total Length of Fwd Packets"]:
+        if counter_field not in rec or rec[counter_field] is None:
+            return False, "MISSING_REQUIRED_FIELD", None
+
+        raw_val = rec[counter_field]
+        if isinstance(raw_val, bool) or isinstance(raw_val, (list, dict, set, tuple)):
+            return False, "UNEXPECTED_DATA_TYPE", None
+
+        try:
+            val = float(raw_val)
+        except (TypeError, ValueError):
+            return False, "NON_NUMERIC_FEATURE", None
+
+        if math.isnan(val):
+            return False, "INVALID_COUNTER", None
+        if math.isinf(val):
+            return False, "INFINITE_COUNTER", None
+        if val < 0.0:
+            return False, "NEGATIVE_COUNTER", None
+
+        rec[counter_field] = val
+
+    rec["Timestamp"] = ts_pd
+
+    # 3. Numeric feature validation and sanitization for other features
+    non_numeric_fields = {
+        "Timestamp", "Label", "Clean_Label", "Flow ID", "Source IP",
+        "Destination IP", "_orig_pos", "_is_valid", "_context_state",
+        "_overflow_events", "original_index", "flow_id", "protocol",
+    }
+
+    for k, v in list(rec.items()):
+        if k in non_numeric_fields:
+            continue
+
+        if isinstance(v, bool) or isinstance(v, (list, dict, set, tuple)):
+            return False, "UNEXPECTED_DATA_TYPE", None
+
+        if isinstance(v, str):
+            try:
+                parsed_val = float(v)
+                if math.isinf(parsed_val):
+                    rec[k] = np.nan
+                else:
+                    rec[k] = parsed_val
+            except (ValueError, TypeError):
+                return False, "NON_NUMERIC_FEATURE", None
+        elif isinstance(v, (int, float, np.number)):
+            val = float(v)
+            if math.isinf(val):
+                rec[k] = np.nan
+            else:
+                rec[k] = val
+        elif v is None:
+            rec[k] = np.nan
+
+    return True, None, rec
+
+
+class FlowQuarantineManager:
+    """
+    Manages quarantine metrics, rejection reason categorization, and diagnostic storage
+    for malformed network flow records rejected by AEGIS input sanitization.
+    """
+
+    def __init__(self, max_diagnostic_samples: int = 100):
+        self.max_diagnostic_samples: int = int(max_diagnostic_samples)
+        self.total_quarantined_records: int = 0
+        self.quarantine_reason_counts: Dict[str, int] = {}
+        self.invalid_timestamp_count: int = 0
+        self.invalid_numeric_feature_count: int = 0
+        self.invalid_packet_byte_counter_count: int = 0
+        self.missing_required_field_count: int = 0
+        self.recent_quarantined_samples: deque = deque(maxlen=self.max_diagnostic_samples)
+
+    def quarantine(self, record: Any, reason: str) -> None:
+        """Records a quarantined flow record and increments diagnostic metrics."""
+        self.total_quarantined_records += 1
+        self.quarantine_reason_counts[reason] = self.quarantine_reason_counts.get(reason, 0) + 1
+
+        # Categorize
+        if "TIMESTAMP" in reason:
+            self.invalid_timestamp_count += 1
+        elif "COUNTER" in reason:
+            self.invalid_packet_byte_counter_count += 1
+        elif "FEATURE" in reason or "TYPE" in reason:
+            self.invalid_numeric_feature_count += 1
+        else:
+            self.missing_required_field_count += 1
+
+        # Store diagnostic sample in bounded ring buffer
+        ts_str = None
+        if isinstance(record, dict):
+            ts_str = str(record.get("Timestamp"))
+            rec_summary = {k: str(v) for k, v in list(record.items())[:10]}
+        elif isinstance(record, pd.Series):
+            ts_str = str(record.get("Timestamp"))
+            rec_summary = {k: str(v) for k, v in list(record.to_dict().items())[:10]}
+        else:
+            rec_summary = str(record)[:200]
+
+        self.recent_quarantined_samples.append({
+            "reason": reason,
+            "timestamp": ts_str,
+            "record_summary": rec_summary,
+        })
+
+    def get_metrics(self) -> Dict[str, Any]:
+        """Returns diagnostic metrics and breakdown of quarantine reasons."""
+        return {
+            "total_quarantined_records": self.total_quarantined_records,
+            "quarantine_reason_counts": dict(self.quarantine_reason_counts),
+            "invalid_timestamp_count": self.invalid_timestamp_count,
+            "invalid_numeric_feature_count": self.invalid_numeric_feature_count,
+            "invalid_packet_byte_counter_count": self.invalid_packet_byte_counter_count,
+            "missing_required_field_count": self.missing_required_field_count,
+            "recent_quarantined_samples_count": len(self.recent_quarantined_samples),
+        }
+
+    def reset(self) -> None:
+        """Resets all quarantine metrics and clears diagnostic sample storage."""
+        self.total_quarantined_records = 0
+        self.quarantine_reason_counts.clear()
+        self.invalid_timestamp_count = 0
+        self.invalid_numeric_feature_count = 0
+        self.invalid_packet_byte_counter_count = 0
+        self.missing_required_field_count = 0
+        self.recent_quarantined_samples.clear()
+
+
+# --------------------------------------------------------------------------
 # 3. Causal Rolling Context Engine
 # --------------------------------------------------------------------------
 
@@ -222,11 +405,15 @@ class StreamingCausalContext:
         window_seconds: int = STREAMING_WINDOW_SECONDS,
         max_late_seconds: float = 10.0,
         max_buffer_capacity: int = 10_000,
+        quarantine_manager: Optional[FlowQuarantineManager] = None,
     ):
         self.window_seconds: int = int(window_seconds)
         self.window_delta: pd.Timedelta = pd.Timedelta(seconds=self.window_seconds)
         self.max_late_delta: pd.Timedelta = pd.Timedelta(seconds=max_late_seconds)
         self.max_buffer_capacity: int = int(max_buffer_capacity)
+        self.quarantine_manager: FlowQuarantineManager = (
+            quarantine_manager if quarantine_manager is not None else FlowQuarantineManager()
+        )
 
         # Deque of (timestamp: pd.Timestamp, fwd_pkts: float, fwd_bytes: float, is_single: float)
         self.buffer: deque = deque()
@@ -265,6 +452,7 @@ class StreamingCausalContext:
         self.is_degraded = False
         self.last_overflow_timestamp = None
         self.total_dropped_overflow_events = 0
+        self.quarantine_manager.reset()
 
     def warm_up(self, historical_df: pd.DataFrame) -> int:
         """
@@ -463,26 +651,41 @@ class StreamingCausalContext:
         and rolling temporal velocities.
         Returns a dictionary containing all 26 PURE_ONE_WAY_FEATURES plus metadata.
         """
-        out = dict(flow)
+        # 1. Validation & Quarantine
+        is_val, reason, sanitized = validate_and_sanitize_flow_record(flow)
+        if not is_val:
+            self.quarantine_manager.quarantine(flow, reason)
+            out = dict(flow)
+            out["Fwd_Bytes_Per_Sec"] = 0.0
+            out["Fwd_Packets_Per_Sec"] = 0.0
+            out["Rolling_Flow_Velocity_10s"] = float(len(self.buffer))
+            out["Rolling_Bytes_Velocity_10s"] = float(sum(b[2] for b in self.buffer))
+            cnt = float(len(self.buffer))
+            out["Rolling_Single_Pkt_Ratio_10s"] = float(sum(b[3] for b in self.buffer) / cnt if cnt > 0 else 0.0)
+            out["_is_valid"] = False
+            out["_context_state"] = "QUARANTINED"
+            out["_quarantine_reason"] = reason
+            out["_overflow_events"] = self.total_dropped_overflow_events
+            return out
 
-        # 1. Forward rates
-        iat = flow.get("Fwd IAT Total", 0.0)
-        bytes_ = flow.get("Total Length of Fwd Packets", 0.0)
-        pkts = flow.get("Total Fwd Packets", 0.0)
+        out = dict(sanitized)
+
+        # 2. Forward rates
+        iat = sanitized.get("Fwd IAT Total", 0.0)
+        bytes_ = float(sanitized["Total Length of Fwd Packets"])
+        pkts = float(sanitized["Total Fwd Packets"])
         b_rate, p_rate = compute_pure_forward_rates_scalar(iat, bytes_, pkts)
         out["Fwd_Bytes_Per_Sec"] = b_rate
         out["Fwd_Packets_Per_Sec"] = p_rate
 
-        # 2. Temporal velocities
-        ts = flow.get("Timestamp")
-        if ts is None:
-            raise ValueError("Flow record missing 'Timestamp' field.")
+        # 3. Temporal velocities
+        ts = sanitized["Timestamp"]
         rf, rb, rs = self.update(ts, pkts, bytes_)
         out["Rolling_Flow_Velocity_10s"] = rf
         out["Rolling_Bytes_Velocity_10s"] = rb
         out["Rolling_Single_Pkt_Ratio_10s"] = rs
 
-        # 3. Buffer health metadata
+        # 4. Buffer health metadata
         out["_is_valid"] = self.is_valid
         out["_context_state"] = self.context_state
         out["_overflow_events"] = self.total_dropped_overflow_events
@@ -526,7 +729,7 @@ class StreamingCausalContext:
             raise ValueError("DataFrame must contain a 'Timestamp' column.")
 
         if not pd.api.types.is_datetime64_any_dtype(df["Timestamp"]):
-            df["Timestamp"] = pd.to_datetime(df["Timestamp"])
+            df["Timestamp"] = pd.to_datetime(df["Timestamp"], errors="coerce")
 
         # Compute forward rates via canonical vectorized function if Fwd IAT Total is present
         if "Fwd IAT Total" in df.columns:
@@ -543,35 +746,56 @@ class StreamingCausalContext:
         n = len(df)
 
         if causal_mode == "sequential":
-            rf = np.zeros(n, dtype=float)
-            rb = np.zeros(n, dtype=float)
-            rs = np.zeros(n, dtype=float)
-            val = np.zeros(n, dtype=bool)
-            cstate: List[str] = []
-            overflow_evs = np.zeros(n, dtype=int)
+            emitted_rows: List[Dict[str, Any]] = []
 
             for i in range(n):
-                r_flow, r_bytes, r_single = self.update(timestamps[i], fwd_pkts[i], fwd_bytes[i])
-                rf[i] = r_flow
-                rb[i] = r_bytes
-                rs[i] = r_single
-                val[i] = self.is_valid
-                cstate.append(self.context_state)
-                overflow_evs[i] = self.total_dropped_overflow_events
+                row_dict = df.iloc[i].to_dict()
+                is_val, reason, sanitized_row = validate_and_sanitize_flow_record(row_dict)
+                if not is_val:
+                    self.quarantine_manager.quarantine(row_dict, reason)
+                    continue
 
-            df["Rolling_Flow_Velocity_10s"] = rf
-            df["Rolling_Bytes_Velocity_10s"] = rb
-            df["Rolling_Single_Pkt_Ratio_10s"] = rs
-            df["_is_valid"] = val
-            df["_context_state"] = cstate
-            df["_overflow_events"] = overflow_evs
-            return df
+                curr_ts_pd = sanitized_row["Timestamp"]
+                p = float(sanitized_row["Total Fwd Packets"])
+                b = float(sanitized_row["Total Length of Fwd Packets"])
+
+                r_flow, r_bytes, r_single = self.update(curr_ts_pd, p, b)
+                res_dict = dict(sanitized_row)
+                res_dict["Rolling_Flow_Velocity_10s"] = r_flow
+                res_dict["Rolling_Bytes_Velocity_10s"] = r_bytes
+                res_dict["Rolling_Single_Pkt_Ratio_10s"] = r_single
+                res_dict["_is_valid"] = self.is_valid
+                res_dict["_context_state"] = self.context_state
+                res_dict["_overflow_events"] = self.total_dropped_overflow_events
+                emitted_rows.append(res_dict)
+
+            if not emitted_rows:
+                cols = list(df.columns)
+                for col in [
+                    "Rolling_Flow_Velocity_10s",
+                    "Rolling_Bytes_Velocity_10s",
+                    "Rolling_Single_Pkt_Ratio_10s",
+                    "_is_valid",
+                    "_context_state",
+                    "_overflow_events",
+                ]:
+                    if col not in cols:
+                        cols.append(col)
+                return pd.DataFrame(columns=cols)
+
+            return pd.DataFrame(emitted_rows)
 
         elif causal_mode == "simultaneous":
             emitted_rows: List[Dict[str, Any]] = []
 
             for i in range(n):
-                curr_ts_pd = pd.Timestamp(timestamps[i])
+                row_dict = df.iloc[i].to_dict()
+                is_val, reason, sanitized_row = validate_and_sanitize_flow_record(row_dict)
+                if not is_val:
+                    self.quarantine_manager.quarantine(row_dict, reason)
+                    continue
+
+                curr_ts_pd = sanitized_row["Timestamp"]
 
                 # Check if timestamp strictly advanced
                 if self.pending_group and curr_ts_pd > self.pending_group[0][1]:
@@ -582,14 +806,17 @@ class StreamingCausalContext:
 
                 self._check_recovery(curr_ts_pd)
 
-                row_dict = df.iloc[i].to_dict()
+                p = float(sanitized_row["Total Fwd Packets"])
+                b = float(sanitized_row["Total Length of Fwd Packets"])
+                s = 1.0 if p <= 1.0 else 0.0
+
                 self.pending_group.append((
                     i,
                     curr_ts_pd,
-                    float(fwd_pkts[i]),
-                    float(fwd_bytes[i]),
-                    float(is_single[i]),
-                    row_dict,
+                    p,
+                    b,
+                    s,
+                    sanitized_row,
                 ))
                 self._enforce_capacity(curr_ts_pd, emitted_rows=emitted_rows)
 
@@ -693,6 +920,8 @@ class StreamingCausalContext:
             "total_processed": self.total_processed,
             "total_late_events": self.total_late_events,
             "total_dropped_overflow_events": self.total_dropped_overflow_events,
+            "total_quarantined_records": self.quarantine_manager.total_quarantined_records,
+            "quarantine_reason_counts": dict(self.quarantine_manager.quarantine_reason_counts),
             "estimated_memory_bytes": total_retained * 64,  # Approx 64 bytes per tuple
         }
 
@@ -719,10 +948,12 @@ class StreamingFeatureEngine:
         pipeline: Optional[PureOneWayLogPreprocessingPipeline] = None,
         window_seconds: int = STREAMING_WINDOW_SECONDS,
         max_buffer_capacity: int = 10_000,
+        quarantine_manager: Optional[FlowQuarantineManager] = None,
     ):
         self.context: StreamingCausalContext = StreamingCausalContext(
             window_seconds=window_seconds,
             max_buffer_capacity=max_buffer_capacity,
+            quarantine_manager=quarantine_manager,
         )
         self.pipeline: Optional[PureOneWayLogPreprocessingPipeline] = pipeline
         self.feature_names: List[str] = list(PURE_ONE_WAY_FEATURES)
@@ -735,6 +966,16 @@ class StreamingFeatureEngine:
 
         if self.pipeline is not None and getattr(self.pipeline, "is_fitted", False):
             self._compile_fast_transforms()
+
+    @property
+    def quarantine_manager(self) -> FlowQuarantineManager:
+        """Access the underlying FlowQuarantineManager."""
+        return self.context.quarantine_manager
+
+    @property
+    def total_quarantined_records(self) -> int:
+        """Cumulative total of quarantined records."""
+        return self.context.quarantine_manager.total_quarantined_records
 
     @property
     def is_degraded(self) -> bool:
@@ -824,19 +1065,24 @@ class StreamingFeatureEngine:
                 "Initialize engine with a pre-fitted pipeline."
             )
 
-        # 1. Update temporal context
-        ts = flow.get("Timestamp")
-        if ts is None:
-            raise ValueError("Flow record missing 'Timestamp'.")
+        # 1. Validation & Quarantine
+        is_val, reason, sanitized = validate_and_sanitize_flow_record(flow)
+        if not is_val:
+            self.context.quarantine_manager.quarantine(flow, reason)
+            if return_status:
+                return np.full((1, 26), np.nan, dtype=np.float64), False, "QUARANTINED"
+            raise ValueError(f"Flow record quarantined: {reason}")
 
-        iat = flow.get("Fwd IAT Total", 0.0)
-        bytes_ = flow.get("Total Length of Fwd Packets", 0.0)
-        pkts = flow.get("Total Fwd Packets", 0.0)
+        # 2. Update temporal context with sanitized values
+        ts = sanitized["Timestamp"]
+        iat = sanitized.get("Fwd IAT Total", 0.0)
+        bytes_ = sanitized["Total Length of Fwd Packets"]
+        pkts = sanitized["Total Fwd Packets"]
 
         b_rate, p_rate = compute_pure_forward_rates_scalar(iat, bytes_, pkts)
         rf, rb, rs = self.context.update(ts, pkts, bytes_)
 
-        # 2. Populate raw feature vector (26 dimensions)
+        # 3. Populate raw feature vector (26 dimensions)
         raw_vals = np.empty(26, dtype=np.float64)
         for idx, feat in enumerate(self.feature_names):
             if feat == "Fwd_Bytes_Per_Sec":
@@ -850,7 +1096,7 @@ class StreamingFeatureEngine:
             elif feat == "Rolling_Single_Pkt_Ratio_10s":
                 val = rs
             else:
-                raw_val = flow.get(feat, np.nan)
+                raw_val = sanitized.get(feat, np.nan)
                 try:
                     val = float(raw_val)
                 except (TypeError, ValueError):
