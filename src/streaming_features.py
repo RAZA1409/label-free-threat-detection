@@ -1185,6 +1185,77 @@ class StreamingCausalContext:
             "estimated_memory_bytes": total_retained * 64,  # Approx 64 bytes per tuple
         }
 
+    def export_state(self) -> Dict[str, Any]:
+        """
+        Exports internal causal buffer, pending simultaneous group, watermarks,
+        and degradation metrics for checkpointing and state persistence.
+        """
+        return {
+            "latest_timestamp": self.latest_timestamp.isoformat() if self.latest_timestamp is not None else None,
+            "window_seconds": self.window_seconds,
+            "max_buffer_capacity": self.max_buffer_capacity,
+            "is_degraded": self.is_degraded,
+            "last_overflow_timestamp": self.last_overflow_timestamp.isoformat() if self.last_overflow_timestamp is not None else None,
+            "total_dropped_overflow_events": self.total_dropped_overflow_events,
+            "total_processed": self.total_processed,
+            "total_late_events": self.total_late_events,
+            "rolling_buffer": [
+                [
+                    item[0].isoformat() if hasattr(item[0], "isoformat") else str(item[0]),
+                    float(item[1]),
+                    float(item[2]),
+                    float(item[3]),
+                ]
+                for item in self.buffer
+            ],
+            "pending_group": [
+                [
+                    int(item[0]),
+                    item[1].isoformat() if hasattr(item[1], "isoformat") else str(item[1]),
+                    float(item[2]),
+                    float(item[3]),
+                    float(item[4]),
+                    dict(item[5]) if hasattr(item[5], "items") else {},
+                ]
+                for item in self.pending_group
+            ],
+        }
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        """
+        Restores causal buffer, pending simultaneous group, watermarks, and
+        degradation state from a validated checkpoint dictionary.
+        """
+        self.reset()
+        if not isinstance(state, dict):
+            return
+
+        buf_raw = state.get("rolling_buffer", [])
+        for item in buf_raw:
+            ts_pd = pd.Timestamp(item[0])
+            self.buffer.append((ts_pd, float(item[1]), float(item[2]), float(item[3])))
+
+        pend_raw = state.get("pending_group", [])
+        for item in pend_raw:
+            idx = int(item[0])
+            ts_pd = pd.Timestamp(item[1])
+            p = float(item[2])
+            b = float(item[3])
+            s = float(item[4])
+            orig = dict(item[5])
+            self.pending_group.append((idx, ts_pd, p, b, s, orig))
+
+        latest_str = state.get("latest_timestamp")
+        self.latest_timestamp = pd.Timestamp(latest_str) if latest_str else None
+
+        overflow_str = state.get("last_overflow_timestamp")
+        self.last_overflow_timestamp = pd.Timestamp(overflow_str) if overflow_str else None
+
+        self.is_degraded = bool(state.get("is_degraded", False))
+        self.total_dropped_overflow_events = int(state.get("total_dropped_overflow_events", 0))
+        self.total_processed = int(state.get("total_processed", 0))
+        self.total_late_events = int(state.get("total_late_events", 0))
+
 
 # --------------------------------------------------------------------------
 # 4. High-Performance Streaming Feature Engine
@@ -1294,6 +1365,14 @@ class StreamingFeatureEngine:
     def reset(self) -> None:
         """Resets the context buffer."""
         self.context.reset()
+
+    def export_state(self) -> Dict[str, Any]:
+        """Exports underlying context state for checkpointing."""
+        return self.context.export_state()
+
+    def load_state(self, state: Dict[str, Any]) -> None:
+        """Loads underlying context state from a validated checkpoint."""
+        self.context.load_state(state)
 
     def extract_features_df(
         self,

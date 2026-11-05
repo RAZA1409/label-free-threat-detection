@@ -57,12 +57,24 @@ try:
         safe_read_json,
         sanitize_for_json,
     )
+    from src.checkpoint import (
+        CheckpointManager,
+        RecoveryStatus,
+        RecoveryResult,
+        AlertIdempotencyTracker,
+    )
 except ImportError:
     from telemetry import (
         TelemetryManager,
         atomic_write_json,
         safe_read_json,
         sanitize_for_json,
+    )
+    from checkpoint import (
+        CheckpointManager,
+        RecoveryStatus,
+        RecoveryResult,
+        AlertIdempotencyTracker,
     )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -469,6 +481,11 @@ def run_stream_simulation(
     verbose: bool = True,
     telemetry_throttle_sec: float = 0.25,
     telemetry_throttle_flows: int = 20,
+    checkpoint_file: Optional[Union[str, Path]] = None,
+    auto_restore: bool = True,
+    checkpoint_interval_events: Optional[int] = None,
+    save_checkpoint_on_shutdown: bool = True,
+    stop_after_events: Optional[int] = None,
 ) -> Dict[str, Any]:
     """
     Simulates a streaming network tap / data diode ingest with chronological playback
@@ -482,6 +499,11 @@ def run_stream_simulation(
     max_buffer_capacity: Configurable safety ceiling on causal sliding context buffer.
     telemetry_throttle_sec: Bounded interval between non-critical telemetry file writes.
     telemetry_throttle_flows: Flow count threshold between non-critical telemetry file writes.
+    checkpoint_file: Path to versioned checkpoint file for persistence and recovery.
+    auto_restore: Whether to automatically restore from checkpoint_file if it exists.
+    checkpoint_interval_events: Save checkpoint every N flows (None for shutdown only).
+    save_checkpoint_on_shutdown: Save final checkpoint upon stream completion/shutdown.
+    stop_after_events: Optional early termination limit to test restart recovery midway.
     """
     feed_path = Path(live_feed_file) if live_feed_file else LIVE_FEED_FILE
     parquet_path = Path(test_file) if test_file else TEST_FILE
@@ -575,7 +597,6 @@ def run_stream_simulation(
     recent_alerts: List[Dict[str, Any]] = []
     total_processed = 0
     total_anomalies = 0
-
     v2_primary_anomalies = 0
     v2_reference_anomalies = 0
     v2_degraded_count = 0
@@ -583,6 +604,56 @@ def run_stream_simulation(
     v2_both_alert = 0
     v2_both_pass = 0
     v2_latencies: List[float] = []
+
+    checkpoint_mgr: Optional[CheckpointManager] = None
+    recovery_result: Optional[RecoveryResult] = None
+    if checkpoint_file:
+        checkpoint_mgr = CheckpointManager(
+            checkpoint_path=checkpoint_file,
+            max_buffer_capacity=max_buffer_capacity,
+        )
+        if auto_restore:
+            recovery_result = checkpoint_mgr.restore_checkpoint(
+                context=engine.context,
+                telemetry_mgr=telemetry_mgr,
+            )
+            if recovery_result.status == RecoveryStatus.SUCCESS:
+                if verbose:
+                    print(f"   [+] Restored checkpoint: {recovery_result.restored_buffer_entries} buffer entries, {recovery_result.restored_alerts_count} alerts.")
+                total_processed = recovery_result.restored_flow_index
+                total_anomalies = recovery_result.restored_anomalies
+                v2_metrics = recovery_result.restored_v2_metrics
+                v2_primary_anomalies = v2_metrics.get("primary_anomalies", 0)
+                v2_reference_anomalies = v2_metrics.get("reference_anomalies", 0)
+                v2_degraded_count = v2_metrics.get("degraded_count", 0)
+                v2_unavailable_count = v2_metrics.get("unavailable_count", 0)
+                v2_both_alert = v2_metrics.get("both_alert", 0)
+                v2_both_pass = v2_metrics.get("both_pass", 0)
+
+                if recovery_result.restored_alerts:
+                    for al in recovery_result.restored_alerts:
+                        if al not in recent_alerts:
+                            recent_alerts.append(al)
+                    if len(recent_alerts) > 150:
+                        recent_alerts = recent_alerts[-150:]
+                elif telemetry_mgr is not None and hasattr(telemetry_mgr, "_backlog_alerts"):
+                    for al in telemetry_mgr._backlog_alerts:
+                        if al not in recent_alerts:
+                            recent_alerts.append(al)
+                            if len(recent_alerts) > 150:
+                                recent_alerts.pop(0)
+
+                # Resume stream pool from total_processed if applicable
+                if total_processed > 0 and total_processed < len(stream_pool):
+                    stream_pool = stream_pool.iloc[total_processed:].copy()
+                    if verbose:
+                        print(f"   [+] Resuming chronological stream from index {total_processed} ({len(stream_pool)} flows remaining).")
+            elif recovery_result.status == RecoveryStatus.SKIPPED:
+                if verbose:
+                    print("   [*] No checkpoint found. Starting clean stream.")
+            else:
+                if verbose:
+                    print(f"   [!] Checkpoint rejected ({recovery_result.status.value}): {recovery_result.error_message}. Starting clean stream.")
 
     def _build_feed_state(curr_timestamp: Optional[str] = None) -> Dict[str, Any]:
         ts = curr_timestamp or time.strftime("%H:%M:%S")
@@ -743,7 +814,33 @@ def run_stream_simulation(
                 recent_alert=alert_record if is_alert else None,
             )
 
-        if max_events and total_processed >= max_events:
+        if checkpoint_mgr is not None and is_alert:
+            checkpoint_mgr.idempotency_tracker.register(f"{total_processed}:{curr_time}")
+
+        if (
+            checkpoint_mgr is not None
+            and checkpoint_interval_events is not None
+            and checkpoint_interval_events > 0
+            and total_processed % checkpoint_interval_events == 0
+        ):
+            checkpoint_mgr.save_checkpoint(
+                context=engine.context,
+                telemetry_mgr=telemetry_mgr,
+                extra_state={
+                    "total_processed": total_processed,
+                    "total_anomalies": total_anomalies,
+                    "recent_alerts": recent_alerts,
+                    "v2_primary_anomalies": v2_primary_anomalies,
+                    "v2_reference_anomalies": v2_reference_anomalies,
+                    "v2_degraded_count": v2_degraded_count,
+                    "v2_unavailable_count": v2_unavailable_count,
+                    "v2_both_alert": v2_both_alert,
+                    "v2_both_pass": v2_both_pass,
+                },
+            )
+
+        effective_limit = stop_after_events if stop_after_events is not None else max_events
+        if effective_limit and total_processed >= effective_limit:
             return False
 
         if delay > 0:
@@ -841,7 +938,11 @@ def run_stream_simulation(
                             recent_alert=q_alert,
                         )
 
-                    if max_events and total_processed >= max_events:
+                    if checkpoint_mgr is not None:
+                        checkpoint_mgr.idempotency_tracker.register(f"{total_processed}:{curr_time}")
+
+                    effective_limit = stop_after_events if stop_after_events is not None else max_events
+                    if effective_limit and total_processed >= effective_limit:
                         stop_early = True
                         break
 
@@ -862,7 +963,7 @@ def run_stream_simulation(
     finally:
         # 6. Shutdown flush of trailing pending timestamp group
         final_batch = engine.context.flush()
-        if not stop_early and len(final_batch) > 0:
+        if len(final_batch) > 0:
             for _, row in final_batch.iterrows():
                 flow_dict = row.to_dict()
                 if not _process_single_flow(flow_dict):
@@ -872,6 +973,24 @@ def run_stream_simulation(
         if write_feed:
             final_feed_state = _build_feed_state()
             telemetry_mgr.flush(final_feed_state)
+
+        # 8. Final checkpoint save on graceful shutdown
+        if checkpoint_mgr is not None and save_checkpoint_on_shutdown:
+            checkpoint_mgr.save_checkpoint(
+                context=engine.context,
+                telemetry_mgr=telemetry_mgr,
+                extra_state={
+                    "total_processed": total_processed,
+                    "total_anomalies": total_anomalies,
+                    "recent_alerts": recent_alerts,
+                    "v2_primary_anomalies": v2_primary_anomalies,
+                    "v2_reference_anomalies": v2_reference_anomalies,
+                    "v2_degraded_count": v2_degraded_count,
+                    "v2_unavailable_count": v2_unavailable_count,
+                    "v2_both_alert": v2_both_alert,
+                    "v2_both_pass": v2_both_pass,
+                },
+            )
 
     if verbose:
         print("-" * 92)
@@ -892,6 +1011,8 @@ def run_stream_simulation(
         "quarantine_summary": quarantine_manager.get_metrics(),
         "recent_alerts": recent_alerts,
         "telemetry_health": telemetry_mgr.get_health(),
+        "recovery_result": recovery_result.to_dict() if recovery_result is not None else None,
+        "checkpoint_saved": bool(checkpoint_mgr.total_checkpoints_saved > 0) if checkpoint_mgr is not None else False,
     }
     return summary_result
 
@@ -906,6 +1027,9 @@ def main():
     parser.add_argument("--no-attacks", action="store_false", dest="inject_attacks", help="Disable synthetic attack injection")
     parser.add_argument("--telemetry-throttle-sec", type=float, default=0.25, help="Telemetry disk write throttle interval in seconds (default: 0.25)")
     parser.add_argument("--telemetry-throttle-flows", type=int, default=20, help="Telemetry disk write flow batch size (default: 20)")
+    parser.add_argument("--checkpoint-file", type=str, default=None, help="Path to checkpoint file for persistence and recovery")
+    parser.add_argument("--no-auto-restore", action="store_false", dest="auto_restore", help="Disable automatic recovery from existing checkpoint")
+    parser.add_argument("--checkpoint-interval", type=int, default=None, help="Save checkpoint every N flows")
     args = parser.parse_args()
 
     run_stream_simulation(
@@ -917,6 +1041,9 @@ def main():
         max_buffer_capacity=args.max_capacity,
         telemetry_throttle_sec=args.telemetry_throttle_sec,
         telemetry_throttle_flows=args.telemetry_throttle_flows,
+        checkpoint_file=args.checkpoint_file,
+        auto_restore=args.auto_restore,
+        checkpoint_interval_events=args.checkpoint_interval,
     )
 
 
