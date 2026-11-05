@@ -40,19 +40,19 @@ The streaming engine operates under two distinct deployment clock models:
 flowchart TD
     Ingest["Incoming Event (Timestamp = t)"] --> ValPre["1. Strict Structural Validation<br/>(Reject None, NaT, NaN, Inf, Booleans)"]
     ValPre -->|Invalid| Q_Inv["Quarantine: INVALID_TIMESTAMP / MISSING_TIMESTAMP<br/>[Zero buffer mutation, watermark frozen]"]
-    
+
     ValPre -->|Valid pd.Timestamp| ModeCheck{"Clock Mode"}
-    
+
     ModeCheck -->|"wall_clock<br/>(Live Diode Ingest)"| WallCheck{"t - T_wall ><br/>max_future_drift_seconds?"}
     WallCheck -->|Yes| Q_DriftW["Quarantine: TIMESTAMP_FUTURE_DRIFT<br/>[Zero buffer mutation, watermark frozen]"]
     WallCheck -->|No| CausalEval
-    
+
     ModeCheck -->|"event_time<br/>(Replay / Simulation)"| BoundCheck{"t > trusted_horizon<br/>(Manifest / Dataset Bound / Default Ceiling)?"}
     BoundCheck -->|Yes| Q_DriftE["Quarantine: TIMESTAMP_FUTURE_DRIFT<br/>[Zero buffer mutation, watermark frozen]"]
     BoundCheck -->|No| CausalEval
-    
+
     CausalEval{"Causal Watermark Check<br/>W = latest_timestamp"}
-    
+
     CausalEval -->|"t >= W<br/>(Monotonic Advance)"| Adv["1. Evict buffer <= (t - 10s)<br/>2. W = max(W, t)<br/>3. Add to buffer / pending group"]
     CausalEval -->|"W - 10s < t < W<br/>(In-Window Late)"| LateIn["1. Increment total_late_events<br/>2. Insert into sorted position in buffer<br/>3. Watermark W strictly unchanged"]
     CausalEval -->|"t <= W - 10s<br/>(Expired Late)"| LateExp["1. Increment total_late_events<br/>2. Evaluate in single-event isolation<br/>3. Buffer & Watermark strictly unchanged"]

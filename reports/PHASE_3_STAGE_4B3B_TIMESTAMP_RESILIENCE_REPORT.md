@@ -14,7 +14,7 @@
 
 ## 1. Executive Summary
 
-Phase 3 Stage 4B.3B hardens the AEGIS Pure One-Way Streaming Feature Engine against malicious, malformed, and out-of-order temporal anomalies. 
+Phase 3 Stage 4B.3B hardens the AEGIS Pure One-Way Streaming Feature Engine against malicious, malformed, and out-of-order temporal anomalies.
 
 Prior to this stage, an empirical audit revealed that a single record with a far-future timestamp (such as year 2099) passed baseline parsing, advanced the event-time watermark by 73 years, and triggered `_evict_expired()`, purging all legitimate historical records from `self.buffer` and permanently locking subsequent legitimate traffic into single-flow isolation. Furthermore, out-of-order records within simultaneous batches could invert pending groups and corrupt rolling eviction.
 
@@ -199,4 +199,3 @@ Breakdown:
 ?? tests/test_timestamp_resilience.py
 ```
 - **Formatting:** `git diff --check` passed cleanly with 0 whitespace errors.
-
