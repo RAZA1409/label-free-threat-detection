@@ -509,17 +509,7 @@ def run_stream_simulation(
             if verbose:
                 print(f"   [!] PureOneWayV2Adapter unavailable: {v2_adapter.load_error}")
 
-    # 3. Initialize Streaming Feature Engine
-    v2_pipe = v2_adapter.pipeline if (v2_adapter and v2_adapter.is_available) else None
-    quarantine_manager = FlowQuarantineManager(max_diagnostic_samples=100)
-    engine = StreamingFeatureEngine(
-        pipeline=v2_pipe,
-        window_seconds=10,
-        max_buffer_capacity=max_buffer_capacity,
-        quarantine_manager=quarantine_manager,
-    )
-
-    # 4. Prepare Chronological Stream
+    # 3. Prepare Chronological Stream
     if verbose:
         print(f"3. Loading and sorting chronological stream from {parquet_path.name}...")
     df = pd.read_parquet(parquet_path)
@@ -531,6 +521,23 @@ def run_stream_simulation(
         inject_attacks=inject_attacks,
         attack_ratio=0.25,
         random_state=42,
+    )
+
+    # Derive trusted replay horizon from complete stream pool before chunking
+    trusted_horizon = stream_pool.attrs.get("trusted_horizon")
+    if trusted_horizon is None and len(stream_pool) > 0:
+        trusted_horizon = stream_pool["Timestamp"].max() + pd.Timedelta(seconds=10.0)
+
+    # 4. Initialize Streaming Feature Engine with trusted horizon
+    v2_pipe = v2_adapter.pipeline if (v2_adapter and v2_adapter.is_available) else None
+    quarantine_manager = FlowQuarantineManager(max_diagnostic_samples=100)
+    engine = StreamingFeatureEngine(
+        pipeline=v2_pipe,
+        window_seconds=10,
+        max_buffer_capacity=max_buffer_capacity,
+        clock_mode="event_time",
+        max_timestamp_horizon=trusted_horizon,
+        quarantine_manager=quarantine_manager,
     )
 
     total_pool_len = len(stream_pool)
@@ -723,7 +730,11 @@ def run_stream_simulation(
             valid_rows = []
             for _, row in chunk_df.iterrows():
                 row_dict = row.to_dict()
-                is_val, reason, sanitized_row = validate_and_sanitize_flow_record(row_dict)
+                is_val, reason, sanitized_row = validate_and_sanitize_flow_record(
+                    row_dict,
+                    clock_mode="event_time",
+                    max_timestamp_horizon=trusted_horizon,
+                )
                 if is_val:
                     valid_rows.append(sanitized_row)
                 else:

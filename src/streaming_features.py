@@ -49,6 +49,94 @@ from features import (
 )
 
 STREAMING_WINDOW_SECONDS: int = 10
+DEFAULT_EVENT_TIME_HORIZON: pd.Timestamp = pd.Timestamp("2030-01-01 00:00:00")
+DEFAULT_MAX_FUTURE_DRIFT_SECONDS: float = 30.0
+
+
+def _normalize_tz_comparison(
+    ts_left: pd.Timestamp,
+    ts_right: pd.Timestamp,
+) -> Tuple[pd.Timestamp, pd.Timestamp]:
+    """Ensures two pd.Timestamp objects have compatible tz for comparison."""
+    if ts_left.tz is None and ts_right.tz is not None:
+        return ts_left, ts_right.tz_localize(None)
+    elif ts_left.tz is not None and ts_right.tz is None:
+        return ts_left.tz_localize(None), ts_right
+    return ts_left, ts_right
+
+
+def validate_timestamp_strict(
+    ts: Any,
+    clock_mode: str = "event_time",
+    max_future_drift_seconds: Optional[float] = None,
+    max_timestamp_horizon: Optional[Union[pd.Timestamp, str]] = None,
+    current_time_fn: Optional[Any] = None,
+) -> Tuple[bool, Optional[str], Optional[pd.Timestamp]]:
+    """
+    Strictly validates, parses, and bounds an incoming flow timestamp.
+
+    Guarantees:
+    - Rejects None: 'MISSING_TIMESTAMP'
+    - Rejects booleans, NaN, Inf, non-numeric unparseable strings, NaT: 'INVALID_TIMESTAMP'
+    - Rejects future drift / horizon exceedance: 'TIMESTAMP_FUTURE_DRIFT'
+    - In 'wall_clock' mode: rejects timestamps > current_time + max_future_drift_seconds (default: 30s)
+    - In 'event_time' mode: rejects timestamps > max_timestamp_horizon (default: 2030-01-01)
+    - Handles timezone-aware and timezone-naive comparisons safely without raising TypeError.
+
+    Returns:
+        (is_valid: bool, reason: Optional[str], parsed_timestamp: Optional[pd.Timestamp])
+    """
+    if ts is None:
+        return False, "MISSING_TIMESTAMP", None
+
+    # In Python, isinstance(True, (int, float)) is True, so check bool explicitly first
+    if isinstance(ts, bool):
+        return False, "INVALID_TIMESTAMP", None
+
+    if isinstance(ts, (float, np.number)):
+        if math.isnan(ts) or math.isinf(ts):
+            return False, "INVALID_TIMESTAMP", None
+
+    if pd.isna(ts):
+        return False, "INVALID_TIMESTAMP", None
+
+    try:
+        ts_pd = pd.Timestamp(ts)
+        if pd.isna(ts_pd):
+            return False, "INVALID_TIMESTAMP", None
+    except Exception:
+        return False, "INVALID_TIMESTAMP", None
+
+    # Horizon and clock drift enforcement
+    if clock_mode == "wall_clock":
+        drift_sec = (
+            float(max_future_drift_seconds)
+            if max_future_drift_seconds is not None
+            else DEFAULT_MAX_FUTURE_DRIFT_SECONDS
+        )
+        if current_time_fn is not None:
+            wall_now = pd.Timestamp(current_time_fn())
+        else:
+            wall_now = pd.Timestamp.now(tz=ts_pd.tz)
+
+        cmp_ts, cmp_wall = _normalize_tz_comparison(ts_pd, wall_now)
+        wall_ceiling = cmp_wall + pd.Timedelta(seconds=drift_sec)
+        if cmp_ts > wall_ceiling:
+            return False, "TIMESTAMP_FUTURE_DRIFT", None
+
+    elif clock_mode == "event_time":
+        horizon = (
+            pd.Timestamp(max_timestamp_horizon)
+            if max_timestamp_horizon is not None
+            else DEFAULT_EVENT_TIME_HORIZON
+        )
+        cmp_ts, cmp_horizon = _normalize_tz_comparison(ts_pd, horizon)
+        if cmp_ts > cmp_horizon:
+            return False, "TIMESTAMP_FUTURE_DRIFT", None
+    else:
+        raise ValueError(f"Unknown clock_mode '{clock_mode}'. Expected 'event_time' or 'wall_clock'.")
+
+    return True, None, ts_pd
 
 
 # --------------------------------------------------------------------------
@@ -184,15 +272,27 @@ def prepare_chronological_stream(
     # Strictly stable chronological sort
     sorted_df = sampled.sort_values(by=["Timestamp", "_orig_pos"], kind="stable").reset_index(drop=True)
     sorted_df = sorted_df.drop(columns=["_orig_pos"])
+
+    # Metadata attachment for trusted replay bounds
+    if len(sorted_df) > 0:
+        max_ts = sorted_df["Timestamp"].max()
+        sorted_df.attrs["max_timestamp"] = max_ts
+        sorted_df.attrs["min_timestamp"] = sorted_df["Timestamp"].min()
+        sorted_df.attrs["trusted_horizon"] = max_ts + pd.Timedelta(seconds=10.0)
+
     return sorted_df
 
 
 # --------------------------------------------------------------------------
-# 2.5 Input Sanitization & Malformed-Flow Quarantine (Stage 4B.3A)
+# 2.5 Input Sanitization & Malformed-Flow Quarantine (Stage 4B.3A & 4B.3B)
 # --------------------------------------------------------------------------
 
 def validate_and_sanitize_flow_record(
     record: Any,
+    clock_mode: str = "event_time",
+    max_future_drift_seconds: Optional[float] = None,
+    max_timestamp_horizon: Optional[Union[pd.Timestamp, str]] = None,
+    current_time_fn: Optional[Any] = None,
 ) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
     """
     Validates and sanitizes a raw network flow record before ingestion into
@@ -202,6 +302,7 @@ def validate_and_sanitize_flow_record(
     - Non-mapping types: Rejection reason 'INVALID_RECORD_TYPE'.
     - Missing or null timestamp: Rejection reason 'MISSING_TIMESTAMP'.
     - Invalid, NaT, or unparseable timestamp: Rejection reason 'INVALID_TIMESTAMP'.
+    - Future drift or horizon exceedance: Rejection reason 'TIMESTAMP_FUTURE_DRIFT'.
     - Missing packet or byte counters: Rejection reason 'MISSING_REQUIRED_FIELD'.
     - Non-numeric or unparseable counter: Rejection reason 'NON_NUMERIC_FEATURE'.
     - NaN counter: Rejection reason 'INVALID_COUNTER'.
@@ -224,20 +325,17 @@ def validate_and_sanitize_flow_record(
 
     rec: Dict[str, Any] = record.to_dict() if isinstance(record, pd.Series) else dict(record)
 
-    # 1. Timestamp validation
-    if "Timestamp" not in rec or rec["Timestamp"] is None:
-        return False, "MISSING_TIMESTAMP", None
-
-    raw_ts = rec["Timestamp"]
-    if pd.isna(raw_ts):
-        return False, "INVALID_TIMESTAMP", None
-
-    try:
-        ts_pd = pd.Timestamp(raw_ts)
-        if pd.isna(ts_pd):
-            return False, "INVALID_TIMESTAMP", None
-    except Exception:
-        return False, "INVALID_TIMESTAMP", None
+    # 1. Timestamp validation via strict parser and horizon boundary check
+    raw_ts = rec.get("Timestamp")
+    is_ts_valid, ts_reason, ts_pd = validate_timestamp_strict(
+        raw_ts,
+        clock_mode=clock_mode,
+        max_future_drift_seconds=max_future_drift_seconds,
+        max_timestamp_horizon=max_timestamp_horizon,
+        current_time_fn=current_time_fn,
+    )
+    if not is_ts_valid:
+        return False, ts_reason, None
 
     # 2. Required packet and byte counters
     for counter_field in ["Total Fwd Packets", "Total Length of Fwd Packets"]:
@@ -405,12 +503,26 @@ class StreamingCausalContext:
         window_seconds: int = STREAMING_WINDOW_SECONDS,
         max_late_seconds: float = 10.0,
         max_buffer_capacity: int = 10_000,
+        clock_mode: str = "event_time",
+        max_future_drift_seconds: Optional[float] = None,
+        max_timestamp_horizon: Optional[Union[pd.Timestamp, str]] = None,
+        current_time_fn: Optional[Any] = None,
         quarantine_manager: Optional[FlowQuarantineManager] = None,
     ):
         self.window_seconds: int = int(window_seconds)
         self.window_delta: pd.Timedelta = pd.Timedelta(seconds=self.window_seconds)
-        self.max_late_delta: pd.Timedelta = pd.Timedelta(seconds=max_late_seconds)
+        self.max_late_delta: pd.Timedelta = pd.Timedelta(seconds=float(max_late_seconds))
         self.max_buffer_capacity: int = int(max_buffer_capacity)
+        self.clock_mode: str = str(clock_mode)
+        self.max_future_drift_seconds: Optional[float] = (
+            float(max_future_drift_seconds) if max_future_drift_seconds is not None else None
+        )
+        self.max_timestamp_horizon: pd.Timestamp = (
+            pd.Timestamp(max_timestamp_horizon)
+            if max_timestamp_horizon is not None
+            else DEFAULT_EVENT_TIME_HORIZON
+        )
+        self.current_time_fn: Optional[Any] = current_time_fn
         self.quarantine_manager: FlowQuarantineManager = (
             quarantine_manager if quarantine_manager is not None else FlowQuarantineManager()
         )
@@ -460,6 +572,10 @@ class StreamingCausalContext:
         Eliminates startup cold-start artifacts by populating events within
         window_seconds of the historical tail.
 
+        Rejection & Horizon Safeguards:
+        - Drops null, NaT, and unparseable timestamps.
+        - Discards timestamps exceeding max_timestamp_horizon.
+
         Returns number of events buffered.
         """
         if historical_df is None or len(historical_df) == 0:
@@ -470,7 +586,26 @@ class StreamingCausalContext:
             raise ValueError("Historical context must contain a 'Timestamp' column.")
 
         if not pd.api.types.is_datetime64_any_dtype(hist["Timestamp"]):
-            hist["Timestamp"] = pd.to_datetime(hist["Timestamp"])
+            hist["Timestamp"] = pd.to_datetime(hist["Timestamp"], errors="coerce")
+
+        # Filter out NaT and invalid timestamps
+        hist = hist.dropna(subset=["Timestamp"]).copy()
+        if len(hist) == 0:
+            return 0
+
+        # Filter out timestamps beyond max_timestamp_horizon
+        if self.max_timestamp_horizon is not None:
+            first_ts = hist["Timestamp"].iloc[0]
+            _, cmp_horizon = _normalize_tz_comparison(first_ts, self.max_timestamp_horizon)
+            if hist["Timestamp"].dt.tz is not None and cmp_horizon.tz is None:
+                hist = hist[hist["Timestamp"].dt.tz_localize(None) <= cmp_horizon].copy()
+            elif hist["Timestamp"].dt.tz is None and cmp_horizon.tz is not None:
+                hist = hist[hist["Timestamp"] <= cmp_horizon.tz_localize(None)].copy()
+            else:
+                hist = hist[hist["Timestamp"] <= cmp_horizon].copy()
+
+        if len(hist) == 0:
+            return 0
 
         hist = hist.sort_values("Timestamp", kind="stable")
         max_ts = hist["Timestamp"].max()
@@ -602,41 +737,64 @@ class StreamingCausalContext:
         Single-event incremental update in sequential mode.
 
         Policy:
+        - Strict timestamp validation: rejects None, NaT, NaN, Inf, and future drift.
+          If rejected, quarantines flow and returns isolated metrics (1.0, fwd_bytes, single_ratio)
+          without mutating self.buffer or self.latest_timestamp.
+        - Monotonic watermark update: self.latest_timestamp = max(self.latest_timestamp, ts_pd).
         - If timestamp is later or equal to latest_timestamp: evicts entries older
           than (t - window_seconds), adds event, and returns current window metrics.
         - If timestamp is earlier than latest_timestamp:
-          - In-window late: inserted into sorted position, evicts, returns metric.
-          - Expired late (t < latest_timestamp - window_seconds): increments late counter,
+          - In-window late (latest_timestamp - max_late_delta < t < latest_timestamp):
+            inserted into sorted position, evicts relative to latest_timestamp, returns metric.
+          - Expired late (t <= latest_timestamp - max_late_delta): increments late counter,
             returns isolated single-event metrics without corrupting streaming buffer.
         """
-        ts_pd = pd.Timestamp(timestamp)
+        is_ts_ok, ts_reason, ts_pd = validate_timestamp_strict(
+            timestamp,
+            clock_mode=self.clock_mode,
+            max_future_drift_seconds=self.max_future_drift_seconds,
+            max_timestamp_horizon=self.max_timestamp_horizon,
+            current_time_fn=self.current_time_fn,
+        )
         p = float(fwd_pkts) if not math.isnan(fwd_pkts) and not math.isinf(fwd_pkts) and fwd_pkts >= 0 else 0.0
         b = float(fwd_bytes) if not math.isnan(fwd_bytes) and not math.isinf(fwd_bytes) and fwd_bytes >= 0 else 0.0
         s = 1.0 if p <= 1.0 else 0.0
+
+        if not is_ts_ok:
+            rec_diag = {
+                "Timestamp": timestamp,
+                "Total Fwd Packets": fwd_pkts,
+                "Total Length of Fwd Packets": fwd_bytes,
+            }
+            self.quarantine_manager.quarantine(rec_diag, ts_reason)
+            return 1.0, b, s
 
         # Safe event-time recovery check
         self._check_recovery(ts_pd)
 
         if self.latest_timestamp is not None and ts_pd < self.latest_timestamp:
             # Late arrival check
-            if ts_pd <= (self.latest_timestamp - self.window_delta):
+            if ts_pd <= (self.latest_timestamp - self.max_late_delta):
                 self.total_late_events += 1
                 self.total_processed += 1
-                # Expired event: evaluated in isolation
+                # Expired event: evaluated in isolation, never enters buffer
                 return 1.0, b, s
             else:
                 self.total_late_events += 1
                 # In-window out-of-order: insert into chronological position
                 self.buffer.append((ts_pd, p, b, s))
-                # Re-sort buffer (small size: <= 500 items)
                 sorted_buf = sorted(self.buffer, key=lambda x: x[0])
                 self.buffer = deque(sorted_buf)
+                # Watermark is NOT moved backward
         else:
-            self.latest_timestamp = ts_pd
+            # Monotonic advance: W = max(W, ts_pd)
+            if self.latest_timestamp is None or ts_pd > self.latest_timestamp:
+                self.latest_timestamp = ts_pd
             self.buffer.append((ts_pd, p, b, s))
 
-        self._evict_expired(ts_pd)
-        self._enforce_capacity(ts_pd)
+        # Evict expired flows relative to latest watermark
+        self._evict_expired(self.latest_timestamp)
+        self._enforce_capacity(self.latest_timestamp)
         self.total_processed += 1
 
         cnt = float(len(self.buffer))
@@ -652,7 +810,13 @@ class StreamingCausalContext:
         Returns a dictionary containing all 26 PURE_ONE_WAY_FEATURES plus metadata.
         """
         # 1. Validation & Quarantine
-        is_val, reason, sanitized = validate_and_sanitize_flow_record(flow)
+        is_val, reason, sanitized = validate_and_sanitize_flow_record(
+            flow,
+            clock_mode=self.clock_mode,
+            max_future_drift_seconds=self.max_future_drift_seconds,
+            max_timestamp_horizon=self.max_timestamp_horizon,
+            current_time_fn=self.current_time_fn,
+        )
         if not is_val:
             self.quarantine_manager.quarantine(flow, reason)
             out = dict(flow)
@@ -691,6 +855,49 @@ class StreamingCausalContext:
         out["_overflow_events"] = self.total_dropped_overflow_events
 
         return out
+
+    def _handle_late_simultaneous_event(
+        self,
+        orig_idx: int,
+        ts: pd.Timestamp,
+        p: float,
+        b: float,
+        s: float,
+        row_dict: Dict[str, Any],
+        watermark: pd.Timestamp,
+        emitted_rows: List[Dict[str, Any]],
+    ) -> None:
+        """
+        Handles an out-of-order late arrival during simultaneous batch processing.
+        Does NOT alter active pending_group.
+        """
+        self.total_late_events += 1
+        self.total_processed += 1
+        out_dict = dict(row_dict)
+
+        if ts <= (watermark - self.max_late_delta):
+            # Expired late event: strictly outside max_late_delta window
+            out_dict["Rolling_Flow_Velocity_10s"] = 1.0
+            out_dict["Rolling_Bytes_Velocity_10s"] = b
+            out_dict["Rolling_Single_Pkt_Ratio_10s"] = s
+        else:
+            # In-window late arrival: insert into buffer in chronological sorted position
+            self.buffer.append((ts, p, b, s))
+            sorted_buf = sorted(self.buffer, key=lambda x: x[0])
+            self.buffer = deque(sorted_buf)
+            # Enforce capacity
+            self._enforce_capacity(watermark)
+            cnt = float(len(self.buffer))
+            tot_bytes = float(sum(item[2] for item in self.buffer))
+            ratio = float(sum(item[3] for item in self.buffer) / cnt if cnt > 0 else 0.0)
+            out_dict["Rolling_Flow_Velocity_10s"] = cnt
+            out_dict["Rolling_Bytes_Velocity_10s"] = tot_bytes
+            out_dict["Rolling_Single_Pkt_Ratio_10s"] = ratio
+
+        out_dict["_is_valid"] = self.is_valid
+        out_dict["_context_state"] = self.context_state
+        out_dict["_overflow_events"] = self.total_dropped_overflow_events
+        emitted_rows.append(out_dict)
 
     def process_batch(
         self,
@@ -738,11 +945,6 @@ class StreamingCausalContext:
             df["Fwd_Bytes_Per_Sec"] = 0.0
             df["Fwd_Packets_Per_Sec"] = 0.0
 
-        fwd_pkts = df.get("Total Fwd Packets", pd.Series(0, index=df.index)).replace([np.inf, -np.inf], np.nan).fillna(0).values
-        fwd_bytes = df.get("Total Length of Fwd Packets", pd.Series(0, index=df.index)).replace([np.inf, -np.inf], np.nan).fillna(0).values
-        is_single = (fwd_pkts <= 1).astype(float)
-        timestamps = df["Timestamp"].values
-
         n = len(df)
 
         if causal_mode == "sequential":
@@ -750,7 +952,13 @@ class StreamingCausalContext:
 
             for i in range(n):
                 row_dict = df.iloc[i].to_dict()
-                is_val, reason, sanitized_row = validate_and_sanitize_flow_record(row_dict)
+                is_val, reason, sanitized_row = validate_and_sanitize_flow_record(
+                    row_dict,
+                    clock_mode=self.clock_mode,
+                    max_future_drift_seconds=self.max_future_drift_seconds,
+                    max_timestamp_horizon=self.max_timestamp_horizon,
+                    current_time_fn=self.current_time_fn,
+                )
                 if not is_val:
                     self.quarantine_manager.quarantine(row_dict, reason)
                     continue
@@ -788,37 +996,84 @@ class StreamingCausalContext:
         elif causal_mode == "simultaneous":
             emitted_rows: List[Dict[str, Any]] = []
 
+            # 1. Validate and quarantine malformed rows before any state mutation
+            valid_entries: List[Tuple[int, pd.Timestamp, float, float, float, Dict[str, Any]]] = []
             for i in range(n):
                 row_dict = df.iloc[i].to_dict()
-                is_val, reason, sanitized_row = validate_and_sanitize_flow_record(row_dict)
+                is_val, reason, sanitized_row = validate_and_sanitize_flow_record(
+                    row_dict,
+                    clock_mode=self.clock_mode,
+                    max_future_drift_seconds=self.max_future_drift_seconds,
+                    max_timestamp_horizon=self.max_timestamp_horizon,
+                    current_time_fn=self.current_time_fn,
+                )
                 if not is_val:
                     self.quarantine_manager.quarantine(row_dict, reason)
                     continue
 
                 curr_ts_pd = sanitized_row["Timestamp"]
-
-                # Check if timestamp strictly advanced
-                if self.pending_group and curr_ts_pd > self.pending_group[0][1]:
-                    self._finalize_pending(emitted_rows)
-
-                # Evict buffer entries expired relative to current event time before capacity check
-                self._evict_expired(curr_ts_pd)
-
-                self._check_recovery(curr_ts_pd)
-
                 p = float(sanitized_row["Total Fwd Packets"])
                 b = float(sanitized_row["Total Length of Fwd Packets"])
                 s = 1.0 if p <= 1.0 else 0.0
+                valid_entries.append((i, curr_ts_pd, p, b, s, sanitized_row))
 
-                self.pending_group.append((
-                    i,
-                    curr_ts_pd,
-                    p,
-                    b,
-                    s,
-                    sanitized_row,
-                ))
-                self._enforce_capacity(curr_ts_pd, emitted_rows=emitted_rows)
+            if not valid_entries and not self.pending_group:
+                cols = list(df.columns)
+                for col in [
+                    "Rolling_Flow_Velocity_10s",
+                    "Rolling_Bytes_Velocity_10s",
+                    "Rolling_Single_Pkt_Ratio_10s",
+                    "_is_valid",
+                    "_context_state",
+                    "_overflow_events",
+                ]:
+                    if col not in cols:
+                        cols.append(col)
+                return pd.DataFrame(columns=cols)
+
+            # 2. Stably pre-sort valid entries by (curr_ts_pd, orig_idx) to guarantee chronological ordering
+            is_sorted = all(valid_entries[k][1] <= valid_entries[k + 1][1] for k in range(len(valid_entries) - 1))
+            if not is_sorted:
+                valid_entries = sorted(valid_entries, key=lambda x: (x[1], x[0]))
+
+            # 3. Process entries through simultaneous state machine
+            for orig_idx, curr_ts_pd, p, b, s, sanitized_row in valid_entries:
+                watermark = self.latest_timestamp
+                if self.pending_group:
+                    pend_ts = self.pending_group[0][1]
+                    if watermark is None or pend_ts > watermark:
+                        watermark = pend_ts
+
+                if self.pending_group:
+                    active_ts = self.pending_group[0][1]
+                    if curr_ts_pd > active_ts:
+                        # Timestamp strictly advanced: finalize previous group
+                        self._finalize_pending(emitted_rows)
+                        self._evict_expired(curr_ts_pd)
+                        self._check_recovery(curr_ts_pd)
+                        self.pending_group.append((orig_idx, curr_ts_pd, p, b, s, sanitized_row))
+                        self._enforce_capacity(curr_ts_pd, emitted_rows=emitted_rows)
+                    elif curr_ts_pd == active_ts:
+                        # Simultaneous flow: accumulate in active pending group
+                        self._evict_expired(curr_ts_pd)
+                        self._check_recovery(curr_ts_pd)
+                        self.pending_group.append((orig_idx, curr_ts_pd, p, b, s, sanitized_row))
+                        self._enforce_capacity(curr_ts_pd, emitted_rows=emitted_rows)
+                    else:
+                        # curr_ts_pd < active_ts: Out-of-order late arrival
+                        self._handle_late_simultaneous_event(
+                            orig_idx, curr_ts_pd, p, b, s, sanitized_row, watermark, emitted_rows
+                        )
+                else:
+                    if watermark is not None and curr_ts_pd < watermark:
+                        self._handle_late_simultaneous_event(
+                            orig_idx, curr_ts_pd, p, b, s, sanitized_row, watermark, emitted_rows
+                        )
+                    else:
+                        self._evict_expired(curr_ts_pd)
+                        self._check_recovery(curr_ts_pd)
+                        self.pending_group.append((orig_idx, curr_ts_pd, p, b, s, sanitized_row))
+                        self._enforce_capacity(curr_ts_pd, emitted_rows=emitted_rows)
 
             if flush and self.pending_group:
                 self._finalize_pending(emitted_rows)
@@ -860,7 +1115,9 @@ class StreamingCausalContext:
             self.buffer.append((ts, pkts, bytes_, single))
             self.total_processed += 1
 
-        self.latest_timestamp = group_ts
+        # Monotonic watermark advance
+        if self.latest_timestamp is None or group_ts > self.latest_timestamp:
+            self.latest_timestamp = group_ts
 
         # Evict entries <= cutoff (strictly open left boundary)
         while self.buffer and self.buffer[0][0] <= cutoff:
@@ -909,6 +1166,9 @@ class StreamingCausalContext:
         return {
             "window_seconds": self.window_seconds,
             "max_buffer_capacity": self.max_buffer_capacity,
+            "clock_mode": self.clock_mode,
+            "max_timestamp_horizon": str(self.max_timestamp_horizon) if self.max_timestamp_horizon is not None else None,
+            "max_future_drift_seconds": self.max_future_drift_seconds,
             "buffer_length": len(self.buffer),
             "pending_group_length": len(self.pending_group),
             "total_retained_entries": total_retained,
@@ -947,12 +1207,22 @@ class StreamingFeatureEngine:
         self,
         pipeline: Optional[PureOneWayLogPreprocessingPipeline] = None,
         window_seconds: int = STREAMING_WINDOW_SECONDS,
+        max_late_seconds: float = 10.0,
         max_buffer_capacity: int = 10_000,
+        clock_mode: str = "event_time",
+        max_future_drift_seconds: Optional[float] = None,
+        max_timestamp_horizon: Optional[Union[pd.Timestamp, str]] = None,
+        current_time_fn: Optional[Any] = None,
         quarantine_manager: Optional[FlowQuarantineManager] = None,
     ):
         self.context: StreamingCausalContext = StreamingCausalContext(
             window_seconds=window_seconds,
+            max_late_seconds=max_late_seconds,
             max_buffer_capacity=max_buffer_capacity,
+            clock_mode=clock_mode,
+            max_future_drift_seconds=max_future_drift_seconds,
+            max_timestamp_horizon=max_timestamp_horizon,
+            current_time_fn=current_time_fn,
             quarantine_manager=quarantine_manager,
         )
         self.pipeline: Optional[PureOneWayLogPreprocessingPipeline] = pipeline
@@ -1066,7 +1336,13 @@ class StreamingFeatureEngine:
             )
 
         # 1. Validation & Quarantine
-        is_val, reason, sanitized = validate_and_sanitize_flow_record(flow)
+        is_val, reason, sanitized = validate_and_sanitize_flow_record(
+            flow,
+            clock_mode=self.context.clock_mode,
+            max_future_drift_seconds=self.context.max_future_drift_seconds,
+            max_timestamp_horizon=self.context.max_timestamp_horizon,
+            current_time_fn=self.context.current_time_fn,
+        )
         if not is_val:
             self.context.quarantine_manager.quarantine(flow, reason)
             if return_status:
