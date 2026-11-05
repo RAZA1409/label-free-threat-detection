@@ -50,6 +50,20 @@ from streaming_features import (
     validate_and_sanitize_flow_record,
     prepare_chronological_stream,
 )
+try:
+    from src.telemetry import (
+        TelemetryManager,
+        atomic_write_json,
+        safe_read_json,
+        sanitize_for_json,
+    )
+except ImportError:
+    from telemetry import (
+        TelemetryManager,
+        atomic_write_json,
+        safe_read_json,
+        sanitize_for_json,
+    )
 
 ROOT = Path(__file__).resolve().parents[1]
 TEST_FILE = ROOT / "outputs" / "experiment" / "test_tue_fri.parquet"
@@ -453,6 +467,8 @@ def run_stream_simulation(
     live_feed_file: Optional[Path] = None,
     write_feed: bool = True,
     verbose: bool = True,
+    telemetry_throttle_sec: float = 0.25,
+    telemetry_throttle_flows: int = 20,
 ) -> Dict[str, Any]:
     """
     Simulates a streaming network tap / data diode ingest with chronological playback
@@ -464,9 +480,18 @@ def run_stream_simulation(
     chunk_size: Streaming chunk size for multi-batch continuity.
     v1_only: Disable v2 shadow mode and execute Champion v1 alone.
     max_buffer_capacity: Configurable safety ceiling on causal sliding context buffer.
+    telemetry_throttle_sec: Bounded interval between non-critical telemetry file writes.
+    telemetry_throttle_flows: Flow count threshold between non-critical telemetry file writes.
     """
     feed_path = Path(live_feed_file) if live_feed_file else LIVE_FEED_FILE
     parquet_path = Path(test_file) if test_file else TEST_FILE
+
+    telemetry_mgr = TelemetryManager(
+        feed_path=feed_path if write_feed else None,
+        enabled=write_feed,
+        throttle_interval_sec=telemetry_throttle_sec,
+        throttle_event_count=telemetry_throttle_flows,
+    )
 
     if verbose:
         print("=" * 75)
@@ -558,6 +583,33 @@ def run_stream_simulation(
     v2_both_alert = 0
     v2_both_pass = 0
     v2_latencies: List[float] = []
+
+    def _build_feed_state(curr_timestamp: Optional[str] = None) -> Dict[str, Any]:
+        ts = curr_timestamp or time.strftime("%H:%M:%S")
+        st = {
+            "last_updated": ts,
+            "total_processed": total_processed,
+            "total_anomalies": total_anomalies,
+            "anomaly_rate_pct": round((total_anomalies / total_processed) * 100, 2) if total_processed > 0 else 0.0,
+            "quarantine_summary": quarantine_manager.get_metrics(),
+            "recent_alerts": recent_alerts,
+        }
+        if not v1_only and v2_adapter is not None:
+            concordance = round(((v2_both_alert + v2_both_pass) / max(total_processed, 1)) * 100, 2)
+            mean_v2_lat = round(float(np.mean(v2_latencies)), 3) if v2_latencies else 0.0
+            st["v2_shadow_summary"] = {
+                "status": "EXPERIMENTAL / RESEARCH CANDIDATE",
+                "primary_anomalies": v2_primary_anomalies,
+                "primary_anomaly_rate_pct": round((v2_primary_anomalies / max(total_processed, 1)) * 100, 2),
+                "reference_anomalies": v2_reference_anomalies,
+                "reference_anomaly_rate_pct": round((v2_reference_anomalies / max(total_processed, 1)) * 100, 2),
+                "degraded_flows": v2_degraded_count,
+                "unavailable_flows": v2_unavailable_count,
+                "total_dropped_overflow_events": engine.total_dropped_overflow_events,
+                "concordance_rate_pct": concordance,
+                "mean_latency_ms": mean_v2_lat,
+            }
+        return st
 
     def _process_single_flow(flow_row: Dict[str, Any]) -> bool:
         nonlocal total_processed, total_anomalies
@@ -682,32 +734,14 @@ def run_stream_simulation(
             recent_alerts.pop(0)
 
         # Write latest state to shared live feed for Dashboard consumption
+        telemetry_mgr.record_event(is_critical=is_alert)
         if write_feed:
-            feed_state = {
-                "last_updated": curr_time,
-                "total_processed": total_processed,
-                "total_anomalies": total_anomalies,
-                "anomaly_rate_pct": round((total_anomalies / total_processed) * 100, 2) if total_processed > 0 else 0.0,
-                "quarantine_summary": quarantine_manager.get_metrics(),
-                "recent_alerts": recent_alerts,
-            }
-            if not v1_only and v2_adapter is not None:
-                concordance = round(((v2_both_alert + v2_both_pass) / max(total_processed, 1)) * 100, 2)
-                mean_v2_lat = round(float(np.mean(v2_latencies)), 3) if v2_latencies else 0.0
-                feed_state["v2_shadow_summary"] = {
-                    "status": "EXPERIMENTAL / RESEARCH CANDIDATE",
-                    "primary_anomalies": v2_primary_anomalies,
-                    "primary_anomaly_rate_pct": round((v2_primary_anomalies / max(total_processed, 1)) * 100, 2),
-                    "reference_anomalies": v2_reference_anomalies,
-                    "reference_anomaly_rate_pct": round((v2_reference_anomalies / max(total_processed, 1)) * 100, 2),
-                    "degraded_flows": v2_degraded_count,
-                    "unavailable_flows": v2_unavailable_count,
-                    "total_dropped_overflow_events": engine.total_dropped_overflow_events,
-                    "concordance_rate_pct": concordance,
-                    "mean_latency_ms": mean_v2_lat,
-                }
-            with open(feed_path, "w", encoding="utf-8") as f:
-                json.dump(feed_state, f, indent=2)
+            feed_state = _build_feed_state(curr_time)
+            telemetry_mgr.update_and_write(
+                feed_state,
+                force=is_alert,
+                recent_alert=alert_record if is_alert else None,
+            )
 
         if max_events and total_processed >= max_events:
             return False
@@ -798,32 +832,14 @@ def run_stream_simulation(
                     if len(recent_alerts) > 150:
                         recent_alerts.pop(0)
 
+                    telemetry_mgr.record_event(is_critical=True)
                     if write_feed:
-                        feed_state = {
-                            "last_updated": curr_time,
-                            "total_processed": total_processed,
-                            "total_anomalies": total_anomalies,
-                            "anomaly_rate_pct": round((total_anomalies / total_processed) * 100, 2) if total_processed > 0 else 0.0,
-                            "quarantine_summary": quarantine_manager.get_metrics(),
-                            "recent_alerts": recent_alerts,
-                        }
-                        if not v1_only and v2_adapter is not None:
-                            concordance = round(((v2_both_alert + v2_both_pass) / max(total_processed, 1)) * 100, 2)
-                            mean_v2_lat = round(float(np.mean(v2_latencies)), 3) if v2_latencies else 0.0
-                            feed_state["v2_shadow_summary"] = {
-                                "status": "EXPERIMENTAL / RESEARCH CANDIDATE",
-                                "primary_anomalies": v2_primary_anomalies,
-                                "primary_anomaly_rate_pct": round((v2_primary_anomalies / max(total_processed, 1)) * 100, 2),
-                                "reference_anomalies": v2_reference_anomalies,
-                                "reference_anomaly_rate_pct": round((v2_reference_anomalies / max(total_processed, 1)) * 100, 2),
-                                "degraded_flows": v2_degraded_count,
-                                "unavailable_flows": v2_unavailable_count,
-                                "total_dropped_overflow_events": engine.total_dropped_overflow_events,
-                                "concordance_rate_pct": concordance,
-                                "mean_latency_ms": mean_v2_lat,
-                            }
-                        with open(feed_path, "w", encoding="utf-8") as f:
-                            json.dump(feed_state, f, indent=2)
+                        feed_state = _build_feed_state(curr_time)
+                        telemetry_mgr.update_and_write(
+                            feed_state,
+                            force=True,
+                            recent_alert=q_alert,
+                        )
 
                     if max_events and total_processed >= max_events:
                         stop_early = True
@@ -852,6 +868,11 @@ def run_stream_simulation(
                 if not _process_single_flow(flow_dict):
                     break
 
+        # 7. Final telemetry flush to ensure complete and accurate final state on disk
+        if write_feed:
+            final_feed_state = _build_feed_state()
+            telemetry_mgr.flush(final_feed_state)
+
     if verbose:
         print("-" * 92)
         print(f"\nStream simulation complete. Processed {total_processed} flows, detected {total_anomalies} anomalies.")
@@ -870,6 +891,7 @@ def run_stream_simulation(
         "total_dropped_overflow_events": engine.total_dropped_overflow_events,
         "quarantine_summary": quarantine_manager.get_metrics(),
         "recent_alerts": recent_alerts,
+        "telemetry_health": telemetry_mgr.get_health(),
     }
     return summary_result
 
@@ -882,6 +904,8 @@ def main():
     parser.add_argument("--v1-only", action="store_true", help="Run in Legacy v1 Champion mode only (disable v2 shadow)")
     parser.add_argument("--max-capacity", type=int, default=10_000, help="Context buffer max capacity (default: 10,000)")
     parser.add_argument("--no-attacks", action="store_false", dest="inject_attacks", help="Disable synthetic attack injection")
+    parser.add_argument("--telemetry-throttle-sec", type=float, default=0.25, help="Telemetry disk write throttle interval in seconds (default: 0.25)")
+    parser.add_argument("--telemetry-throttle-flows", type=int, default=20, help="Telemetry disk write flow batch size (default: 20)")
     args = parser.parse_args()
 
     run_stream_simulation(
@@ -891,6 +915,8 @@ def main():
         chunk_size=args.chunk_size,
         v1_only=args.v1_only,
         max_buffer_capacity=args.max_capacity,
+        telemetry_throttle_sec=args.telemetry_throttle_sec,
+        telemetry_throttle_flows=args.telemetry_throttle_flows,
     )
 
 

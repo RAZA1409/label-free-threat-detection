@@ -30,6 +30,10 @@ RESULTS_DIR = ROOT_DIR / "reports" / "phase_2_operational_results"
 
 sys.path.append(str(SRC_DIR))
 from model_adapters import LegacyModelAdapter, PureOneWayV2Adapter
+try:
+    from src.telemetry import safe_read_json, sanitize_for_json
+except ImportError:
+    from telemetry import safe_read_json, sanitize_for_json
 
 PORT = 8501
 SERVER_START_TIME = time.time()
@@ -268,22 +272,13 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps(v2_overview).encode("utf-8"))
                 return
 
-            # Load champion metrics
+            # Load champion metrics safely
             t_path = EVAL_DIR / "temporal_autoencoder_metrics.json"
-            t_data = {}
-            if t_path.exists():
-                with open(t_path, encoding="utf-8") as f:
-                    t_data = json.load(f)
+            t_data = safe_read_json(t_path, default={})
 
-            # Load live feed stats if available
+            # Load live feed stats safely
             live_path = EVAL_DIR / "live_stream_feed.json"
-            live_data = {"total_processed": 0, "total_anomalies": 0, "recent_alerts": []}
-            if live_path.exists():
-                try:
-                    with open(live_path, encoding="utf-8") as f:
-                        live_data = json.load(f)
-                except Exception:
-                    pass
+            live_data = safe_read_json(live_path, default={"total_processed": 0, "total_anomalies": 0, "recent_alerts": []})
 
             per_cat = t_data.get("per_category", {})
             critical_count = per_cat.get("DDoS", {}).get("detected", 0) + per_cat.get("Heartbleed", {}).get("detected", 0)
@@ -341,21 +336,21 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             self.end_headers()
 
             live_path = EVAL_DIR / "live_stream_feed.json"
-            if live_path.exists():
-                try:
-                    with open(live_path, encoding="utf-8") as f:
-                        self.wfile.write(f.read().encode("utf-8"))
-                        return
-                except Exception:
-                    pass
-
-            self.wfile.write(json.dumps({
+            default_feed = {
                 "status": "idle",
                 "total_processed": 0,
                 "total_anomalies": 0,
                 "anomaly_rate_pct": 0.0,
-                "recent_alerts": []
-            }).encode("utf-8"))
+                "recent_alerts": [],
+                "telemetry_health": {
+                    "status": "HEALTHY",
+                    "consecutive_failures": 0,
+                    "total_failures": 0,
+                    "last_error": None,
+                },
+            }
+            feed_data = safe_read_json(live_path, default=default_feed)
+            self.wfile.write(json.dumps(sanitize_for_json(feed_data)).encode("utf-8"))
             return
 
         elif path == "/api/system_status":
@@ -373,11 +368,11 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
                 try:
                     mtime = os.path.getmtime(live_path)
                     stream_active = (time.time() - mtime) < 15.0
-                    with open(live_path, encoding="utf-8") as f:
-                        ld = json.load(f)
-                        last_event_time = ld.get("last_updated", "N/A")
                 except Exception:
                     pass
+
+            ld = safe_read_json(live_path, default={})
+            last_event_time = ld.get("last_updated", "N/A")
 
             status = {
                 "status": "OPERATIONAL",
