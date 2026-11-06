@@ -761,19 +761,62 @@
       <!-- VIEW 3: THREAT ANALYTICS & CATEGORY RECALL -->
       <!-- ===================================================================== -->
       <div id="view-analytics" class="space-y-6 hidden">
-        <div class="glass-panel p-5 rounded-xl border border-soc-border">
-          <h2 class="text-sm font-bold text-white">Full 14-Category Attack Recall & Confusion Diagnostics</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Comprehensive benchmark across all cyberattack classes evaluated on
-            2.3M test flows in strictly forward-only one-way traffic.</p>
+        <div class="glass-panel p-5 rounded-xl border border-soc-border flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-bold text-white">Full 14-Category Attack Recall & Confusion Diagnostics</h2>
+              <span id="analytics-active-badge" class="text-[10px] font-mono px-2 py-0.5 rounded font-semibold bg-emerald-950/80 border border-emerald-700/80 text-emerald-400">PRODUCTION CHAMPION (v1)</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Comprehensive empirical benchmark across all 14 cyberattack classes evaluated on 2,300,825 test flows in strictly forward-only one-way traffic.</p>
+            <span id="analytics-authority-note" class="text-[10px] text-cyan-400/90 font-mono block mt-1">Live Production Alert Authority: Legacy Temporal Autoencoder (v1) &middot; 32 Forward Features</span>
+          </div>
+
+          <!-- Model Switcher Buttons -->
+          <div class="flex flex-wrap items-center gap-1.5 bg-soc-elevated p-1 rounded-lg border border-soc-border">
+            <button id="btn-analytics-v1"
+              class="px-3 py-1.5 rounded-md text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40"
+              onclick="switchAnalyticsModel('legacy')">
+              Legacy v1 Champion
+            </button>
+            <button id="btn-analytics-v2-primary"
+              class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition"
+              onclick="switchAnalyticsModel('v2_primary')">
+              Pure One-Way v2 (Primary)
+            </button>
+            <button id="btn-analytics-v2-ref"
+              class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition"
+              onclick="switchAnalyticsModel('v2_reference')">
+              Pure One-Way v2 (Reference)
+            </button>
+          </div>
+        </div>
+
+        <!-- Shadow Notice Banner (visible only when v2 is selected) -->
+        <div id="analytics-shadow-banner" class="hidden glass-panel p-3.5 rounded-xl border border-amber-600/40 bg-amber-950/20 text-xs text-amber-300 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span>⚠️</span>
+            <span><strong>Shadow Evaluation Only:</strong> Pure One-Way v2 metrics are experimental and displayed for research comparison. v1 Legacy Temporal Autoencoder remains the sole active production alert authority.</span>
+          </div>
+          <span class="text-[10px] font-mono text-amber-400/80">NON-AUTHORITATIVE</span>
+        </div>
+
+        <!-- Status / Error Banner -->
+        <div id="analytics-status-banner" class="hidden glass-panel p-3.5 rounded-xl border border-rose-800 bg-rose-950/40 text-xs text-rose-300 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span>❌</span>
+            <span id="analytics-status-msg">Failed to load analytics data</span>
+          </div>
+          <button onclick="dismissAnalyticsStatusBanner()" class="text-slate-400 hover:text-white text-xs">&times; Dismiss</button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Full Category Chart (2 Cols) -->
           <div class="lg:col-span-2 glass-panel p-5 rounded-xl space-y-4">
             <div class="flex items-center justify-between">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Detection Rate per Attack Category
-                (%)</h3>
-              <span class="text-xs text-slate-400">Green = &gt;50% &middot; Amber = 15-50% &middot; Red = &lt;15%</span>
+              <h3 id="analytics-chart-title" class="text-xs font-bold uppercase tracking-wider text-slate-200">
+                Detection Rate per Attack Category (%) — Legacy Champion (v1)
+              </h3>
+              <span class="text-xs text-slate-400">Green = &gt;50% &middot; Amber = 15-50% &middot; Red = &lt;15% &middot; Gray = N/A</span>
             </div>
             <div class="h-96">
               <canvas id="analyticsCategoryChart"></canvas>
@@ -782,30 +825,32 @@
 
           <!-- Confusion Matrix Card (1 Col) -->
           <div class="glass-panel p-5 rounded-xl space-y-4">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Confusion Matrix (2,300,825 Flows)
-            </h3>
-            <p class="text-xs text-slate-400">Binary classification at calibrated 0.2% FPR threshold.</p>
+            <div class="flex items-center justify-between">
+              <h3 id="analytics-cm-title" class="text-xs font-bold uppercase tracking-wider text-slate-200">Confusion Matrix</h3>
+              <span id="analytics-total-flows" class="text-[10px] font-mono text-slate-400">2,300,825 Flows</span>
+            </div>
+            <p id="analytics-cm-subtitle" class="text-xs text-slate-400">Binary classification at calibrated threshold (τ = 0.190885).</p>
 
             <div class="grid grid-cols-2 gap-2 text-center text-xs">
               <div class="bg-emerald-950/40 border border-emerald-800/60 p-3 rounded-lg">
                 <div class="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">True Positives</div>
-                <div class="text-xl font-bold font-mono text-emerald-300 mt-0.5">519,031</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Attacks Caught (93.1%)</div>
+                <div id="analytics-cm-tp" class="text-xl font-bold font-mono text-emerald-300 mt-0.5">--</div>
+                <div id="analytics-cm-tp-pct" class="text-[10px] text-slate-400 mt-0.5">Attacks Caught (--)</div>
               </div>
               <div class="bg-rose-950/40 border border-rose-800/60 p-3 rounded-lg">
                 <div class="text-[10px] uppercase tracking-wider text-rose-400 font-bold">False Positives</div>
-                <div class="text-xl font-bold font-mono text-rose-300 mt-0.5">217,598</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Benign Alarms (12.5%)</div>
+                <div id="analytics-cm-fp" class="text-xl font-bold font-mono text-rose-300 mt-0.5">--</div>
+                <div id="analytics-cm-fp-pct" class="text-[10px] text-slate-400 mt-0.5">Benign Alarms (--)</div>
               </div>
               <div class="bg-amber-950/40 border border-amber-800/60 p-3 rounded-lg">
                 <div class="text-[10px] uppercase tracking-wider text-amber-400 font-bold">False Negatives</div>
-                <div class="text-xl font-bold font-mono text-amber-300 mt-0.5">38,615</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Attacks Missed (6.9%)</div>
+                <div id="analytics-cm-fn" class="text-xl font-bold font-mono text-amber-300 mt-0.5">--</div>
+                <div id="analytics-cm-fn-pct" class="text-[10px] text-slate-400 mt-0.5">Attacks Missed (--)</div>
               </div>
               <div class="bg-slate-800/60 border border-slate-700 p-3 rounded-lg">
                 <div class="text-[10px] uppercase tracking-wider text-slate-300 font-bold">True Negatives</div>
-                <div class="text-xl font-bold font-mono text-slate-200 mt-0.5">1,525,581</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Benign Passed (87.5%)</div>
+                <div id="analytics-cm-tn" class="text-xl font-bold font-mono text-slate-200 mt-0.5">--</div>
+                <div id="analytics-cm-tn-pct" class="text-[10px] text-slate-400 mt-0.5">Benign Passed (--)</div>
               </div>
             </div>
 
@@ -813,21 +858,69 @@
             <div class="border-t border-soc-border pt-3 space-y-2 text-xs">
               <div class="flex justify-between text-slate-300">
                 <span>Precision (TP purity):</span>
-                <span class="font-mono text-indigo-400 font-bold">70.46%</span>
+                <span id="analytics-precision" class="font-mono text-indigo-400 font-bold">--</span>
               </div>
               <div class="flex justify-between text-slate-300">
                 <span>Recall (Threat capture):</span>
-                <span class="font-mono text-emerald-400 font-bold">93.08%</span>
+                <span id="analytics-recall" class="font-mono text-emerald-400 font-bold">--</span>
               </div>
               <div class="flex justify-between text-slate-300">
                 <span>Average Precision (PR-AUC):</span>
-                <span class="font-mono text-purple-400 font-bold">0.8783</span>
+                <span id="analytics-prauc" class="font-mono text-purple-400 font-bold">--</span>
               </div>
               <div class="flex justify-between text-slate-300">
-                <span>Calibrated Score Cutoff:</span>
-                <span class="font-mono text-cyan-400 font-bold">0.190885</span>
+                <span>Calibrated Cutoff:</span>
+                <span id="analytics-threshold" class="font-mono text-cyan-400 font-bold">--</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Per-Attack Category Breakdown Table -->
+        <div class="glass-panel rounded-xl overflow-hidden border border-soc-border space-y-0">
+          <div class="px-5 py-3.5 border-b border-soc-border flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">
+                Empirical Per-Attack Category Detection & Confusion Diagnostics
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">
+                Evaluated on held-out Tuesday–Friday evaluation traffic (2,300,825 total flows: 557,646 attack flows across 14 categories).
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="analytics-table-model-tag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800 text-cyan-300">
+                Model: Legacy Temporal Autoencoder (v1)
+              </span>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="bg-soc-elevated text-slate-400 uppercase text-[10px] tracking-wider font-sans">
+                <tr>
+                  <th class="px-4 py-2.5">Attack Category</th>
+                  <th class="px-4 py-2.5 text-right">Attack Count</th>
+                  <th class="px-4 py-2.5 text-right">Detected (TP)</th>
+                  <th class="px-4 py-2.5 text-right">Missed (FN)</th>
+                  <th class="px-4 py-2.5 text-right">Detection Rate / Recall</th>
+                  <th class="px-4 py-2.5 text-right">Precision</th>
+                  <th class="px-4 py-2.5 text-right">F1-Score</th>
+                  <th class="px-4 py-2.5 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-attack-tbody" class="divide-y divide-soc-border text-slate-300">
+                <tr>
+                  <td colspan="8" class="px-4 py-8 text-center text-slate-500 font-sans">
+                    Loading threat analytics evaluation data...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="px-5 py-2.5 border-t border-soc-border bg-soc-elevated/40 flex flex-wrap items-center justify-between text-[11px] text-slate-400 font-sans">
+            <span>Only empirical evaluation data supported by ground truth test splits is displayed. Categories without data are marked UNAVAILABLE.</span>
+            <span class="font-mono text-cyan-400" id="analytics-table-summary">14 of 14 categories evaluated</span>
           </div>
         </div>
       </div>
@@ -1647,6 +1740,7 @@
     let apiSyncStatus = { metrics: false, models: false, compare: false };
     let syncErrors = [];
     let isDataStale = false;
+    let activeAnalyticsModel = 'legacy';
 
     // Toast Notification helper
     function showToast(message, type = "info") {
@@ -1710,6 +1804,7 @@
       } else if (viewKey === 'analytics') {
         setTimeout(() => {
           if (analyticsChartInstance) analyticsChartInstance.resize();
+          fetchThreatAnalytics(activeAnalyticsModel);
         }, 50);
       }
     }
@@ -2758,6 +2853,191 @@
       navigateXaiFlow(1);
     }
 
+    // Threat Analytics Engine (Real Per-Attack Category Metrics & Breakdown Table)
+    async function fetchThreatAnalytics(modelKey = activeAnalyticsModel) {
+      activeAnalyticsModel = modelKey;
+      const banner = document.getElementById('analytics-status-banner');
+      const bannerMsg = document.getElementById('analytics-status-msg');
+      const shadowBanner = document.getElementById('analytics-shadow-banner');
+      const activeBadge = document.getElementById('analytics-active-badge');
+      const authNote = document.getElementById('analytics-authority-note');
+      const tableTag = document.getElementById('analytics-table-model-tag');
+      const chartTitle = document.getElementById('analytics-chart-title');
+
+      // Update switcher buttons UI
+      const btnV1 = document.getElementById('btn-analytics-v1');
+      const btnV2P = document.getElementById('btn-analytics-v2-primary');
+      const btnV2R = document.getElementById('btn-analytics-v2-ref');
+
+      if (btnV1 && btnV2P && btnV2R) {
+        btnV1.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition";
+        btnV2P.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition";
+        btnV2R.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition";
+
+        if (modelKey === 'legacy' || modelKey === 'v1' || modelKey === 'temporal_ae') {
+          btnV1.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40";
+        } else if (modelKey === 'v2_primary' || modelKey === 'v2' || modelKey === 'pure_oneway_v2') {
+          btnV2P.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-600 text-white shadow cursor-pointer transition border border-amber-400/50";
+        } else if (modelKey === 'v2_reference' || modelKey === 'v2_ref' || modelKey === 'pure_oneway_v2_ref') {
+          btnV2R.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-600 text-white shadow cursor-pointer transition border border-amber-400/50";
+        }
+      }
+
+      try {
+        const res = await fetch(`/api/threat_analytics?model=${encodeURIComponent(modelKey)}`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        const data = await res.json();
+        if (banner) banner.classList.add('hidden');
+
+        // Update Champion vs Shadow Badges
+        if (data.is_production_champion) {
+          if (shadowBanner) shadowBanner.classList.add('hidden');
+          if (activeBadge) {
+            activeBadge.textContent = "PRODUCTION CHAMPION (v1)";
+            activeBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded font-semibold bg-emerald-950/80 border border-emerald-700/80 text-emerald-400";
+          }
+          if (authNote) {
+            authNote.textContent = data.authority_note || "Live Production Alert Authority: Legacy Temporal Autoencoder (v1) · 32 Forward Features";
+            authNote.className = "text-[10px] text-cyan-400/90 font-mono block mt-1";
+          }
+        } else {
+          if (shadowBanner) shadowBanner.classList.remove('hidden');
+          if (activeBadge) {
+            activeBadge.textContent = "EXPERIMENTAL SHADOW CANDIDATE (v2)";
+            activeBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded font-semibold bg-amber-950/80 border border-amber-600/80 text-amber-300";
+          }
+          if (authNote) {
+            authNote.textContent = data.authority_note || "Shadow Inspection Only — v1 remains live production alert authority.";
+            authNote.className = "text-[10px] text-amber-400/90 font-mono block mt-1";
+          }
+        }
+
+        if (tableTag) tableTag.textContent = `Model: ${data.model_name}`;
+        if (chartTitle) chartTitle.textContent = `Detection Rate per Attack Category (%) — ${data.model_name}`;
+
+        // Update Confusion Matrix Card
+        const cm = data.confusion_matrix || {};
+        const sum = data.summary_metrics || {};
+        const totalFlows = data.total_flows || 2300825;
+
+        const elTp = document.getElementById('analytics-cm-tp');
+        const elFp = document.getElementById('analytics-cm-fp');
+        const elFn = document.getElementById('analytics-cm-fn');
+        const elTn = document.getElementById('analytics-cm-tn');
+        const elTpPct = document.getElementById('analytics-cm-tp-pct');
+        const elFpPct = document.getElementById('analytics-cm-fp-pct');
+        const elFnPct = document.getElementById('analytics-cm-fn-pct');
+        const elTnPct = document.getElementById('analytics-cm-tn-pct');
+        const elPrec = document.getElementById('analytics-precision');
+        const elRecall = document.getElementById('analytics-recall');
+        const elPrauc = document.getElementById('analytics-prauc');
+        const elThresh = document.getElementById('analytics-threshold');
+        const elTotal = document.getElementById('analytics-total-flows');
+        const elSub = document.getElementById('analytics-cm-subtitle');
+
+        if (elTp) elTp.textContent = (cm.tp != null) ? cm.tp.toLocaleString() : "N/A";
+        if (elFp) elFp.textContent = (cm.fp != null) ? cm.fp.toLocaleString() : "N/A";
+        if (elFn) elFn.textContent = (cm.fn != null) ? cm.fn.toLocaleString() : "N/A";
+        if (elTn) elTn.textContent = (cm.tn != null) ? cm.tn.toLocaleString() : "N/A";
+
+        if (elTpPct) elTpPct.textContent = (sum.recall_pct != null) ? `Attacks Caught (${Number(sum.recall_pct).toFixed(1)}%)` : "Attacks Caught (N/A)";
+        if (elFpPct) elFpPct.textContent = (sum.false_positive_rate_pct != null) ? `Benign Alarms (${Number(sum.false_positive_rate_pct).toFixed(1)}%)` : "Benign Alarms (N/A)";
+        if (elFnPct) elFnPct.textContent = (sum.false_negative_rate_pct != null) ? `Attacks Missed (${Number(sum.false_negative_rate_pct).toFixed(1)}%)` : "Attacks Missed (N/A)";
+        if (elTnPct) elTnPct.textContent = (sum.specificity_pct != null) ? `Benign Passed (${Number(sum.specificity_pct).toFixed(1)}%)` : "Benign Passed (N/A)";
+
+        if (elPrec) elPrec.textContent = (sum.precision_pct != null) ? `${Number(sum.precision_pct).toFixed(2)}%` : "N/A";
+        if (elRecall) elRecall.textContent = (sum.recall_pct != null) ? `${Number(sum.recall_pct).toFixed(2)}%` : "N/A";
+        if (elPrauc) elPrauc.textContent = (sum.pr_auc != null) ? Number(sum.pr_auc).toFixed(4) : "N/A";
+        if (elThresh) elThresh.textContent = (data.threshold != null) ? parseFloat(data.threshold).toFixed(6) : "N/A";
+        if (elTotal) elTotal.textContent = `${totalFlows.toLocaleString()} Flows`;
+        if (elSub) elSub.textContent = `Binary classification at calibrated threshold (τ = ${parseFloat(data.threshold || 0).toFixed(6)}).`;
+
+        // Update Chart
+        if (analyticsChartInstance && Array.isArray(data.categories)) {
+          analyticsChartInstance.data.labels = data.categories.map(c => c.category);
+          analyticsChartInstance.data.datasets[0].data = data.categories.map(c => c.recall_pct != null ? c.recall_pct : 0.0);
+          analyticsChartInstance.data.datasets[0].backgroundColor = data.categories.map(c => {
+            if (c.status === "UNAVAILABLE" || c.recall_pct == null) return "#475569";
+            return c.recall_pct >= 50.0 ? "#10b981" : (c.recall_pct >= 15.0 ? "#f59e0b" : "#ef4444");
+          });
+          analyticsChartInstance.update();
+        }
+
+        // Update Per-Attack Category Breakdown Table
+        const tbody = document.getElementById('analytics-attack-tbody');
+        if (tbody && Array.isArray(data.categories)) {
+          tbody.innerHTML = data.categories.map(cat => {
+            const isAvail = cat.status === "AVAILABLE" && cat.recall_pct != null;
+            const totalStr = cat.total_count != null ? cat.total_count.toLocaleString() : `<span class="text-slate-500">N/A</span>`;
+            const detStr = cat.detected_count != null ? cat.detected_count.toLocaleString() : `<span class="text-slate-500">N/A</span>`;
+            const missStr = cat.missed_count != null ? cat.missed_count.toLocaleString() : `<span class="text-slate-500">N/A</span>`;
+
+            let recallStr = `<span class="text-slate-500">N/A</span>`;
+            let statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-slate-800 text-slate-400 border border-slate-700">UNAVAILABLE</span>`;
+
+            if (isAvail) {
+              if (cat.recall_pct >= 50.0) {
+                recallStr = `<span class="text-emerald-400 font-bold">${cat.recall_pct.toFixed(2)}%</span>`;
+                statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800">STRONG (&ge;50%)</span>`;
+              } else if (cat.recall_pct >= 15.0) {
+                recallStr = `<span class="text-amber-400 font-bold">${cat.recall_pct.toFixed(2)}%</span>`;
+                statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-amber-950/80 text-amber-400 border border-amber-800">MODERATE (15-50%)</span>`;
+              } else {
+                recallStr = `<span class="text-rose-400 font-bold">${cat.recall_pct.toFixed(2)}%</span>`;
+                statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-rose-950/80 text-rose-400 border border-rose-800">SUPPRESSED (&lt;15%)</span>`;
+              }
+            }
+
+            const precStr = (cat.precision_pct != null)
+              ? `<span class="text-indigo-400">${cat.precision_pct.toFixed(2)}%</span>`
+              : `<span class="text-slate-500">N/A</span>`;
+
+            const f1Str = (cat.f1_score != null)
+              ? `<span class="text-slate-300">${cat.f1_score.toFixed(4)}</span>`
+              : `<span class="text-slate-500">N/A</span>`;
+
+            return `
+              <tr class="hover:bg-slate-800/40 transition">
+                <td class="px-4 py-2.5 font-bold font-sans ${isAvail && cat.recall_pct >= 50.0 ? 'text-emerald-300' : 'text-slate-200'}">
+                  ${cat.category}
+                </td>
+                <td class="px-4 py-2.5 text-right font-mono">${totalStr}</td>
+                <td class="px-4 py-2.5 text-right font-mono ${isAvail && cat.detected_count > 0 ? 'text-emerald-400 font-bold' : 'text-slate-400'}">${detStr}</td>
+                <td class="px-4 py-2.5 text-right font-mono ${isAvail && cat.missed_count > 0 ? 'text-amber-400' : 'text-slate-400'}">${missStr}</td>
+                <td class="px-4 py-2.5 text-right font-mono">${recallStr}</td>
+                <td class="px-4 py-2.5 text-right font-mono">${precStr}</td>
+                <td class="px-4 py-2.5 text-right font-mono">${f1Str}</td>
+                <td class="px-4 py-2.5 text-center">${statusBadge}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        const summaryEl = document.getElementById('analytics-table-summary');
+        if (summaryEl) {
+          summaryEl.textContent = `${data.available_categories_count} of ${data.total_categories_count} categories empirically evaluated`;
+        }
+
+      } catch (err) {
+        console.error("Threat analytics fetch error:", err);
+        if (banner) {
+          banner.classList.remove('hidden');
+          if (bannerMsg) bannerMsg.textContent = `Failed to load threat analytics: ${err.message}. Backend offline or invalid model.`;
+        }
+      }
+    }
+
+    function switchAnalyticsModel(modelKey) {
+      fetchThreatAnalytics(modelKey);
+    }
+
+    function dismissAnalyticsStatusBanner() {
+      const banner = document.getElementById('analytics-status-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+
     // Chart.js Visualizations
     function initCharts() {
       // 1. Overview Attack Bar Chart
@@ -2954,6 +3234,7 @@
 
       updateCalibrationDisplay();
       fetchModelData();
+      fetchThreatAnalytics(activeAnalyticsModel);
     });
   </script>
 </body>

@@ -44,6 +44,179 @@ EXPLAINER = None
 LEGACY_ADAPTER = LegacyModelAdapter()
 V2_ADAPTER = PureOneWayV2Adapter()
 
+CANONICAL_ATTACK_CATEGORIES = [
+    "Bot",
+    "DDoS",
+    "DoS GoldenEye",
+    "DoS Hulk",
+    "DoS Slowhttptest",
+    "DoS slowloris",
+    "FTP-Patator",
+    "Heartbleed",
+    "Infiltration",
+    "PortScan",
+    "SSH-Patator",
+    "Web Attack - Brute Force",
+    "Web Attack - Sql Injection",
+    "Web Attack - XSS",
+]
+
+
+def get_threat_analytics(model_key: str = "legacy") -> dict:
+    normalized = (model_key or "legacy").strip().lower()
+
+    if normalized in ("legacy", "v1", "temporal_ae", "legacy_champion", "legacy_champion_v1"):
+        target_model_id = "legacy_champion_v1"
+        model_name = "Legacy Temporal Autoencoder (v1)"
+        status = "PRODUCTION CHAMPION"
+        is_champion = True
+        dims = 32
+        thresh = 0.190885
+        target_fpr = 0.002
+        authority_note = "Active Live Production Alert Authority (32 forward features, weighted MSE, threshold 0.190885)"
+    elif normalized in ("v2", "v2_primary", "pure_oneway_v2", "pure_one_way_v2_primary", "primary"):
+        target_model_id = "pure_one_way_v2_primary"
+        model_name = "Pure One-Way Autoencoder (v2 Primary)"
+        status = "EXPERIMENTAL / RESEARCH CANDIDATE"
+        is_champion = False
+        dims = 26
+        thresh = getattr(V2_ADAPTER, "primary_threshold", 0.314036)
+        target_fpr = 0.002
+        authority_note = "Experimental Shadow Candidate (alpha = 0.2%) — Non-authoritative inspection. v1 remains live production alert authority."
+    elif normalized in ("v2_ref", "v2_reference", "pure_oneway_v2_ref", "pure_one_way_v2_reference", "reference"):
+        target_model_id = "pure_one_way_v2_reference"
+        model_name = "Pure One-Way Autoencoder (v2 Reference)"
+        status = "EXPERIMENTAL / RESEARCH CANDIDATE"
+        is_champion = False
+        dims = 26
+        thresh = getattr(V2_ADAPTER, "reference_threshold", 0.099018)
+        target_fpr = 0.01
+        authority_note = "Experimental Shadow Candidate (alpha = 1.0%) — Non-authoritative inspection. v1 remains live production alert authority."
+    else:
+        return None
+
+    res_path = RESULTS_DIR / "overall_metrics.json"
+    overall_data = safe_read_json(res_path, default={})
+    m_data = overall_data.get("models", {}).get(target_model_id, {})
+
+    # If missing from overall_metrics.json and legacy is requested, fallback to temporal_autoencoder_metrics.json
+    if not m_data and is_champion:
+        t_path = EVAL_DIR / "temporal_autoencoder_metrics.json"
+        t_data = safe_read_json(t_path, default={})
+        if t_data:
+            m_data = {
+                "total_flows": 2300825,
+                "benign_flows": 1743179,
+                "attack_flows": 557646,
+                "confusion_matrix": {
+                    "tp": t_data.get("tp", 519031),
+                    "fp": t_data.get("fp", 217598),
+                    "tn": t_data.get("tn", 1525581),
+                    "fn": t_data.get("fn", 38615),
+                },
+                "rates": {
+                    "detection_rate_pct": t_data.get("detection_rate_pct", 93.08),
+                    "false_positive_rate_pct": t_data.get("false_positive_rate_pct", 12.48),
+                    "false_negative_rate_pct": round(100.0 - float(t_data.get("detection_rate_pct", 93.08)), 4),
+                    "specificity_pct": round(100.0 - float(t_data.get("false_positive_rate_pct", 12.48)), 4),
+                },
+                "classification_metrics": {
+                    "precision_pct": t_data.get("precision_pct", 70.46),
+                    "f1_score": 0.8019,
+                    "accuracy_pct": 88.8642,
+                },
+                "continuous_curves": {
+                    "pr_auc": t_data.get("average_precision", 0.8783),
+                    "roc_auc": 0.9538,
+                },
+                "per_category": t_data.get("per_category", {}),
+            }
+
+    cm = m_data.get("confusion_matrix", {})
+    rates = m_data.get("rates", {})
+    cls_metrics = m_data.get("classification_metrics", {})
+    curves = m_data.get("continuous_curves", {})
+    per_cat = m_data.get("per_category", {})
+
+    categories_list = []
+    for cat_name in CANONICAL_ATTACK_CATEGORIES:
+        if cat_name in per_cat:
+            c = per_cat[cat_name]
+            total_cnt = c.get("total")
+            det_cnt = c.get("detected")
+            miss_cnt = c.get("missed")
+            rec_val = c.get("recall_pct") if c.get("recall_pct") is not None else c.get("detection_rate_pct")
+            prec_val = c.get("specific_precision_pct") if c.get("specific_precision_pct") is not None else c.get("precision_pct")
+            f1_val = c.get("specific_f1_score") if c.get("specific_f1_score") is not None else c.get("f1_score")
+            categories_list.append({
+                "category": cat_name,
+                "total_count": total_cnt,
+                "detected_count": det_cnt,
+                "missed_count": miss_cnt,
+                "recall_pct": round(float(rec_val), 2) if rec_val is not None else None,
+                "precision_pct": round(float(prec_val), 2) if prec_val is not None else None,
+                "f1_score": round(float(f1_val), 4) if f1_val is not None else None,
+                "status": "AVAILABLE",
+            })
+        else:
+            categories_list.append({
+                "category": cat_name,
+                "total_count": None,
+                "detected_count": None,
+                "missed_count": None,
+                "recall_pct": None,
+                "precision_pct": None,
+                "f1_score": None,
+                "status": "UNAVAILABLE",
+            })
+
+    benign_raw = per_cat.get("BENIGN", {})
+    benign_summary = {
+        "total_count": benign_raw.get("total", 1743179),
+        "false_positives": benign_raw.get("detected_as_anomaly", benign_raw.get("detected", cm.get("fp"))),
+        "true_negatives": benign_raw.get("classified_benign", benign_raw.get("missed", cm.get("tn"))),
+        "fpr_pct": benign_raw.get("false_positive_rate_pct", rates.get("false_positive_rate_pct")),
+        "accuracy_pct": benign_raw.get("accuracy_pct"),
+    }
+
+    return {
+        "status": "SUCCESS",
+        "model_id": target_model_id,
+        "model_name": model_name,
+        "model_status": status,
+        "is_production_champion": is_champion,
+        "authority_note": authority_note,
+        "feature_count": dims,
+        "threshold": thresh,
+        "target_calibration_fpr": target_fpr,
+        "dataset": "outputs/experiment/test_tue_fri.parquet",
+        "total_flows": m_data.get("total_flows", 2300825),
+        "benign_flows": m_data.get("benign_flows", 1743179),
+        "attack_flows": m_data.get("attack_flows", 557646),
+        "confusion_matrix": {
+            "tp": cm.get("tp"),
+            "fp": cm.get("fp"),
+            "tn": cm.get("tn"),
+            "fn": cm.get("fn"),
+        },
+        "summary_metrics": {
+            "recall_pct": rates.get("detection_rate_pct"),
+            "false_positive_rate_pct": rates.get("false_positive_rate_pct"),
+            "false_negative_rate_pct": rates.get("false_negative_rate_pct"),
+            "specificity_pct": rates.get("specificity_pct"),
+            "precision_pct": cls_metrics.get("precision_pct"),
+            "f1_score": cls_metrics.get("f1_score"),
+            "accuracy_pct": cls_metrics.get("accuracy_pct"),
+            "pr_auc": curves.get("pr_auc"),
+            "roc_auc": curves.get("roc_auc"),
+        },
+        "benign": benign_summary,
+        "categories": categories_list,
+        "total_categories_count": len(CANONICAL_ATTACK_CATEGORIES),
+        "available_categories_count": sum(1 for c in categories_list if c["status"] == "AVAILABLE"),
+        "missing_categories_count": sum(1 for c in categories_list if c["status"] == "UNAVAILABLE"),
+    }
+
 
 def get_explainer():
     global EXPLAINER
@@ -388,6 +561,65 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             }
 
             self.wfile.write(json.dumps(overview).encode("utf-8"))
+            return
+
+        elif path in ("/api/threat_analytics", "/api/attack_metrics"):
+            query = parse_qs(parsed.query)
+            requested_model = query.get("model", ["legacy"])[0]
+
+            if requested_model.lower() == "all":
+                all_payload = {
+                    "status": "SUCCESS",
+                    "production_champion_id": "legacy_champion_v1",
+                    "models": {
+                        "legacy_champion_v1": get_threat_analytics("legacy"),
+                        "pure_one_way_v2_primary": get_threat_analytics("v2_primary"),
+                        "pure_one_way_v2_reference": get_threat_analytics("v2_reference"),
+                    }
+                }
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps(sanitize_for_json(all_payload)).encode("utf-8"))
+                return
+
+            analytics = get_threat_analytics(requested_model)
+            if analytics is None:
+                self.send_response(404)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "NOT_FOUND",
+                    "error": f"Model '{requested_model}' not found in evaluated analytics catalog.",
+                    "available_models": ["legacy", "v2_primary", "v2_reference", "all"],
+                }).encode("utf-8"))
+                return
+
+            # Optional category filter
+            req_cat = query.get("category", [None])[0]
+            if req_cat:
+                matched = [c for c in analytics["categories"] if c["category"].lower() == req_cat.lower()]
+                if not matched:
+                    analytics["filtered_category"] = {
+                        "category": req_cat,
+                        "status": "UNAVAILABLE",
+                        "total_count": None,
+                        "detected_count": None,
+                        "missed_count": None,
+                        "recall_pct": None,
+                        "precision_pct": None,
+                        "f1_score": None,
+                    }
+                else:
+                    analytics["filtered_category"] = matched[0]
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(sanitize_for_json(analytics)).encode("utf-8"))
             return
 
         elif path == "/api/live_feed":
