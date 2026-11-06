@@ -345,34 +345,48 @@
       <!-- ===================================================================== -->
       <div id="view-overview" class="space-y-6">
 
-        <!-- Banner Alert: Model Breakthrough -->
-        <div
+        <!-- Banner Alert: Model Breakthrough & Production Authority -->
+        <div id="ov-banner-container"
           class="glass-panel p-4 rounded-xl border-l-4 border-l-cyan-500 flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center space-x-3.5">
-            <div
+            <div id="ov-banner-icon"
               class="w-10 h-10 rounded-lg bg-cyan-950/80 border border-cyan-800 flex items-center justify-center text-cyan-400 flex-shrink-0">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
             <div>
-              <div class="flex items-center gap-2">
-                <h2 class="text-sm font-bold text-white">Temporal Flow Velocity Autoencoder Active</h2>
-                <span
-                  class="text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full">SOTA
-                  93.08% Recall</span>
-                <span
-                  class="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">AP:
-                  0.8783</span>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 id="ov-banner-title" class="text-sm font-bold text-white">Temporal Flow Velocity Autoencoder Active</h2>
+                <span id="ov-banner-badge"
+                  class="text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full">PRODUCTION CHAMPION</span>
+                <span id="ov-banner-recall"
+                  class="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">Recall: 93.08%</span>
+                <span id="ov-banner-ap"
+                  class="text-[10px] font-mono text-purple-300 bg-purple-950/60 px-2 py-0.5 rounded border border-purple-800">AP: 0.8783</span>
               </div>
-              <p class="text-xs text-slate-400 mt-0.5">Physical forward features augmented with 10-second rolling flow
-                velocity, catching 519,031 zero-day attacks without reverse telemetry.</p>
+              <p id="ov-banner-desc" class="text-xs text-slate-400 mt-1">Physical forward features augmented with 10-second rolling flow velocity, catching 519,031 zero-day attacks without reverse telemetry.</p>
             </div>
           </div>
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center space-x-3">
+            <!-- Model Switcher Buttons -->
+            <div class="flex items-center gap-1 bg-soc-elevated p-1 rounded-lg border border-soc-border">
+              <button id="ov-btn-v1" onclick="switchOverviewModel('legacy')"
+                class="px-2.5 py-1 rounded text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40">
+                Legacy v1 Champion
+              </button>
+              <button id="ov-btn-v2-primary" onclick="switchOverviewModel('v2_primary')"
+                class="px-2.5 py-1 rounded text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition">
+                Pure One-Way v2 (Primary)
+              </button>
+              <button id="ov-btn-v2-ref" onclick="switchOverviewModel('v2_reference')"
+                class="px-2.5 py-1 rounded text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition">
+                Pure One-Way v2 (Reference)
+              </button>
+            </div>
             <button onclick="switchView('live')"
-              class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-medium transition shadow flex items-center gap-1.5">
-              <span>Inspect Live Ingestion Feed</span>
+              class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-xs font-medium transition shadow flex items-center gap-1.5">
+              <span>Live Radar</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
@@ -380,54 +394,86 @@
           </div>
         </div>
 
+        <!-- Live Sensor & Optical Stream Telemetry Strip -->
+        <div class="glass-panel px-4 py-3 rounded-xl border border-soc-border flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center space-x-3">
+            <span class="flex h-2.5 w-2.5 relative">
+              <span id="ov-live-pulse" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span id="ov-live-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <div class="text-xs">
+              <span class="font-bold text-white tracking-wide uppercase">Optical Diode Telemetry</span>
+              <span class="text-slate-400 ml-2 hidden sm:inline">Live operational counters segregated from benchmark test evaluation</span>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-6 text-xs font-mono">
+            <div>
+              <span class="text-slate-400 uppercase text-[10px] block">Live Flows Ingested</span>
+              <span id="ov-live-processed" class="font-bold text-white">0</span>
+            </div>
+            <div>
+              <span class="text-slate-400 uppercase text-[10px] block">Live Anomalies Flagged</span>
+              <span id="ov-live-alerts" class="font-bold text-rose-400">0</span>
+            </div>
+            <div>
+              <span class="text-slate-400 uppercase text-[10px] block">Buffer Status</span>
+              <span id="ov-live-buffer" class="font-bold text-emerald-400">ONLINE</span>
+            </div>
+            <div>
+              <span class="text-slate-400 uppercase text-[10px] block">Diode Model Status</span>
+              <span id="ov-model-availability" class="font-bold text-cyan-400">v1 ONLINE (CHAMPION)</span>
+            </div>
+          </div>
+        </div>
+
         <!-- KPI Summary Cards (6-Column Responsive Grid) -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <!-- KPI 1 -->
+          <!-- KPI 1: Evaluated Flows -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>Test Flows</span>
+              <span>Evaluated Flows</span>
               <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z" />
               </svg>
             </div>
             <div class="text-xl font-bold text-white font-mono" id="ov-kpi-total">2,300,825</div>
-            <div class="text-[11px] text-slate-400 flex items-center justify-between">
-              <span>1.74M Benign</span>
-              <span class="text-slate-400">557K Threats</span>
+            <div class="text-[11px] text-slate-400 flex items-center justify-between" id="ov-kpi-total-sub">
+              <span id="ov-kpi-benign">1.74M Benign</span>
+              <span id="ov-kpi-threats" class="text-slate-400">557K Threats</span>
             </div>
           </div>
 
-          <!-- KPI 2 -->
+          <!-- KPI 2: Detection Recall -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>Overall Recall</span>
+              <span>Detection Recall</span>
               <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div class="text-xl font-bold text-emerald-400 font-mono" id="ov-kpi-recall">93.08%</div>
-            <div class="text-[11px] text-slate-400 flex items-center justify-between">
-              <span class="text-emerald-400 font-medium">519,031 Caught</span>
-              <span>38,615 Missed</span>
+            <div class="text-[11px] text-slate-400 flex items-center justify-between" id="ov-kpi-recall-sub">
+              <span id="ov-kpi-caught" class="text-emerald-400 font-medium">519,031 Caught</span>
+              <span id="ov-kpi-missed">38,615 Missed</span>
             </div>
           </div>
 
-          <!-- KPI 3 -->
+          <!-- KPI 3: False-Positive Rate -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>Average Precision</span>
-              <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span>False-Positive Rate</span>
+              <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <div class="text-xl font-bold text-purple-400 font-mono" id="ov-kpi-ap">0.8783</div>
-            <div class="text-[11px] text-slate-400">PR-AUC (14 Attack Classes)</div>
+            <div class="text-xl font-bold text-rose-400 font-mono" id="ov-kpi-fpr">12.48%</div>
+            <div class="text-[11px] text-slate-400" id="ov-kpi-fpr-sub">Target: 0.2% | Observed</div>
           </div>
 
-          <!-- KPI 4 -->
+          <!-- KPI 4: Detection Precision -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
               <span>Detection Precision</span>
@@ -437,33 +483,34 @@
               </svg>
             </div>
             <div class="text-xl font-bold text-indigo-400 font-mono" id="ov-kpi-prec">70.46%</div>
-            <div class="text-[11px] text-slate-400">At 0.2% Calib FPR</div>
+            <div class="text-[11px] text-slate-400" id="ov-kpi-prec-sub">True Positive Purity</div>
           </div>
 
-          <!-- KPI 5 -->
+          <!-- KPI 5: F1 Score -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>Inference Latency</span>
+              <span>F1 Score</span>
               <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
-            <div class="text-xl font-bold text-amber-400 font-mono" id="ov-kpi-lat">0.012 ms</div>
-            <div class="text-[11px] text-slate-400">83,000+ Flows/sec</div>
+            <div class="text-xl font-bold text-amber-400 font-mono" id="ov-kpi-f1">0.8020</div>
+            <div class="text-[11px] text-slate-400" id="ov-kpi-f1-sub">Harmonic Mean</div>
           </div>
 
-          <!-- KPI 6 -->
+          <!-- KPI 6: Average Precision & Inference Latency -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>PortScan Recall</span>
-              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <span>Average Precision</span>
+              <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
               </svg>
             </div>
-            <div class="text-xl font-bold text-cyan-400 font-mono">99.79%</div>
-            <div class="text-[11px] text-slate-400">158,601 / 158,930</div>
+            <div class="text-xl font-bold text-purple-400 font-mono" id="ov-kpi-ap">0.8783</div>
+            <div class="text-[11px] text-slate-400" id="ov-kpi-ap-sub">PR-AUC (14 Classes)</div>
+            <span id="ov-kpi-lat" class="hidden">0.012 ms</span>
           </div>
         </section>
 
@@ -507,7 +554,7 @@
                       <th class="px-4 py-2.5">Detection Mechanism</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-soc-border text-slate-300 font-mono">
+                  <tbody id="ov-dominant-tbody" class="divide-y divide-soc-border text-slate-300 font-mono">
                     <tr class="hover:bg-slate-800/30 transition">
                       <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-400"></span> DoS Hulk
@@ -567,7 +614,7 @@
             <div class="glass-panel p-5 rounded-xl space-y-4">
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-semibold text-white">Threat Severity Breakdown</h3>
-                <span class="text-[10px] text-slate-400">557K Attacks Flagged</span>
+                <span id="ov-donut-total-attacks" class="text-[10px] text-slate-400">557K Attacks Flagged</span>
               </div>
               <div class="h-56 relative flex items-center justify-center">
                 <canvas id="overviewDonutChart"></canvas>
@@ -575,22 +622,22 @@
               <div class="grid grid-cols-2 gap-2 text-xs pt-1">
                 <div class="bg-rose-950/40 border border-rose-800/60 p-2.5 rounded-lg text-center">
                   <div class="text-[10px] uppercase font-bold text-rose-400">Critical Threats</div>
-                  <div class="text-lg font-bold text-rose-300 font-mono mt-0.5">125,259</div>
+                  <div id="ov-donut-crit" class="text-lg font-bold text-rose-300 font-mono mt-0.5">125,259</div>
                   <div class="text-[10px] text-slate-400">DDoS & Heartbleed</div>
                 </div>
                 <div class="bg-amber-950/40 border border-amber-800/60 p-2.5 rounded-lg text-center">
                   <div class="text-[10px] uppercase font-bold text-amber-400">High Floods</div>
-                  <div class="text-lg font-bold text-amber-300 font-mono mt-0.5">389,327</div>
+                  <div id="ov-donut-high" class="text-lg font-bold text-amber-300 font-mono mt-0.5">389,327</div>
                   <div class="text-[10px] text-slate-400">DoS Hulk & Scans</div>
                 </div>
                 <div class="bg-cyan-950/40 border border-cyan-800/60 p-2.5 rounded-lg text-center">
                   <div class="text-[10px] uppercase font-bold text-cyan-400">Medium Stealth</div>
-                  <div class="text-lg font-bold text-cyan-300 font-mono mt-0.5">4,199</div>
+                  <div id="ov-donut-med" class="text-lg font-bold text-cyan-300 font-mono mt-0.5">4,199</div>
                   <div class="text-[10px] text-slate-400">Slowloris / GoldenEye</div>
                 </div>
                 <div class="bg-purple-950/40 border border-purple-800/60 p-2.5 rounded-lg text-center">
                   <div class="text-[10px] uppercase font-bold text-purple-400">Low / Probes</div>
-                  <div class="text-lg font-bold text-purple-300 font-mono mt-0.5">246</div>
+                  <div id="ov-donut-low" class="text-lg font-bold text-purple-300 font-mono mt-0.5">246</div>
                   <div class="text-[10px] text-slate-400">Infiltration & Bots</div>
                 </div>
               </div>
@@ -616,11 +663,11 @@
               <div class="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-300 pt-1">
                 <div class="bg-slate-800/60 p-2 rounded border border-slate-700">
                   <span class="text-slate-400 block text-[9px] uppercase">Fwd Features</span>
-                  <span class="text-emerald-400 font-bold">29 Clean Metrics</span>
+                  <span id="ov-diode-fwd-dims" class="text-emerald-400 font-bold">29 Clean Metrics</span>
                 </div>
                 <div class="bg-slate-800/60 p-2 rounded border border-slate-700">
                   <span class="text-slate-400 block text-[9px] uppercase">Temporal Window</span>
-                  <span class="text-cyan-400 font-bold">10-Second Causal</span>
+                  <span id="ov-diode-window" class="text-cyan-400 font-bold">10-Second Causal</span>
                 </div>
               </div>
             </div>
@@ -1801,6 +1848,7 @@
           if (overviewChartInstance) overviewChartInstance.resize();
           if (donutChartInstance) donutChartInstance.resize();
         }, 50);
+        fetchOverviewData(activeOverviewModel);
       } else if (viewKey === 'analytics') {
         setTimeout(() => {
           if (analyticsChartInstance) analyticsChartInstance.resize();
@@ -3160,25 +3208,218 @@
       document.getElementById('clock-utc').textContent = `${now.toUTCString().slice(17, 25)} UTC`;
     }
 
-    async function fetchOverviewData() {
+    let activeOverviewModel = 'legacy';
+
+    function switchOverviewModel(modelKey) {
+      activeOverviewModel = modelKey;
+
+      const btnV1 = document.getElementById('ov-btn-v1');
+      const btnV2Primary = document.getElementById('ov-btn-v2-primary');
+      const btnV2Ref = document.getElementById('ov-btn-v2-ref');
+
+      const baseClass = "px-2.5 py-1 rounded text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition";
+      const activeClassV1 = "px-2.5 py-1 rounded text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40";
+      const activeClassV2 = "px-2.5 py-1 rounded text-xs font-semibold bg-amber-600 text-white shadow cursor-pointer transition border border-amber-400/40";
+      const activeClassV2Ref = "px-2.5 py-1 rounded text-xs font-semibold bg-indigo-600 text-white shadow cursor-pointer transition border border-indigo-400/40";
+
+      if (btnV1) btnV1.className = (modelKey === 'legacy' || modelKey === 'v1') ? activeClassV1 : baseClass;
+      if (btnV2Primary) btnV2Primary.className = (modelKey === 'v2_primary' || modelKey === 'v2') ? activeClassV2 : baseClass;
+      if (btnV2Ref) btnV2Ref.className = (modelKey === 'v2_reference' || modelKey === 'v2_ref') ? activeClassV2Ref : baseClass;
+
+      fetchOverviewData(modelKey);
+    }
+
+    async function fetchOverviewData(modelKey) {
+      const targetModel = modelKey || activeOverviewModel || 'legacy';
       try {
-        const res = await fetch('/api/overview');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!data.kpi) return;
-
-        document.getElementById('ov-kpi-total').textContent = data.kpi.total_network_events.toLocaleString();
-        document.getElementById('ov-kpi-recall').textContent = `${data.kpi.overall_recall_pct}%`;
-        document.getElementById('ov-kpi-ap').textContent = data.kpi.average_precision;
-        document.getElementById('ov-kpi-prec').textContent = `${data.kpi.precision_pct}%`;
-        document.getElementById('ov-kpi-lat').textContent = `${data.kpi.average_inference_ms} ms`;
-
-        // Update donut chart with real severity counts
-        if (donutChartInstance && data.severity_distribution) {
-          const s = data.severity_distribution;
-          donutChartInstance.data.datasets[0].data = [s.Critical || 0, s.High || 0, s.Medium || 0, s.Low || 0];
-          donutChartInstance.update();
+        const res = await fetch(`/api/overview?model=${encodeURIComponent(targetModel)}`);
+        if (!res.ok) {
+          console.error(`Overview API error: HTTP ${res.status}`);
+          return;
         }
+        const data = await res.json();
+        if (!data || !data.kpi) return;
+
+        // 1. Update Executive Banner
+        const bannerContainer = document.getElementById('ov-banner-container');
+        const bannerTitle = document.getElementById('ov-banner-title');
+        const bannerBadge = document.getElementById('ov-banner-badge');
+        const bannerRecall = document.getElementById('ov-banner-recall');
+        const bannerAp = document.getElementById('ov-banner-ap');
+        const bannerDesc = document.getElementById('ov-banner-desc');
+
+        if (data.is_production_champion) {
+          if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border-l-4 border-l-cyan-500 flex flex-wrap items-center justify-between gap-4";
+          if (bannerTitle) bannerTitle.textContent = "Temporal Flow Velocity Autoencoder Active";
+          if (bannerBadge) {
+            bannerBadge.textContent = "PRODUCTION CHAMPION";
+            bannerBadge.className = "text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full";
+          }
+          if (bannerRecall) bannerRecall.textContent = data.kpi.overall_recall_pct != null ? `Recall: ${data.kpi.overall_recall_pct}%` : 'Recall: N/A';
+          if (bannerAp) bannerAp.textContent = data.kpi.average_precision != null ? `AP: ${data.kpi.average_precision}` : 'AP: N/A';
+          if (bannerDesc) bannerDesc.textContent = "Physical forward features augmented with 10-second rolling flow velocity, catching 519,031 zero-day attacks without reverse telemetry.";
+        } else {
+          const isPrimary = (targetModel === 'v2_primary' || targetModel === 'v2');
+          if (bannerContainer) {
+            bannerContainer.className = isPrimary
+              ? "glass-panel p-4 rounded-xl border-l-4 border-l-amber-500 flex flex-wrap items-center justify-between gap-4"
+              : "glass-panel p-4 rounded-xl border-l-4 border-l-indigo-500 flex flex-wrap items-center justify-between gap-4";
+          }
+          if (bannerTitle) {
+            bannerTitle.textContent = isPrimary
+              ? "Pure One-Way Autoencoder Active (Primary Operating Point)"
+              : "Pure One-Way Autoencoder Active (Reference Operating Point)";
+          }
+          if (bannerBadge) {
+            bannerBadge.textContent = "EXPERIMENTAL / SHADOW CANDIDATE";
+            bannerBadge.className = isPrimary
+              ? "text-[10px] font-semibold bg-amber-950 text-amber-400 border border-amber-800 px-2 py-0.5 rounded-full"
+              : "text-[10px] font-semibold bg-indigo-950 text-indigo-400 border border-indigo-800 px-2 py-0.5 rounded-full";
+          }
+          if (bannerRecall) bannerRecall.textContent = data.kpi.overall_recall_pct != null ? `Recall: ${data.kpi.overall_recall_pct}%` : 'Recall: N/A';
+          if (bannerAp) bannerAp.textContent = data.kpi.average_precision != null ? `AP: ${data.kpi.average_precision}` : 'AP: N/A';
+          if (bannerDesc) {
+            bannerDesc.textContent = isPrimary
+              ? "Strict 26-dimensional forward-only architecture calibrated at target FPR = 0.2%. Non-authoritative shadow inspection; v1 remains live alert authority."
+              : "Strict 26-dimensional forward-only architecture calibrated at target FPR = 1.0%. Non-authoritative shadow inspection; v1 remains live alert authority.";
+          }
+        }
+
+        // 2. Update Live Sensor & Optical Stream Telemetry Strip
+        const live = data.live_telemetry || {};
+        const liveProc = live.processed_flows != null ? live.processed_flows : data.kpi.live_stream_processed;
+        const liveAl = live.alert_count != null ? live.alert_count : data.kpi.live_stream_anomalies;
+        const liveProcEl = document.getElementById('ov-live-processed');
+        const liveAlertsEl = document.getElementById('ov-live-alerts');
+        const liveBufferEl = document.getElementById('ov-live-buffer');
+        const liveModelEl = document.getElementById('ov-model-availability');
+
+        if (liveProcEl) liveProcEl.textContent = liveProc != null ? liveProc.toLocaleString() : '0';
+        if (liveAlertsEl) liveAlertsEl.textContent = liveAl != null ? liveAl.toLocaleString() : '0';
+        if (liveBufferEl) liveBufferEl.textContent = live.buffer_status || data.kpi.buffer_status || 'ONLINE';
+        if (liveModelEl) {
+          liveModelEl.textContent = data.is_production_champion ? 'v1 ONLINE (CHAMPION)' : 'v2 SHADOW (STANDBY)';
+        }
+
+        // 3. Update KPI Summary Cards
+        const totalEl = document.getElementById('ov-kpi-total');
+        if (totalEl) totalEl.textContent = data.kpi.total_network_events != null ? data.kpi.total_network_events.toLocaleString() : 'N/A';
+        const benignEl = document.getElementById('ov-kpi-benign');
+        if (benignEl) benignEl.textContent = data.kpi.benign_events != null ? `${(data.kpi.benign_events / 1000000).toFixed(2)}M Benign` : 'N/A';
+        const threatsEl = document.getElementById('ov-kpi-threats');
+        if (threatsEl) threatsEl.textContent = data.kpi.total_attacks != null ? `${Math.round(data.kpi.total_attacks / 1000)}K Threats` : 'N/A';
+
+        const recallEl = document.getElementById('ov-kpi-recall');
+        if (recallEl) recallEl.textContent = data.kpi.overall_recall_pct != null ? `${data.kpi.overall_recall_pct}%` : 'N/A';
+        const caughtEl = document.getElementById('ov-kpi-caught');
+        if (caughtEl) caughtEl.textContent = data.kpi.attacks_detected != null ? `${data.kpi.attacks_detected.toLocaleString()} Caught` : 'N/A';
+        const missedEl = document.getElementById('ov-kpi-missed');
+        if (missedEl) missedEl.textContent = data.kpi.attacks_missed != null ? `${data.kpi.attacks_missed.toLocaleString()} Missed` : 'N/A';
+
+        const fprVal = data.kpi.false_positive_rate_pct != null ? data.kpi.false_positive_rate_pct : data.kpi.observed_fpr_pct;
+        const fprEl = document.getElementById('ov-kpi-fpr');
+        if (fprEl) fprEl.textContent = fprVal != null ? `${fprVal}%` : 'N/A';
+        const fprSubEl = document.getElementById('ov-kpi-fpr-sub');
+        if (fprSubEl) {
+          const targetFpr = data.kpi.target_calibration_fpr != null ? `${(data.kpi.target_calibration_fpr * 100).toFixed(1)}%` : '0.2%';
+          fprSubEl.textContent = `Target: ${targetFpr} | Observed`;
+        }
+
+        const precEl = document.getElementById('ov-kpi-prec');
+        if (precEl) precEl.textContent = data.kpi.precision_pct != null ? `${data.kpi.precision_pct}%` : 'N/A';
+        const precSubEl = document.getElementById('ov-kpi-prec-sub');
+        if (precSubEl) precSubEl.textContent = 'True Positive Purity';
+
+        const f1El = document.getElementById('ov-kpi-f1');
+        if (f1El) f1El.textContent = data.kpi.f1_score != null ? Number(data.kpi.f1_score).toFixed(4) : 'N/A';
+        const f1SubEl = document.getElementById('ov-kpi-f1-sub');
+        if (f1SubEl) f1SubEl.textContent = 'Harmonic Mean';
+
+        const apEl = document.getElementById('ov-kpi-ap');
+        if (apEl) apEl.textContent = data.kpi.average_precision != null ? Number(data.kpi.average_precision).toFixed(4) : 'N/A';
+        const latEl = document.getElementById('ov-kpi-lat');
+        if (latEl) latEl.textContent = data.kpi.average_inference_ms != null ? `${data.kpi.average_inference_ms} ms` : 'N/A';
+
+        // 4. Update Dominant Attack Classes Table Dynamically
+        const tbody = document.getElementById('ov-dominant-tbody');
+        if (tbody && data.dominant_attacks && Array.isArray(data.dominant_attacks)) {
+          tbody.innerHTML = data.dominant_attacks.map(row => {
+            const recStr = row.recall_pct != null ? `${row.recall_pct}%` : 'N/A';
+            const recClass = (row.recall_pct != null && row.recall_pct > 80) ? 'text-emerald-400 font-bold'
+              : (row.recall_pct != null && row.recall_pct > 40) ? 'text-cyan-400 font-bold'
+              : (row.recall_pct != null && row.recall_pct > 0) ? 'text-amber-400 font-bold'
+              : 'text-rose-400 font-bold';
+            const detStr = row.detected != null ? row.detected.toLocaleString() : 'N/A';
+            const totStr = row.total_volume != null ? row.total_volume.toLocaleString() : 'N/A';
+            const dotCol = row.dot_color || '#10b981';
+            return `
+              <tr class="hover:bg-slate-800/30 transition">
+                <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full" style="background-color: ${dotCol}"></span> ${row.display_name || row.attack_class}
+                </td>
+                <td class="px-4 py-2.5">${totStr}</td>
+                <td class="px-4 py-2.5 ${recClass}">${detStr}</td>
+                <td class="px-4 py-2.5 ${recClass}">${recStr}</td>
+                <td class="px-4 py-2.5 text-slate-400 font-sans text-[11px]">${row.mechanism || 'N/A'}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // 5. Update Donut Chart & Severity Legend Cards
+        if (data.severity_distribution) {
+          const s = data.severity_distribution;
+          const crit = s.Critical || 0;
+          const high = s.High || 0;
+          const med = s.Medium || 0;
+          const low = s.Low || 0;
+
+          if (donutChartInstance) {
+            donutChartInstance.data.datasets[0].data = [crit, high, med, low];
+            donutChartInstance.update();
+          }
+
+          const critEl = document.getElementById('ov-donut-crit');
+          const highEl = document.getElementById('ov-donut-high');
+          const medEl = document.getElementById('ov-donut-med');
+          const lowEl = document.getElementById('ov-donut-low');
+          if (critEl) critEl.textContent = crit.toLocaleString();
+          if (highEl) highEl.textContent = high.toLocaleString();
+          if (medEl) medEl.textContent = med.toLocaleString();
+          if (lowEl) lowEl.textContent = low.toLocaleString();
+
+          const totalEl = document.getElementById('ov-donut-total-attacks');
+          if (totalEl) {
+            const totalAttacks = crit + high + med + low;
+            totalEl.textContent = `${totalAttacks.toLocaleString()} Attacks Flagged`;
+          }
+        }
+
+        // 6. Update Overview Attack Bar Chart
+        if (overviewChartInstance && data.category_breakdown) {
+          const breakdown = data.category_breakdown;
+          const rates = attackCategories.map(cat => {
+            const c = breakdown[cat];
+            if (!c) return 0;
+            if (c.recall_pct != null) return c.recall_pct;
+            if (c.total > 0 && c.detected != null) return Math.round((c.detected / c.total) * 10000) / 100;
+            return 0;
+          });
+          overviewChartInstance.data.datasets[0].data = rates;
+          overviewChartInstance.data.datasets[0].backgroundColor = rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
+          overviewChartInstance.update();
+        }
+
+        // 7. Update Diode Physical Integrity Constraints
+        const diodeDims = document.getElementById('ov-diode-fwd-dims');
+        const diodeWindow = document.getElementById('ov-diode-window');
+        if (diodeDims) {
+          diodeDims.textContent = data.is_production_champion ? "29 Clean Metrics" : "26 Forward Only";
+        }
+        if (diodeWindow) {
+          diodeWindow.textContent = data.is_production_champion ? "10-Second Causal" : "Static Flow-Only";
+        }
+
       } catch (err) {
         console.error("Overview data fetch error:", err);
       }

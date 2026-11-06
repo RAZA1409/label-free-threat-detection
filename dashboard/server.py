@@ -428,96 +428,63 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             return
 
         elif path == "/api/overview":
+            query = parse_qs(parsed.query)
+            raw_model = query.get("model", ["legacy"])[0].lower().strip()
+
+            # Normalize model selection aliases
+            if raw_model in ("legacy", "v1", "temporal_ae", "temporal_autoencoder", ""):
+                normalized_model = "legacy"
+            elif raw_model in ("v2", "v2_primary", "pure_oneway_v2", "pure_one_way_v2", "pure_one_way_v2_primary"):
+                normalized_model = "v2_primary"
+            elif raw_model in ("v2_ref", "v2_reference", "pure_oneway_v2_ref", "pure_one_way_v2_reference"):
+                normalized_model = "v2_reference"
+            else:
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "ERROR",
+                    "error": f"Unknown model '{raw_model}'. Supported models: 'legacy', 'v2_primary', 'v2_reference'"
+                }).encode("utf-8"))
+                return
+
+            threat_data = get_threat_analytics(normalized_model)
+            if threat_data is None:
+                self.send_response(404)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "ERROR",
+                    "error": f"Evaluation data unavailable for model '{raw_model}'"
+                }).encode("utf-8"))
+                return
+
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
 
-            query = parse_qs(parsed.query)
-            requested_model = query.get("model", ["legacy"])[0].lower()
-
-            # Handle v2 model inspection safely without altering default behavior
-            if requested_model in ("v2", "pure_oneway_v2", "v2_primary") and V2_ADAPTER.is_available:
-                v2_meta = V2_ADAPTER.get_metadata()
-                v2_metrics = v2_meta["metrics"]["primary"]
-                v2_breakdown = {}
-                v2_res_path = RESULTS_DIR / "overall_metrics.json"
-                if v2_res_path.exists():
-                    try:
-                        with open(v2_res_path, encoding="utf-8") as f:
-                            raw_cat = json.load(f).get("models", {}).get("pure_one_way_v2_primary", {}).get("per_category", {})
-                            v2_breakdown = {k: v for k, v in raw_cat.items() if k != "BENIGN"}
-                    except Exception:
-                        pass
-
-                v2_crit = v2_breakdown.get("DDoS", {}).get("detected", 0) + v2_breakdown.get("Heartbleed", {}).get("detected", 0)
-                v2_high = v2_breakdown.get("DoS Hulk", {}).get("detected", 0) + v2_breakdown.get("PortScan", {}).get("detected", 0)
-                v2_med = (
-                    v2_breakdown.get("DoS GoldenEye", {}).get("detected", 0) +
-                    v2_breakdown.get("DoS slowloris", {}).get("detected", 0) +
-                    v2_breakdown.get("DoS Slowhttptest", {}).get("detected", 0)
-                )
-                v2_low = (
-                    v2_breakdown.get("Infiltration", {}).get("detected", 0) +
-                    v2_breakdown.get("Bot", {}).get("detected", 0) +
-                    v2_breakdown.get("FTP-Patator", {}).get("detected", 0)
-                )
-
-                v2_overview = {
-                    "system_name": "AEGIS // Pure One-Way Network Threat Defense (Experimental)",
-                    "problem_id": "SIH26145",
-                    "model_id": "pure_one_way_v2",
-                    "model_status": "EXPERIMENTAL / RESEARCH CANDIDATE",
-                    "diode_mode": "26-dimensional forward-feature-only design; reverse-direction feature information excluded.",
-                    "compliance_note": "Feature-level compliance only; distinct from validation on a physical one-way capture device.",
-                    "uptime_seconds": int(time.time() - SERVER_START_TIME),
-                    "kpi": {
-                        "total_network_events": 2300825,
-                        "benign_events": 1743179,
-                        "total_attacks": 557646,
-                        "attacks_detected": v2_metrics.get("tp", 476125),
-                        "attacks_missed": v2_metrics.get("fn", 81521),
-                        "overall_recall_pct": v2_metrics.get("detection_rate_pct", 85.38),
-                        "average_precision": v2_metrics.get("average_precision", 0.8687),
-                        "precision_pct": v2_metrics.get("precision_pct", 71.86),
-                        "observed_fpr_pct": v2_metrics.get("false_positive_rate_pct", 10.70),
-                        "calibrated_threshold": V2_ADAPTER.primary_threshold,
-                        "target_calibration_fpr": V2_ADAPTER.primary_target_fpr,
-                        "average_inference_ms": 0.0041,
-                        "live_stream_processed": 0,
-                        "live_stream_anomalies": 0,
-                    },
-                    "severity_distribution": {
-                        "Critical": v2_crit,
-                        "High": v2_high,
-                        "Medium": v2_med,
-                        "Low": v2_low,
-                    },
-                    "operating_point_note": (
-                        "The primary v2 operating point reduces false positives compared with v1 but sacrifices recall. "
-                        "The reference operating point nearly matches v1 recall but has a higher FPR."
-                    ),
-                    "drift_warning": (
-                        "Operational FPR on Tuesday–Friday exceeds the Monday calibration target. "
-                        "The cause has not yet been established."
-                    ),
-                    "category_breakdown": v2_breakdown,
-                }
-                self.wfile.write(json.dumps(v2_overview).encode("utf-8"))
-                return
-
-            # Load champion metrics safely
-            t_path = EVAL_DIR / "temporal_autoencoder_metrics.json"
-            t_data = safe_read_json(t_path, default={})
-
             # Load live feed stats safely
             live_path = EVAL_DIR / "live_stream_feed.json"
             live_data = safe_read_json(live_path, default={"total_processed": 0, "total_anomalies": 0, "recent_alerts": []})
 
-            per_cat = t_data.get("per_category", {})
-            critical_count = per_cat.get("DDoS", {}).get("detected", 0) + per_cat.get("Heartbleed", {}).get("detected", 0)
+            # Load per-category data for severity & category breakdown
+            res_path = RESULTS_DIR / "overall_metrics.json"
+            overall_data = safe_read_json(res_path, default={})
+            target_model_id = threat_data["model_id"]
+            m_data = overall_data.get("models", {}).get(target_model_id, {})
+            per_cat = m_data.get("per_category", {})
+            if not per_cat and threat_data["is_production_champion"]:
+                t_path = EVAL_DIR / "temporal_autoencoder_metrics.json"
+                t_data = safe_read_json(t_path, default={})
+                per_cat = t_data.get("per_category", {})
+
+            # Compute severity distribution from empirical per_category
+            crit_count = per_cat.get("DDoS", {}).get("detected", 0) + per_cat.get("Heartbleed", {}).get("detected", 0)
             high_count = per_cat.get("DoS Hulk", {}).get("detected", 0) + per_cat.get("PortScan", {}).get("detected", 0)
-            medium_count = (
+            med_count = (
                 per_cat.get("DoS GoldenEye", {}).get("detected", 0) +
                 per_cat.get("DoS slowloris", {}).get("detected", 0) +
                 per_cat.get("DoS Slowhttptest", {}).get("detected", 0)
@@ -528,33 +495,116 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
                 per_cat.get("FTP-Patator", {}).get("detected", 0)
             )
 
+            # Compute dominant attacks with genuine statistics and detection mechanisms
+            dominant_spec = [
+                ("DoS Hulk", "DoS Hulk", "10s Forward Ingest Velocity", "#10b981"),
+                ("PortScan", "PortScan", "Log1p + SYN Flag Dispersion", "#10b981"),
+                ("DDoS", "DDoS Volumetric", "8-Dim Bottleneck Compression", "#10b981"),
+                ("Infiltration", "Infiltration", "Forward Header / Window Residual", "#06b6d4"),
+                ("Heartbleed", "Heartbleed", "Total Fwd Payload Volume Variance", "#06b6d4"),
+            ]
+            dominant_attacks = []
+            for cat_key, disp_name, mechanism, dot_color in dominant_spec:
+                c_info = per_cat.get(cat_key, {})
+                tot = c_info.get("total")
+                det = c_info.get("detected")
+                rec = c_info.get("recall_pct")
+                if rec is None and tot and tot > 0 and det is not None:
+                    rec = round((det / tot) * 100.0, 2)
+                dominant_attacks.append({
+                    "attack_class": cat_key,
+                    "display_name": disp_name,
+                    "total_volume": tot,
+                    "detected": det,
+                    "recall_pct": round(float(rec), 2) if rec is not None else None,
+                    "mechanism": mechanism,
+                    "dot_color": dot_color,
+                })
+
+            cm = threat_data["confusion_matrix"]
+            sm = threat_data["summary_metrics"]
+
+            avg_inf_ms = (
+                0.0041 if not threat_data["is_production_champion"]
+                else round((safe_read_json(EVAL_DIR / "temporal_autoencoder_metrics.json", {}).get("elapsed_seconds", 27.6) / 2300825) * 1000, 4)
+            )
+
+            is_champ = threat_data["is_production_champion"]
+            sys_name = "AEGIS // Label-Free One-Way Network Threat Defense" if is_champ else "AEGIS // Pure One-Way Network Threat Defense (Experimental)"
+            diode_mode = (
+                "Strict Optical Tap / Forward-Only Unidirectional" if is_champ
+                else "26-dimensional forward-feature-only design; reverse-direction feature information excluded."
+            )
+            compliance_note = (
+                "Operating strictly behind receive-only optical mirror tap. Forward packet counts and byte rates permitted. Zero reverse telemetry." if is_champ
+                else "Feature-level compliance only; distinct from validation on a physical one-way capture device."
+            )
+            operating_note = (
+                "Production champion operating point established at alpha = 0.002." if is_champ
+                else (
+                    "The primary v2 operating point reduces false positives compared with v1 but sacrifices recall. "
+                    "The reference operating point nearly matches v1 recall but has a higher FPR."
+                )
+            )
+            drift_warn = (
+                "Operational FPR on Tuesday–Friday exceeds the Monday calibration target. "
+                "The cause has not yet been established."
+            )
+
+            is_streaming = STREAM_PROCESS is not None and STREAM_PROCESS.poll() is None
+            buffer_state = "ONLINE" if is_streaming else "IDLE"
+            model_avail = "AVAILABLE" if (V2_ADAPTER.is_available if not is_champ else True) else "OFFLINE"
+
             overview = {
-                "system_name": "AEGIS // Label-Free One-Way Network Threat Defense",
+                "system_name": sys_name,
                 "problem_id": "SIH26145",
-                "diode_mode": "Strict Optical Tap / Forward-Only Unidirectional",
+                "model_id": threat_data["model_id"],
+                "model_name": threat_data["model_name"],
+                "model_status": threat_data["model_status"],
+                "is_production_champion": is_champ,
+                "authority_note": threat_data.get("authority_note", ""),
+                "diode_mode": diode_mode,
+                "compliance_note": compliance_note,
+                "operating_point_note": operating_note,
+                "drift_warning": drift_warn,
                 "uptime_seconds": int(time.time() - SERVER_START_TIME),
                 "kpi": {
-                    "total_network_events": 2300825,
-                    "benign_events": 1743179,
-                    "total_attacks": 557646,
-                    "attacks_detected": t_data.get("tp", 519031),
-                    "attacks_missed": t_data.get("fn", 38615),
-                    "overall_recall_pct": t_data.get("detection_rate_pct", 93.08),
-                    "average_precision": t_data.get("average_precision", 0.8783),
-                    "precision_pct": t_data.get("precision_pct", 70.46),
-                    "observed_fpr_pct": t_data.get("false_positive_rate_pct", 12.48),
-                    "calibrated_threshold": 0.190885,
-                    "target_calibration_fpr": 0.002,
-                    "average_inference_ms": round((t_data.get("elapsed_seconds", 27.6) / 2300825) * 1000, 4),
+                    "total_network_events": threat_data["total_flows"],
+                    "benign_events": threat_data["benign_flows"],
+                    "total_attacks": threat_data["attack_flows"],
+                    "attacks_detected": cm["tp"],
+                    "attacks_missed": cm["fn"],
+                    "overall_recall_pct": round(sm["recall_pct"], 2) if sm.get("recall_pct") is not None else None,
+                    "false_positive_rate_pct": round(sm["false_positive_rate_pct"], 2) if sm.get("false_positive_rate_pct") is not None else None,
+                    "observed_fpr_pct": round(sm["false_positive_rate_pct"], 2) if sm.get("false_positive_rate_pct") is not None else None,
+                    "precision_pct": round(sm["precision_pct"], 2) if sm.get("precision_pct") is not None else None,
+                    "f1_score": round(sm["f1_score"], 4) if sm.get("f1_score") is not None else None,
+                    "average_precision": round(sm["pr_auc"], 4) if sm.get("pr_auc") is not None else None,
+                    "pr_auc": round(sm["pr_auc"], 4) if sm.get("pr_auc") is not None else None,
+                    "roc_auc": round(sm["roc_auc"], 4) if sm.get("roc_auc") is not None else None,
+                    "calibrated_threshold": threat_data["threshold"],
+                    "target_calibration_fpr": threat_data["target_calibration_fpr"],
+                    "average_inference_ms": avg_inf_ms,
                     "live_stream_processed": live_data.get("total_processed", 0),
                     "live_stream_anomalies": live_data.get("total_anomalies", 0),
+                    "buffer_status": buffer_state,
+                    "model_availability": model_avail,
+                },
+                "live_telemetry": {
+                    "processed_flows": live_data.get("total_processed", 0),
+                    "alert_count": live_data.get("total_anomalies", 0),
+                    "buffer_status": buffer_state,
+                    "streaming_active": is_streaming,
+                    "model_availability": model_avail,
+                    "recent_alerts_count": len(live_data.get("recent_alerts", [])),
                 },
                 "severity_distribution": {
-                    "Critical": critical_count,
+                    "Critical": crit_count,
                     "High": high_count,
-                    "Medium": medium_count,
+                    "Medium": med_count,
                     "Low": low_count,
                 },
+                "dominant_attacks": dominant_attacks,
                 "category_breakdown": {
                     k: v for k, v in per_cat.items() if k != "BENIGN"
                 }
