@@ -919,8 +919,8 @@
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 class="text-sm font-bold text-white">Model Comparison & Threshold Calibration Sandbox</h2>
-              <p class="text-xs text-slate-400 mt-0.5">Evaluate detection performance across different architectures or
-                slide the target FPR.</p>
+              <p class="text-xs text-slate-400 mt-0.5">Evaluate detection performance across architectures and verified discrete calibration points.</p>
+              <span class="text-[10px] text-cyan-400/90 font-mono block mt-1">Live Ingestion Authority: Legacy Temporal Autoencoder (v1) &middot; Sandbox inspection only</span>
             </div>
 
             <!-- Model Switcher Buttons -->
@@ -953,21 +953,73 @@
             </div>
           </div>
 
-          <!-- Threshold Slider -->
-          <div class="pt-3 border-t border-soc-border space-y-2">
-            <div class="flex justify-between items-center text-xs font-medium">
-              <span class="text-slate-300">Target Benign Calibration FPR: <span id="fpr-slider-val"
-                  class="text-cyan-400 font-bold">0.2%</span></span>
-              <span class="text-slate-400">Calibrated Score Cutoff: <span id="thresh-val"
-                  class="font-mono text-emerald-400 font-bold">0.190885</span></span>
+          <!-- Calibration Sandbox Synchronization / Error Status Banner -->
+          <div id="sandbox-sync-status" class="hidden p-3 rounded-lg border text-xs flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span id="sandbox-sync-icon" class="text-sm">⚠️</span>
+              <span id="sandbox-sync-msg" class="font-medium"></span>
             </div>
-            <input id="fpr-slider" type="range" min="0.1" max="5.0" step="0.1" value="0.2"
-              class="w-full accent-cyan-500 cursor-pointer" oninput="updateFPR(this.value)">
-            <div class="flex justify-between text-[10px] text-slate-400">
-              <span>0.1% (Strict / Minimum Alarms)</span>
-              <span>0.2% (Operational Champion — 93.1% Recall)</span>
-              <span>1.0% (Aggressive Zero-Day Mode)</span>
-              <span>5.0% (High-Recall Forensic Sweep)</span>
+            <button type="button" onclick="fetchModelData()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-cyan-300 font-mono border border-slate-700 cursor-pointer">Retry Sync</button>
+          </div>
+
+          <!-- Verified Discrete Operating-Point Selector -->
+          <div class="pt-3 border-t border-soc-border space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Verified Operating Point</span>
+                <span class="text-[10px] text-slate-400 block">Select an empirically verified discrete calibration point</span>
+              </div>
+              <!-- Operating Point Buttons -->
+              <div class="flex items-center gap-2">
+                <button id="btn-op-primary" type="button"
+                  class="px-3 py-1.5 rounded-md text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40"
+                  onclick="selectOperatingPoint('primary')">
+                  Operational Primary (&alpha; = 0.2%)
+                </button>
+                <button id="btn-op-reference" type="button"
+                  class="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-500 bg-soc-elevated border border-soc-border cursor-not-allowed opacity-50 transition"
+                  disabled
+                  title="Reference operating point (&alpha; = 1.0%) applies exclusively to Pure One-Way v2"
+                  onclick="selectOperatingPoint('reference')">
+                  High-Recall Reference (&alpha; = 1.0%)
+                </button>
+              </div>
+            </div>
+
+            <!-- Operating Point Metrics Badges -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-lg bg-soc-elevated/70 border border-soc-border text-xs">
+              <div>
+                <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Calibration Target (&alpha;)</span>
+                <span id="calib-target-val" class="font-mono text-cyan-400 font-bold text-sm">0.2%</span>
+                <span class="text-[10px] text-slate-500 block">Monday Benign Set (Target)</span>
+              </div>
+              <div>
+                <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Calibrated Score Cutoff (&tau;)</span>
+                <span id="thresh-val" class="font-mono text-emerald-400 font-bold text-sm">0.190885</span>
+                <span class="text-[10px] text-slate-500 block">Empirical Anomaly Threshold</span>
+              </div>
+              <div>
+                <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Operational Test FPR</span>
+                <span id="observed-fpr-val" class="font-mono text-amber-400 font-bold text-sm">12.48%</span>
+                <span class="text-[10px] text-slate-500 block">Tue–Fri (2,300,825 Flows)</span>
+              </div>
+            </div>
+
+            <!-- Educational Distinction Note -->
+            <div class="flex items-start gap-2 p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400">
+              <svg class="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div class="space-y-0.5">
+                <div id="op-point-note" class="text-slate-300">
+                  <strong class="text-white">Calibration Target vs. Operational FPR:</strong>
+                  Target FPR (&alpha;) is determined exclusively on unlabelled Monday benign calibration traffic (<code class="text-cyan-300">calibration_benign.parquet</code>).
+                  Operational FPR is observed empirically on held-out Tuesday–Friday evaluation traffic (<code class="text-cyan-300">test_tue_fri.parquet</code>).
+                </div>
+                <div id="op-point-restriction" class="text-slate-400 text-[10px]">
+                  Note: Production Champion v1 is calibrated strictly at &alpha; = 0.2%. High-Recall Reference point (&alpha; = 1.0%) applies exclusively to Pure One-Way v2.
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -975,54 +1027,55 @@
         <!-- DUAL-MODEL INTELLIGENCE & COMPARISON CARDS -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-          <!-- Card A: Legacy Champion (v1) -->
+          <!-- Card A: Selected Model Dynamic Evaluation Card -->
           <div class="glass-panel p-5 rounded-xl border border-cyan-500/40 relative overflow-hidden space-y-4">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <h3 class="text-sm font-bold text-white">Legacy Temporal Autoencoder (v1)</h3>
+                <span id="card-a-pulse" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <h3 id="card-a-title" class="text-sm font-bold text-white">Legacy Temporal Autoencoder (v1)</h3>
+                <span id="card-a-stale-tag" class="hidden text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-600 text-amber-300">STALE</span>
               </div>
-              <span
+              <span id="card-a-badge"
                 class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700/80 text-emerald-400">
                 ACTIVE PRODUCTION CHAMPION
               </span>
             </div>
             <div class="text-xs text-slate-400">
-              Feature Scope: <span class="font-mono text-cyan-300 font-bold">32 Features</span> (Includes Reverse
-              Telemetry &amp; Bidirectional Flags)
+              Feature Scope: <span id="card-a-scope" class="font-mono text-cyan-300 font-bold">32 Features</span> <span id="card-a-scope-sub">(Includes Reverse
+              Telemetry &amp; Bidirectional Flags)</span>
             </div>
 
             <!-- Metrics Grid -->
             <div class="grid grid-cols-3 gap-2.5 pt-1 text-center font-mono">
               <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
                 <div class="text-[9px] uppercase tracking-wider text-slate-400">Attack Recall</div>
-                <div class="text-sm font-bold text-emerald-400 mt-0.5">93.08%</div>
+                <div id="card-a-recall" class="text-sm font-bold text-emerald-400 mt-0.5">93.08%</div>
               </div>
               <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
                 <div class="text-[9px] uppercase tracking-wider text-slate-400">False Positives</div>
-                <div class="text-sm font-bold text-amber-400 mt-0.5">12.48%</div>
+                <div id="card-a-fpr" class="text-sm font-bold text-amber-400 mt-0.5">12.48%</div>
               </div>
               <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
                 <div class="text-[9px] uppercase tracking-wider text-slate-400">Precision</div>
-                <div class="text-sm font-bold text-indigo-400 mt-0.5">70.46%</div>
+                <div id="card-a-prec" class="text-sm font-bold text-indigo-400 mt-0.5">70.46%</div>
               </div>
               <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
                 <div class="text-[9px] uppercase tracking-wider text-slate-400">F1-Score</div>
-                <div class="text-sm font-bold text-white mt-0.5">0.8020</div>
+                <div id="card-a-f1" class="text-sm font-bold text-white mt-0.5">0.8020</div>
               </div>
               <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
                 <div class="text-[9px] uppercase tracking-wider text-slate-400">PR-AUC (AP)</div>
-                <div class="text-sm font-bold text-purple-400 mt-0.5">0.8783</div>
+                <div id="card-a-prauc" class="text-sm font-bold text-purple-400 mt-0.5">0.8783</div>
               </div>
               <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
                 <div class="text-[9px] uppercase tracking-wider text-slate-400">ROC-AUC</div>
-                <div class="text-sm font-bold text-cyan-400 mt-0.5">0.9538</div>
+                <div id="card-a-rocauc" class="text-sm font-bold text-cyan-400 mt-0.5">0.9538</div>
               </div>
             </div>
 
             <div class="pt-2 border-t border-soc-border flex items-center justify-between text-xs text-slate-400">
-              <span>Operating Threshold: <span class="font-mono text-emerald-400 font-bold">0.190885</span></span>
-              <span>Scoring: <span class="text-slate-300">Weighted MSE</span></span>
+              <span>Operating Threshold: <span id="card-a-threshold" class="font-mono text-emerald-400 font-bold">0.190885</span> (<span id="card-a-target-fpr" class="text-cyan-300 font-mono">&alpha; = 0.2%</span>)</span>
+              <span>Scoring: <span id="card-a-scoring" class="text-slate-300">Weighted MSE</span></span>
             </div>
           </div>
 
@@ -1139,7 +1192,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-soc-border text-slate-300">
-                <tr class="bg-cyan-950/20 hover:bg-cyan-950/40 transition">
+                <tr id="row-h2h-legacy" class="bg-cyan-950/20 hover:bg-cyan-950/40 transition ring-2 ring-cyan-400 bg-cyan-950/60">
                   <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-1.5">
                     <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Legacy Champion (v1)
                   </td>
@@ -1155,7 +1208,7 @@
                   <td class="px-4 py-2.5 text-purple-400">0.8783</td>
                   <td class="px-4 py-2.5 text-cyan-400">0.9538</td>
                 </tr>
-                <tr class="bg-amber-950/20 hover:bg-amber-950/40 transition">
+                <tr id="row-h2h-v2-primary" class="bg-amber-950/20 hover:bg-amber-950/40 transition">
                   <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-1.5">
                     <span class="w-2 h-2 rounded-full bg-amber-400"></span> Pure One-Way v2 (Primary)
                   </td>
@@ -1171,7 +1224,7 @@
                   <td class="px-4 py-2.5 text-purple-400">0.8687</td>
                   <td class="px-4 py-2.5 text-cyan-400">0.9478</td>
                 </tr>
-                <tr class="hover:bg-slate-800/30 transition">
+                <tr id="row-h2h-v2-ref" class="hover:bg-slate-800/30 transition">
                   <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-1.5">
                     <span class="w-2 h-2 rounded-full bg-slate-400"></span> Pure One-Way v2 (Reference)
                   </td>
@@ -1497,21 +1550,21 @@
         status: "PRODUCTION CHAMPION",
         rates: [54.55, 99.79, 58.33, 22.07, 99.85, 25.02, 15.00, 0.0, 2.29, 0.0, 0.0, 2.27, 97.83],
         recall: "93.08%", fpr: "12.48%", precision: "70.46%", ap: "0.8783", roc_auc: "0.9538", f1: "0.8020",
-        tp: "519,031", fp: "217,598", fn: "38,615", tn: "1,525,581", threshold: "0.190885"
+        tp: "519,031", fp: "217,598", fn: "38,615", tn: "1,525,581", threshold: "0.190885", target_fpr: "0.2%"
       },
       pure_oneway_v2: {
         name: "Pure One-Way Autoencoder (v2 Primary)",
         status: "EXPERIMENTAL / RESEARCH CANDIDATE",
         rates: [0.0, 99.14, 47.22, 27.57, 99.85, 12.73, 5.13, 0.0, 2.24, 0.0, 0.0, 0.73, 66.30],
         recall: "85.38%", fpr: "10.70%", precision: "71.86%", ap: "0.8687", roc_auc: "0.9478", f1: "0.7804",
-        tp: "476,125", fp: "186,489", fn: "81,521", tn: "1,556,690", threshold: "0.314036"
+        tp: "476,125", fp: "186,489", fn: "81,521", tn: "1,556,690", threshold: "0.314036", target_fpr: "0.2%"
       },
       pure_oneway_v2_ref: {
         name: "Pure One-Way Autoencoder (v2 Reference)",
         status: "EXPERIMENTAL / RESEARCH CANDIDATE",
         rates: [18.18, 99.15, 75.00, 31.69, 99.85, 18.00, 11.82, 0.27, 3.05, 0.0, 3.24, 7.53, 97.97],
         recall: "93.01%", fpr: "17.35%", precision: "63.16%", ap: "0.8687", roc_auc: "0.9478", f1: "0.7523",
-        tp: "518,647", fp: "302,461", fn: "38,999", tn: "1,440,718", threshold: "0.099018"
+        tp: "518,647", fp: "302,461", fn: "38,999", tn: "1,440,718", threshold: "0.099018", target_fpr: "1.0%"
       },
       oneway_ae: {
         name: "Deep One-Way Autoencoder",
@@ -1537,11 +1590,16 @@
     };
 
     let activeModel = 'temporal_ae';
+    let activeOperatingPoint = 'primary';
     let isStreamPollingPaused = false;
     let overviewChartInstance = null;
     let donutChartInstance = null;
     let analyticsChartInstance = null;
     let liveAlertsCache = [];
+    let validatedCatalog = null;
+    let apiSyncStatus = { metrics: false, models: false, compare: false };
+    let syncErrors = [];
+    let isDataStale = false;
 
     // Toast Notification helper
     function showToast(message, type = "info") {
@@ -1614,9 +1672,37 @@
       sidebar.classList.toggle('-translate-x-full');
     }
 
+    // Operating Point Selection (Verified Discrete Points)
+    function selectOperatingPoint(pointKey) {
+      if (activeModel === 'temporal_ae') {
+        if (pointKey === 'reference') {
+          showToast("Reference operating point (\u03b1 = 1.0%) applies exclusively to Pure One-Way v2. Temporal Autoencoder v1 is calibrated at \u03b1 = 0.2%.", "warning");
+          return;
+        }
+        activeOperatingPoint = 'primary';
+      } else if (activeModel === 'pure_oneway_v2') {
+        activeOperatingPoint = pointKey;
+        if (pointKey === 'reference') {
+          showToast("Selected Pure One-Way v2 Reference point (\u03c4 = 0.099018, \u03b1 = 1.0%). Recall: 93.01%, Test FPR: 17.35%.", "info");
+        } else {
+          showToast("Selected Pure One-Way v2 Primary point (\u03c4 = 0.314036, \u03b1 = 0.2%). Recall: 85.38%, Test FPR: 10.70%.", "info");
+        }
+      } else {
+        if (pointKey === 'reference') {
+          showToast("Reference operating point (\u03b1 = 1.0%) applies exclusively to Pure One-Way v2.", "warning");
+          return;
+        }
+        activeOperatingPoint = 'primary';
+      }
+      updateCalibrationDisplay();
+    }
+
     // Model Selector
     function switchModel(modelKey) {
       activeModel = modelKey;
+      if (activeModel !== 'pure_oneway_v2') {
+        activeOperatingPoint = 'primary';
+      }
       ['btn-temporal-ae', 'btn-pure-oneway-v2', 'btn-oneway-ae', 'btn-oneway-log', 'btn-bidirectional'].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer";
@@ -1635,32 +1721,550 @@
         }
       }
 
-      const data = modelBreakdowns[modelKey];
-      document.getElementById('thresh-val').textContent = data.threshold;
-
-      if (overviewChartInstance) {
-        overviewChartInstance.data.datasets[0].data = data.rates;
-        overviewChartInstance.data.datasets[0].backgroundColor = data.rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
-        overviewChartInstance.update();
-      }
-      if (analyticsChartInstance) {
-        analyticsChartInstance.data.datasets[0].data = data.rates;
-        analyticsChartInstance.data.datasets[0].backgroundColor = data.rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
-        analyticsChartInstance.update();
-      }
+      updateCalibrationDisplay();
 
       if (modelKey === 'pure_oneway_v2') {
-        showToast("Viewing EXPERIMENTAL candidate: Pure One-Way Autoencoder (v2). Production Champion remains Legacy v1.", "warning");
+        showToast("Sandbox Inspection: Pure One-Way v2 (Experimental). Live production inference remains Legacy v1.", "warning");
+      } else if (modelKey === 'temporal_ae') {
+        showToast("Sandbox Inspection: Legacy Temporal Autoencoder (v1) [Active Production Champion].", "info");
       } else {
-        showToast(`Switched active detector to ${modelKey.replace('_', ' ').toUpperCase()}`, "info");
+        showToast(`Sandbox Inspection: Switched active detector to ${modelKey.replace('_', ' ').toUpperCase()}`, "info");
       }
     }
 
-    function updateFPR(val) {
-      document.getElementById('fpr-slider-val').textContent = `${parseFloat(val).toFixed(1)}%`;
-      const baseThresh = parseFloat(modelBreakdowns[activeModel].threshold);
-      const adjustedThresh = (baseThresh * (1.5 - val / 5.0)).toFixed(6);
-      document.getElementById('thresh-val').textContent = adjustedThresh;
+    // Strict Metric Validation Helper:
+    // Returns true only for valid finite numbers or non-empty numeric strings (handles 0, 0.0, '0.00%' as valid; null/undefined/NaN/empty/N/A as invalid)
+    function isValidMetricValue(val) {
+      if (val === null || val === undefined) return false;
+      if (typeof val === 'number') {
+        return !isNaN(val) && isFinite(val);
+      }
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        if (trimmed === '' || trimmed.toUpperCase() === 'N/A' || trimmed === 'NAN' || trimmed === 'NULL' || trimmed === 'UNDEFINED') {
+          return false;
+        }
+        let clean = trimmed;
+        if (clean.startsWith('α = ') || clean.startsWith('\u03b1 = ') || clean.startsWith('a = ')) {
+          clean = clean.replace(/^[\u03b1\a]\s*=\s*/, '').trim();
+        }
+        if (clean.endsWith('%')) {
+          clean = clean.slice(0, -1).trim();
+        }
+        if (clean === '') return false;
+        const num = Number(clean);
+        return !isNaN(num) && isFinite(num);
+      }
+      return false;
+    }
+
+    // Synchronize DOM elements with active model & operating point
+    function updateCalibrationDisplay() {
+      let dataKey = activeModel;
+      if (activeModel === 'pure_oneway_v2') {
+        dataKey = (activeOperatingPoint === 'reference') ? 'pure_oneway_v2_ref' : 'pure_oneway_v2';
+      }
+
+      // DO NOT silently fall back to temporal_ae or any other model!
+      const data = modelBreakdowns[dataKey];
+
+      // Banner Elements
+      const syncBanner = document.getElementById('sandbox-sync-status');
+      const syncMsg = document.getElementById('sandbox-sync-msg');
+      const syncIcon = document.getElementById('sandbox-sync-icon');
+
+      // Selector & Badge Elements
+      const btnPrimary = document.getElementById('btn-op-primary');
+      const btnRef = document.getElementById('btn-op-reference');
+      const targetValEl = document.getElementById('calib-target-val');
+      const threshValEl = document.getElementById('thresh-val');
+      const obsFprValEl = document.getElementById('observed-fpr-val');
+      const restrictEl = document.getElementById('op-point-restriction');
+
+      // Card A Elements
+      const cardTitle = document.getElementById('card-a-title');
+      const cardBadge = document.getElementById('card-a-badge');
+      const cardStaleTag = document.getElementById('card-a-stale-tag');
+      const cardPulse = document.getElementById('card-a-pulse');
+      const cardScope = document.getElementById('card-a-scope');
+      const cardScopeSub = document.getElementById('card-a-scope-sub');
+      const cardRecall = document.getElementById('card-a-recall');
+      const cardFpr = document.getElementById('card-a-fpr');
+      const cardPrec = document.getElementById('card-a-prec');
+      const cardF1 = document.getElementById('card-a-f1');
+      const cardPrauc = document.getElementById('card-a-prauc');
+      const cardRocauc = document.getElementById('card-a-rocauc');
+      const cardThreshold = document.getElementById('card-a-threshold');
+      const cardTargetFpr = document.getElementById('card-a-target-fpr');
+      const cardScoring = document.getElementById('card-a-scoring');
+
+      // =========================================================================
+      // CASE 1: Missing Model Object entirely (Strictly NO substitution!)
+      // =========================================================================
+      if (!data) {
+        if (syncBanner) {
+          syncBanner.classList.remove('hidden');
+          syncBanner.className = "p-3 rounded-lg border border-rose-700 bg-rose-950/80 text-rose-200 text-xs flex items-center justify-between gap-3";
+          if (syncIcon) syncIcon.textContent = "❌";
+          if (syncMsg) syncMsg.innerHTML = `<strong>Error:</strong> Evaluation data for selected model <code class="text-rose-300 font-bold font-mono">${dataKey}</code> is unavailable. No metrics substituted.`;
+        }
+
+        if (cardTitle) cardTitle.textContent = `${dataKey.toUpperCase().replace(/_/g, ' ')} (DATA UNAVAILABLE)`;
+        if (cardBadge) {
+          cardBadge.textContent = "DATA UNAVAILABLE";
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-950/80 border border-rose-700 text-rose-300";
+        }
+        if (cardStaleTag) cardStaleTag.classList.add('hidden');
+        if (cardPulse) cardPulse.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+        if (cardScope) { cardScope.textContent = "N/A"; cardScope.className = "font-mono text-slate-500 font-bold"; }
+        if (cardScopeSub) cardScopeSub.textContent = "(Model evaluation data missing from backend; no substitution)";
+        if (cardRecall) cardRecall.textContent = "N/A";
+        if (cardFpr) cardFpr.textContent = "N/A";
+        if (cardPrec) cardPrec.textContent = "N/A";
+        if (cardF1) cardF1.textContent = "N/A";
+        if (cardPrauc) cardPrauc.textContent = "N/A";
+        if (cardRocauc) cardRocauc.textContent = "N/A";
+        if (cardThreshold) cardThreshold.textContent = "N/A";
+        if (cardTargetFpr) cardTargetFpr.textContent = "N/A";
+        if (cardScoring) cardScoring.textContent = "N/A";
+
+        if (targetValEl) targetValEl.textContent = "N/A";
+        if (threshValEl) threshValEl.textContent = "N/A";
+        if (obsFprValEl) obsFprValEl.textContent = "N/A";
+        if (restrictEl) restrictEl.textContent = `Error: Evaluation metrics for ${dataKey} are unavailable. No fallback metrics substituted.`;
+
+        // Clear charts to reflect missing data
+        if (overviewChartInstance) {
+          overviewChartInstance.data.datasets[0].data = [];
+          overviewChartInstance.update();
+        }
+        if (analyticsChartInstance) {
+          analyticsChartInstance.data.datasets[0].data = [];
+          analyticsChartInstance.update();
+        }
+
+        // Unhighlight Head-to-Head table rows
+        const rowLegacy = document.getElementById('row-h2h-legacy');
+        const rowV2Primary = document.getElementById('row-h2h-v2-primary');
+        const rowV2Ref = document.getElementById('row-h2h-v2-ref');
+        [rowLegacy, rowV2Primary, rowV2Ref].forEach(r => {
+          if (r) r.classList.remove('ring-2', 'ring-cyan-400', 'ring-amber-400', 'bg-cyan-950/60', 'bg-amber-950/60');
+        });
+        return;
+      }
+
+      // =========================================================================
+      // CASE 2: Model Object Present -> Strict Field-Level Validation of 8 Metrics
+      // 1. Recall, 2. Test FPR, 3. Precision, 4. F1-score, 5. PR-AUC, 6. ROC-AUC,
+      // 7. Threshold, 8. Calibration target FPR
+      // =========================================================================
+      const praucVal = (data.ap !== undefined && data.ap !== null) ? data.ap : data.pr_auc;
+      const requiredMetricFields = [
+        { key: 'recall', name: 'Recall', val: data.recall },
+        { key: 'fpr', name: 'Test FPR', val: data.fpr },
+        { key: 'precision', name: 'Precision', val: data.precision },
+        { key: 'f1', name: 'F1-score', val: data.f1 },
+        { key: 'ap', name: 'PR-AUC', val: praucVal },
+        { key: 'roc_auc', name: 'ROC-AUC', val: data.roc_auc },
+        { key: 'threshold', name: 'Threshold', val: data.threshold },
+        { key: 'target_fpr', name: 'Calibration target FPR', val: data.target_fpr }
+      ];
+
+      const missingFields = requiredMetricFields
+        .filter(f => !isValidMetricValue(f.val))
+        .map(f => f.name);
+
+      const hasIncompleteMetrics = missingFields.length > 0;
+      const isStale = isDataStale || Boolean(data.isStale);
+
+      // Sync / Stale / Incomplete Banner Handling
+      if (syncBanner) {
+        if (hasIncompleteMetrics) {
+          syncBanner.classList.remove('hidden');
+          syncBanner.className = "p-3 rounded-lg border border-amber-700 bg-amber-950/80 text-amber-200 text-xs flex items-center justify-between gap-3";
+          if (syncIcon) syncIcon.textContent = "⚠️";
+          const staleSuffix = isStale ? " (also marked STALE)" : "";
+          if (syncMsg) syncMsg.innerHTML = `<strong>Incomplete Evaluation Data:</strong> Model <code class="text-amber-300 font-bold font-mono">${dataKey}</code> is missing required metric fields (${missingFields.join(", ")}). Unavailable metrics are rendered as N/A. No values substituted.${staleSuffix}`;
+        } else if (isStale) {
+          syncBanner.classList.remove('hidden');
+          syncBanner.className = "p-3 rounded-lg border border-amber-700 bg-amber-950/80 text-amber-200 text-xs flex items-center justify-between gap-3";
+          if (syncIcon) syncIcon.textContent = "⚠️";
+          const errDetail = syncErrors.length > 0 ? ` (${syncErrors.join(", ")})` : "";
+          if (syncMsg) syncMsg.innerHTML = `<strong>Stale Evaluation Benchmarks:</strong> Backend synchronization incomplete${errDetail}. Retaining cached benchmarks marked as STALE.`;
+        } else {
+          syncBanner.classList.add('hidden');
+        }
+      }
+
+      // Discrete Operating Point Selector Elements
+      if (activeModel === 'pure_oneway_v2') {
+        if (btnRef) {
+          btnRef.disabled = false;
+          btnRef.title = "High-Recall Reference Operating Point (\u03b1 = 1.0%)";
+        }
+        if (activeOperatingPoint === 'reference') {
+          if (btnPrimary) {
+            btnPrimary.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-slate-300 bg-soc-elevated hover:text-white cursor-pointer transition border border-soc-border";
+          }
+          if (btnRef) {
+            btnRef.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-600 text-white shadow cursor-pointer transition border border-amber-400/50";
+          }
+          if (targetValEl) targetValEl.textContent = isValidMetricValue(data.target_fpr) ? data.target_fpr : "N/A";
+          if (threshValEl) threshValEl.textContent = isValidMetricValue(data.threshold) ? data.threshold : "N/A";
+          if (obsFprValEl) obsFprValEl.textContent = isValidMetricValue(data.fpr) ? data.fpr : "N/A";
+          if (restrictEl) {
+            if (hasIncompleteMetrics) {
+              restrictEl.textContent = `Warning: Pure One-Way v2 Reference point has incomplete metrics (${missingFields.join(", ")}). Unavailable metrics rendered as N/A.`;
+            } else {
+              restrictEl.textContent = isStale
+                ? "[STALE] Active: Pure One-Way v2 High-Recall Reference (Parity with v1 recall, higher test FPR)."
+                : "Active: Pure One-Way v2 High-Recall Reference (Parity with v1 recall, higher test FPR).";
+            }
+          }
+        } else {
+          if (btnPrimary) {
+            btnPrimary.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-600 text-white shadow cursor-pointer transition border border-amber-400/50";
+          }
+          if (btnRef) {
+            btnRef.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-slate-300 bg-soc-elevated hover:text-white cursor-pointer transition border border-soc-border";
+          }
+          if (targetValEl) targetValEl.textContent = isValidMetricValue(data.target_fpr) ? data.target_fpr : "N/A";
+          if (threshValEl) threshValEl.textContent = isValidMetricValue(data.threshold) ? data.threshold : "N/A";
+          if (obsFprValEl) obsFprValEl.textContent = isValidMetricValue(data.fpr) ? data.fpr : "N/A";
+          if (restrictEl) {
+            if (hasIncompleteMetrics) {
+              restrictEl.textContent = `Warning: Pure One-Way v2 Primary point has incomplete metrics (${missingFields.join(", ")}). Unavailable metrics rendered as N/A.`;
+            } else {
+              restrictEl.textContent = isStale
+                ? "[STALE] Active: Pure One-Way v2 Operational Primary (Lowest test FPR: 10.70%)."
+                : "Active: Pure One-Way v2 Operational Primary (Lowest test FPR: 10.70%).";
+            }
+          }
+        }
+      } else {
+        if (btnRef) {
+          btnRef.disabled = true;
+          btnRef.title = "Reference operating point (\u03b1 = 1.0%) applies exclusively to Pure One-Way v2";
+          btnRef.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-slate-500 bg-soc-elevated border border-soc-border cursor-not-allowed opacity-50 transition";
+        }
+        if (btnPrimary) {
+          btnPrimary.disabled = false;
+          btnPrimary.className = (activeModel === 'temporal_ae')
+            ? "px-3 py-1.5 rounded-md text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40"
+            : "px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-700 text-white shadow cursor-pointer transition border border-slate-600";
+        }
+        if (targetValEl) targetValEl.textContent = isValidMetricValue(data.target_fpr) ? data.target_fpr : "N/A";
+        if (threshValEl) threshValEl.textContent = isValidMetricValue(data.threshold) ? data.threshold : "N/A";
+        if (obsFprValEl) obsFprValEl.textContent = isValidMetricValue(data.fpr) ? data.fpr : "N/A";
+        if (restrictEl) {
+          if (hasIncompleteMetrics) {
+            restrictEl.textContent = `Warning: Model ${dataKey} has incomplete metrics (${missingFields.join(", ")}). Unavailable metrics rendered as N/A.`;
+          } else {
+            restrictEl.textContent = (activeModel === 'temporal_ae')
+              ? (isStale
+                  ? "[STALE] Note: Production Champion v1 is calibrated strictly at \u03b1 = 0.2%. Reference point applies only to v2."
+                  : "Note: Production Champion v1 is calibrated strictly at \u03b1 = 0.2%. High-Recall Reference point (\u03b1 = 1.0%) applies exclusively to Pure One-Way v2.")
+              : "Note: Baseline model operating points are fixed. Reference point applies only to v2.";
+          }
+        }
+      }
+
+      // Update Card A (Dynamic Selected Model Card)
+      if (cardTitle) cardTitle.textContent = data.name || (activeModel === 'temporal_ae' ? "Legacy Temporal Autoencoder (v1)" : activeModel.toUpperCase());
+      if (cardBadge) {
+        const baseStatus = data.status || (activeModel === 'temporal_ae' ? "PRODUCTION CHAMPION" : "CANDIDATE");
+        if (hasIncompleteMetrics) {
+          cardBadge.textContent = isStale ? `${baseStatus} [INCOMPLETE / STALE]` : `${baseStatus} [INCOMPLETE DATA]`;
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-950/80 border border-amber-600/80 text-amber-300";
+        } else if (isStale) {
+          cardBadge.textContent = `${baseStatus} [STALE]`;
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-950/80 border border-amber-600/80 text-amber-300";
+        } else if (activeModel === 'temporal_ae') {
+          cardBadge.textContent = baseStatus;
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700/80 text-emerald-400";
+        } else if (activeModel === 'pure_oneway_v2') {
+          cardBadge.textContent = baseStatus;
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-950/80 border border-amber-600/80 text-amber-300";
+        } else {
+          cardBadge.textContent = baseStatus;
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300";
+        }
+      }
+      if (cardStaleTag) {
+        if (hasIncompleteMetrics) {
+          cardStaleTag.classList.remove('hidden');
+          cardStaleTag.textContent = "INCOMPLETE DATA";
+          cardStaleTag.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-900/60 border border-amber-500 text-amber-200";
+        } else if (isStale) {
+          cardStaleTag.classList.remove('hidden');
+          cardStaleTag.textContent = "STALE BENCHMARK";
+          cardStaleTag.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-900/60 border border-amber-500 text-amber-200";
+        } else {
+          cardStaleTag.classList.add('hidden');
+        }
+      }
+      if (cardPulse) {
+        cardPulse.className = (activeModel === 'temporal_ae')
+          ? "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"
+          : (activeModel === 'pure_oneway_v2' ? "w-2.5 h-2.5 rounded-full bg-amber-400" : "w-2.5 h-2.5 rounded-full bg-slate-400");
+      }
+      if (cardScope) {
+        if (activeModel === 'temporal_ae') {
+          cardScope.textContent = "32 Features";
+          cardScope.className = "font-mono text-cyan-300 font-bold";
+        } else if (activeModel === 'pure_oneway_v2') {
+          cardScope.textContent = "26 Features";
+          cardScope.className = "font-mono text-amber-300 font-bold";
+        } else if (activeModel === 'bidirectional') {
+          cardScope.textContent = "39 Features";
+          cardScope.className = "font-mono text-rose-300 font-bold";
+        } else {
+          cardScope.textContent = "29 Features";
+          cardScope.className = "font-mono text-slate-300 font-bold";
+        }
+      }
+      if (cardScopeSub) {
+        if (activeModel === 'temporal_ae') {
+          cardScopeSub.textContent = "(Includes Reverse Telemetry & Bidirectional Flags)";
+        } else if (activeModel === 'pure_oneway_v2') {
+          cardScopeSub.textContent = "(26-dimensional forward-feature-only design; reverse-direction feature information excluded)";
+        } else if (activeModel === 'bidirectional') {
+          cardScopeSub.textContent = "(Non-compliant bidirectional reference)";
+        } else {
+          cardScopeSub.textContent = "(Forward features only)";
+        }
+      }
+
+      // Render strictly validated metrics or N/A (Zero hardcoded fallbacks!)
+      if (cardRecall) cardRecall.textContent = isValidMetricValue(data.recall) ? data.recall : "N/A";
+      if (cardFpr) cardFpr.textContent = isValidMetricValue(data.fpr) ? data.fpr : "N/A";
+      if (cardPrec) cardPrec.textContent = isValidMetricValue(data.precision) ? data.precision : "N/A";
+      if (cardF1) cardF1.textContent = isValidMetricValue(data.f1) ? data.f1 : "N/A";
+      if (cardPrauc) cardPrauc.textContent = isValidMetricValue(praucVal) ? praucVal : "N/A";
+      if (cardRocauc) cardRocauc.textContent = isValidMetricValue(data.roc_auc) ? data.roc_auc : "N/A";
+      if (cardThreshold) cardThreshold.textContent = isValidMetricValue(data.threshold) ? data.threshold : "N/A";
+      if (cardTargetFpr) {
+        if (isValidMetricValue(data.target_fpr)) {
+          const tfStr = String(data.target_fpr).trim();
+          cardTargetFpr.textContent = (tfStr.includes('=') || tfStr.startsWith('\u03b1')) ? tfStr : `\u03b1 = ${tfStr}`;
+        } else {
+          cardTargetFpr.textContent = "N/A";
+        }
+      }
+      if (cardScoring) {
+        cardScoring.textContent = (activeModel === 'temporal_ae') ? "Weighted MSE" : (activeModel === 'pure_oneway_v2' ? "Unweighted MSE" : "Reconstruction Error");
+      }
+
+      // Update Head-to-Head Table Row Highlights
+      const rowLegacy = document.getElementById('row-h2h-legacy');
+      const rowV2Primary = document.getElementById('row-h2h-v2-primary');
+      const rowV2Ref = document.getElementById('row-h2h-v2-ref');
+
+      [rowLegacy, rowV2Primary, rowV2Ref].forEach(r => {
+        if (r) {
+          r.classList.remove('ring-2', 'ring-cyan-400', 'ring-amber-400', 'bg-cyan-950/60', 'bg-amber-950/60');
+        }
+      });
+
+      if (activeModel === 'temporal_ae' && rowLegacy) {
+        rowLegacy.classList.add('ring-2', 'ring-cyan-400', 'bg-cyan-950/60');
+      } else if (activeModel === 'pure_oneway_v2') {
+        if (activeOperatingPoint === 'reference' && rowV2Ref) {
+          rowV2Ref.classList.add('ring-2', 'ring-amber-400', 'bg-amber-950/60');
+        } else if (rowV2Primary) {
+          rowV2Primary.classList.add('ring-2', 'ring-amber-400', 'bg-amber-950/60');
+        }
+      }
+
+      // Update Charts with actual per-category rates
+      if (data.rates && Array.isArray(data.rates) && data.rates.length) {
+        if (overviewChartInstance) {
+          overviewChartInstance.data.datasets[0].data = data.rates;
+          overviewChartInstance.data.datasets[0].backgroundColor = data.rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
+          overviewChartInstance.update();
+        }
+        if (analyticsChartInstance) {
+          analyticsChartInstance.data.datasets[0].data = data.rates;
+          analyticsChartInstance.data.datasets[0].backgroundColor = data.rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
+          analyticsChartInstance.update();
+        }
+      } else {
+        if (overviewChartInstance) {
+          overviewChartInstance.data.datasets[0].data = [];
+          overviewChartInstance.update();
+        }
+        if (analyticsChartInstance) {
+          analyticsChartInstance.data.datasets[0].data = [];
+          analyticsChartInstance.update();
+        }
+      }
+    }
+
+    // Authentic Evaluation Data Synchronization from Backend APIs (Consumes /api/metrics, /api/models, /api/compare_models)
+    async function fetchModelData() {
+      syncErrors = [];
+      apiSyncStatus = { metrics: false, models: false, compare: false };
+
+      try {
+        const [metricsRes, modelsRes, compareRes] = await Promise.allSettled([
+          fetch('/api/metrics'),
+          fetch('/api/models'),
+          fetch('/api/compare_models')
+        ]);
+
+        // 1. Validate and consume /api/models (Model Catalog & Active Champion Validation)
+        if (modelsRes.status === 'fulfilled' && modelsRes.value.ok) {
+          try {
+            const catalog = await modelsRes.value.json();
+            if (
+              typeof catalog === 'object' && catalog !== null &&
+              catalog.active_production_champion === 'legacy_champion' &&
+              typeof catalog.models === 'object' && catalog.models !== null &&
+              catalog.models.legacy_champion &&
+              catalog.models.legacy_champion.status === 'PRODUCTION CHAMPION' &&
+              catalog.models.legacy_champion.input_dimensions === 32 &&
+              catalog.models.pure_one_way_v2 &&
+              catalog.models.pure_one_way_v2.input_dimensions === 26
+            ) {
+              validatedCatalog = catalog;
+              apiSyncStatus.models = true;
+              // Crucial invariant: Catalog metadata MUST NOT overwrite verified evaluation metrics!
+            } else {
+              syncErrors.push('/api/models (schema validation failed)');
+            }
+          } catch (e) {
+            syncErrors.push(`/api/models (JSON parse error: ${e.message})`);
+          }
+        } else {
+          const status = (modelsRes.status === 'fulfilled') ? `HTTP ${modelsRes.value.status}` : 'Network error';
+          syncErrors.push(`/api/models (${status})`);
+        }
+
+        // 2. Validate and consume /api/metrics
+        if (metricsRes.status === 'fulfilled' && metricsRes.value.ok) {
+          try {
+            const metrics = await metricsRes.value.json();
+            if (typeof metrics === 'object' && metrics !== null && metrics.temporal_autoencoder) {
+              apiSyncStatus.metrics = true;
+
+              // 1. Sync Temporal Autoencoder (v1)
+              const m1 = metrics.temporal_autoencoder;
+              modelBreakdowns.temporal_ae.recall = (m1.detection_rate_pct != null) ? `${m1.detection_rate_pct.toFixed(2)}%` : null;
+              modelBreakdowns.temporal_ae.fpr = (m1.false_positive_rate_pct != null) ? `${m1.false_positive_rate_pct.toFixed(2)}%` : null;
+              modelBreakdowns.temporal_ae.precision = (m1.precision_pct != null) ? `${m1.precision_pct.toFixed(2)}%` : null;
+              modelBreakdowns.temporal_ae.ap = (m1.average_precision != null) ? m1.average_precision.toFixed(4) : null;
+              modelBreakdowns.temporal_ae.threshold = (m1.threshold != null) ? parseFloat(m1.threshold).toFixed(6) : null;
+              modelBreakdowns.temporal_ae.target_fpr = (m1.target_calibration_fpr != null) ? `${(m1.target_calibration_fpr * 100).toFixed(1)}%` : "0.2%";
+              if (m1.per_category) {
+                modelBreakdowns.temporal_ae.rates = attackCategories.map(cat => {
+                  const item = m1.per_category[cat];
+                  if (!item) return 0.0;
+                  return item.detection_rate_pct != null ? parseFloat(item.detection_rate_pct.toFixed(2)) :
+                    parseFloat((item.detected / (item.total || 1) * 100).toFixed(2));
+                });
+              }
+
+              // 2. Sync Pure One-Way v2 (Primary)
+              if (metrics.pure_one_way_v2_primary) {
+                const m2p = metrics.pure_one_way_v2_primary;
+                const ratesObj = m2p.rates || {};
+                const clsObj = m2p.classification_metrics || {};
+                const curvesObj = m2p.continuous_curves || {};
+                modelBreakdowns.pure_oneway_v2.recall = (ratesObj.detection_rate_pct != null) ? `${ratesObj.detection_rate_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2.fpr = (ratesObj.false_positive_rate_pct != null) ? `${ratesObj.false_positive_rate_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2.precision = (clsObj.precision_pct != null) ? `${clsObj.precision_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2.f1 = (clsObj.f1_score != null) ? clsObj.f1_score.toFixed(4) : null;
+                modelBreakdowns.pure_oneway_v2.ap = (curvesObj.pr_auc != null) ? curvesObj.pr_auc.toFixed(4) : null;
+                modelBreakdowns.pure_oneway_v2.roc_auc = (curvesObj.roc_auc != null) ? curvesObj.roc_auc.toFixed(4) : null;
+                const rawThresh = m2p.threshold_value != null ? m2p.threshold_value : m2p.threshold;
+                modelBreakdowns.pure_oneway_v2.threshold = (rawThresh != null) ? parseFloat(rawThresh).toFixed(6) : null;
+                modelBreakdowns.pure_oneway_v2.target_fpr = (m2p.target_calibration_fpr != null) ? `${(m2p.target_calibration_fpr * 100).toFixed(1)}%` : "0.2%";
+                if (m2p.per_category) {
+                  modelBreakdowns.pure_oneway_v2.rates = attackCategories.map(cat => {
+                    const item = m2p.per_category[cat];
+                    if (!item) return 0.0;
+                    return item.recall_pct != null ? parseFloat(item.recall_pct.toFixed(2)) :
+                      parseFloat((item.detected / (item.total || 1) * 100).toFixed(2));
+                  });
+                }
+              }
+
+              // 3. Sync Pure One-Way v2 (Reference)
+              if (metrics.pure_one_way_v2_reference) {
+                const m2r = metrics.pure_one_way_v2_reference;
+                const ratesObj = m2r.rates || {};
+                const clsObj = m2r.classification_metrics || {};
+                const curvesObj = m2r.continuous_curves || {};
+                modelBreakdowns.pure_oneway_v2_ref.recall = (ratesObj.detection_rate_pct != null) ? `${ratesObj.detection_rate_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2_ref.fpr = (ratesObj.false_positive_rate_pct != null) ? `${ratesObj.false_positive_rate_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2_ref.precision = (clsObj.precision_pct != null) ? `${clsObj.precision_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2_ref.f1 = (clsObj.f1_score != null) ? clsObj.f1_score.toFixed(4) : null;
+                modelBreakdowns.pure_oneway_v2_ref.ap = (curvesObj.pr_auc != null) ? curvesObj.pr_auc.toFixed(4) : null;
+                modelBreakdowns.pure_oneway_v2_ref.roc_auc = (curvesObj.roc_auc != null) ? curvesObj.roc_auc.toFixed(4) : null;
+                const rawThresh = m2r.threshold_value != null ? m2r.threshold_value : m2r.threshold;
+                modelBreakdowns.pure_oneway_v2_ref.threshold = (rawThresh != null) ? parseFloat(rawThresh).toFixed(6) : null;
+                modelBreakdowns.pure_oneway_v2_ref.target_fpr = (m2r.target_calibration_fpr != null) ? `${(m2r.target_calibration_fpr * 100).toFixed(1)}%` : "1.0%";
+                if (m2r.per_category) {
+                  modelBreakdowns.pure_oneway_v2_ref.rates = attackCategories.map(cat => {
+                    const item = m2r.per_category[cat];
+                    if (!item) return 0.0;
+                    return item.recall_pct != null ? parseFloat(item.recall_pct.toFixed(2)) :
+                      parseFloat((item.detected / (item.total || 1) * 100).toFixed(2));
+                  });
+                }
+              }
+            } else {
+              syncErrors.push('/api/metrics (metrics schema validation failed)');
+            }
+          } catch (e) {
+            syncErrors.push(`/api/metrics (JSON parse error: ${e.message})`);
+          }
+        } else {
+          const status = (metricsRes.status === 'fulfilled') ? `HTTP ${metricsRes.value.status}` : 'Network error';
+          syncErrors.push(`/api/metrics (${status})`);
+        }
+
+        // 3. Validate and consume /api/compare_models
+        if (compareRes.status === 'fulfilled' && compareRes.value.ok) {
+          try {
+            const comp = await compareRes.value.json();
+            if (typeof comp === 'object' && comp !== null && Array.isArray(comp.comparison_table) && comp.comparison_table.length >= 3) {
+              apiSyncStatus.compare = true;
+              const legacyRow = comp.comparison_table.find(r => r.model && r.model.includes('Legacy'));
+              if (legacyRow) {
+                modelBreakdowns.temporal_ae.f1 = (legacyRow.f1_score != null) ? legacyRow.f1_score.toFixed(4) : null;
+                modelBreakdowns.temporal_ae.roc_auc = (legacyRow.roc_auc != null) ? legacyRow.roc_auc.toFixed(4) : null;
+              }
+            } else {
+              syncErrors.push('/api/compare_models (comparison schema validation failed)');
+            }
+          } catch (e) {
+            syncErrors.push(`/api/compare_models (JSON parse error: ${e.message})`);
+          }
+        } else {
+          const status = (compareRes.status === 'fulfilled') ? `HTTP ${compareRes.value.status}` : 'Network error';
+          syncErrors.push(`/api/compare_models (${status})`);
+        }
+
+        // Determine Stale / Sync State
+        if (syncErrors.length > 0) {
+          isDataStale = true;
+          Object.values(modelBreakdowns).forEach(m => { if (m) m.isStale = true; });
+          showToast(`Warning: Backend synchronization incomplete (${syncErrors.join(", ")}). Data marked as STALE.`, "warning");
+        } else {
+          isDataStale = false;
+          Object.values(modelBreakdowns).forEach(m => { if (m) m.isStale = false; });
+          showToast("Model calibration metrics successfully synchronized from all 3 backend APIs.", "success");
+        }
+
+        updateCalibrationDisplay();
+      } catch (err) {
+        syncErrors.push(`Unexpected error: ${err.message}`);
+        isDataStale = true;
+        Object.values(modelBreakdowns).forEach(m => { if (m) m.isStale = true; });
+        showToast(`Backend sync failed: ${err.message}. Retaining stale data.`, "error");
+        updateCalibrationDisplay();
+      }
     }
 
     // Live Stream Polling & Table Rendering
@@ -2120,6 +2724,9 @@
 
       setInterval(fetchSystemStatus, 3000);
       fetchSystemStatus();
+
+      updateCalibrationDisplay();
+      fetchModelData();
     });
   </script>
 </body>

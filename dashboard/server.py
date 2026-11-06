@@ -97,9 +97,15 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
                     with open(v2_results_path, encoding="utf-8") as f:
                         v2_data = json.load(f).get("models", {})
                         if "pure_one_way_v2_primary" in v2_data:
-                            models_data["pure_one_way_v2_primary"] = v2_data["pure_one_way_v2_primary"]
+                            m_p = dict(v2_data["pure_one_way_v2_primary"])
+                            if "threshold" not in m_p and "threshold_value" in m_p:
+                                m_p["threshold"] = m_p["threshold_value"]
+                            models_data["pure_one_way_v2_primary"] = m_p
                         if "pure_one_way_v2_reference" in v2_data:
-                            models_data["pure_one_way_v2_reference"] = v2_data["pure_one_way_v2_reference"]
+                            m_r = dict(v2_data["pure_one_way_v2_reference"])
+                            if "threshold" not in m_r and "threshold_value" in m_r:
+                                m_r["threshold"] = m_r["threshold_value"]
+                            models_data["pure_one_way_v2_reference"] = m_r
                 except Exception:
                     pass
             elif V2_ADAPTER.is_available:
@@ -108,8 +114,19 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
                     "status": V2_ADAPTER.STATUS,
                     "features": V2_ADAPTER.EXPECTED_DIM,
                     "threshold": V2_ADAPTER.primary_threshold,
+                    "threshold_value": V2_ADAPTER.primary_threshold,
                     "rates": {"detection_rate_pct": 85.38, "false_positive_rate_pct": 10.70},
                     "classification_metrics": {"precision_pct": 71.86, "f1_score": 0.7804},
+                    "continuous_curves": {"pr_auc": 0.8687, "roc_auc": 0.9478},
+                }
+                models_data["pure_one_way_v2_reference"] = {
+                    "model_name": V2_ADAPTER.MODEL_NAME,
+                    "status": V2_ADAPTER.STATUS,
+                    "features": V2_ADAPTER.EXPECTED_DIM,
+                    "threshold": V2_ADAPTER.reference_threshold,
+                    "threshold_value": V2_ADAPTER.reference_threshold,
+                    "rates": {"detection_rate_pct": 93.01, "false_positive_rate_pct": 17.35},
+                    "classification_metrics": {"precision_pct": 63.16, "f1_score": 0.7523},
                     "continuous_curves": {"pr_auc": 0.8687, "roc_auc": 0.9478},
                 }
 
