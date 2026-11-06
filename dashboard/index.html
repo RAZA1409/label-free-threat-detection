@@ -836,49 +836,87 @@
       <!-- VIEW 4: FORENSIC XAI & ROOT-CAUSE ATTRIBUTION SANDBOX -->
       <!-- ===================================================================== -->
       <div id="view-xai" class="space-y-6 hidden">
-        <div class="glass-panel p-5 rounded-xl border border-soc-border flex items-center justify-between">
+        <div class="glass-panel p-5 rounded-xl border border-soc-border flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 class="text-sm font-bold text-white">Explainable AI (XAI) Forensic Root-Cause Sandbox</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Deconstruct mathematical Autoencoder residuals w_j(x_j - x̂_j)²
-              into plain-English SOC analyst forensic reports.</p>
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-bold text-white">Explainable AI (XAI) Forensic Root-Cause Sandbox</h2>
+              <span class="text-[10px] font-mono text-cyan-400 font-semibold bg-cyan-950/80 border border-cyan-700/80 px-2 py-0.5 rounded">Production Champion (v1)</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Feature Reconstruction-Error Attribution: Attribution % = w_j (x_j - x̂_j)² / Total Residual</p>
+            <span class="text-[10px] text-slate-500 font-mono block mt-1">Live Ingestion Telemetry &middot; Mathematical Residual Decomposition</span>
           </div>
-          <button onclick="simulateInteractiveFlow()"
-            class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg transition flex items-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            <span>Simulate Random Test Flow</span>
-          </button>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Flow selector dropdown -->
+            <div class="flex items-center gap-1.5 bg-soc-elevated p-1 rounded-lg border border-soc-border">
+              <label for="xai-flow-select" class="text-[10px] uppercase font-bold text-slate-400 px-2">Flow:</label>
+              <select id="xai-flow-select" onchange="loadSelectedXaiFlow(this.value)"
+                class="bg-slate-900 border border-soc-border text-cyan-400 text-xs font-mono rounded px-2.5 py-1.5 focus:outline-none focus:border-cyan-500 cursor-pointer max-w-xs">
+                <option value="">Awaiting live telemetry flows...</option>
+              </select>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="flex items-center gap-1 bg-soc-elevated p-1 rounded-lg border border-soc-border">
+              <button id="btn-xai-prev" onclick="navigateXaiFlow(-1)" title="Previous Ingested Flow"
+                class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono transition cursor-pointer">
+                &larr; Prev
+              </button>
+              <button id="btn-xai-next" onclick="navigateXaiFlow(1)" title="Next Ingested Flow"
+                class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono transition cursor-pointer">
+                Next &rarr;
+              </button>
+            </div>
+
+            <!-- Latest Alert Shortcut -->
+            <button id="btn-xai-latest" onclick="loadLatestXaiAlert()"
+              class="px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg transition flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Latest Alert</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Status / Error Banner -->
+        <div id="xai-status-banner" class="hidden glass-panel p-4 rounded-xl border border-soc-border flex items-center justify-between text-xs">
+          <div class="flex items-center space-x-3">
+            <span id="xai-status-icon" class="text-base">⚠️</span>
+            <span id="xai-status-msg" class="text-slate-300 font-mono">Flow status notification</span>
+          </div>
+          <button onclick="dismissXaiStatusBanner()" class="text-slate-500 hover:text-slate-300 text-xs font-mono">&times; Dismiss</button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           <!-- Left Column (1 Col): Flow Meta & Verdict -->
           <div class="glass-panel p-5 rounded-xl border border-soc-border space-y-4">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Target Flow Metadata</h3>
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Target Flow Metadata</h3>
+              <span id="xai-model-badge" class="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/80 px-2 py-0.5 rounded">v1 Temporal AE</span>
+            </div>
 
             <div class="space-y-3 text-xs">
               <div class="bg-soc-elevated p-3 rounded-lg border border-soc-border">
                 <div class="text-[10px] text-slate-400 uppercase font-semibold">Flow Identifier</div>
-                <div id="xai-flow-id" class="text-sm font-bold font-mono text-cyan-400 mt-0.5">#FL-902144</div>
+                <div id="xai-flow-id" class="text-sm font-bold font-mono text-cyan-400 mt-0.5">#FL-000000</div>
               </div>
 
               <div class="bg-soc-elevated p-3 rounded-lg border border-soc-border">
                 <div class="text-[10px] text-slate-400 uppercase font-semibold">Ground Truth Label</div>
-                <div id="xai-flow-label" class="text-sm font-bold font-mono text-amber-400 mt-0.5">PortScan</div>
+                <div id="xai-flow-label" class="text-sm font-bold font-mono text-amber-400 mt-0.5">--</div>
               </div>
 
               <div class="bg-soc-elevated p-3 rounded-lg border border-soc-border">
                 <div class="text-[10px] text-slate-400 uppercase font-semibold">Autoencoder Verdict</div>
-                <div id="xai-flow-verdict" class="text-sm font-bold font-mono text-rose-400 mt-0.5">ANOMALY DETECTED
-                </div>
+                <div id="xai-flow-verdict" class="text-sm font-bold font-mono text-rose-400 mt-0.5">--</div>
               </div>
 
               <div class="bg-soc-elevated p-3 rounded-lg border border-soc-border">
-                <div class="text-[10px] text-slate-400 uppercase font-semibold">Anomaly Score vs Threshold</div>
-                <div id="xai-flow-score" class="text-sm font-bold font-mono text-white mt-0.5">127.8759 (Thresh:
-                  0.190885)</div>
+                <div class="text-[10px] text-slate-400 uppercase font-semibold">Anomaly Score vs Calibrated Threshold</div>
+                <div id="xai-flow-score" class="text-sm font-bold font-mono text-white mt-0.5">-- (Thresh: 0.190885)</div>
               </div>
             </div>
 
@@ -886,8 +924,7 @@
             <div class="bg-cyan-950/30 border border-cyan-800/60 p-3.5 rounded-lg space-y-1">
               <div class="text-[10px] font-bold text-cyan-400 uppercase">Automated SOC Analyst Narrative</div>
               <p id="xai-flow-narrative" class="text-xs text-slate-300 leading-relaxed font-sans">
-                ALERT: Flow flagged as anomalous. Primary deviation: Forward flow arrival velocity surges 51.0% above
-                benign Monday baselines, indicative of rapid multi-port TCP SYN scanning.
+                Awaiting ingested flow selection for forensic attribution.
               </p>
             </div>
           </div>
@@ -896,11 +933,10 @@
           <div class="lg:col-span-2 glass-panel p-5 rounded-xl border border-soc-border space-y-4">
             <div class="flex items-center justify-between">
               <div>
-                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Reconstruction Residual
-                  Decomposition</h3>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Reconstruction Residual Decomposition</h3>
                 <p class="text-xs text-slate-400">Attribution % = w_j (x_j - x̂_j)² / Total Residual</p>
               </div>
-              <span class="text-xs font-mono text-slate-400">Top-5 Contributors</span>
+              <span class="text-xs font-mono text-cyan-400 font-semibold bg-cyan-950/60 border border-cyan-800/80 px-2 py-0.5 rounded">Top-5 Leading Drivers</span>
             </div>
 
             <div id="xai-feature-bars" class="space-y-4 pt-2">
@@ -1519,9 +1555,17 @@
         </div>
 
         <!-- Drawer Footer -->
-        <div class="p-4 border-t border-soc-border bg-soc-surface flex items-center justify-between">
+        <div class="p-4 border-t border-soc-border bg-soc-surface flex items-center justify-between gap-3">
+          <button id="btn-drawer-inspect-xai" onclick="inspectCurrentFlowInXai()"
+            class="flex-1 px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg transition flex items-center justify-center gap-2 cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span>Inspect in Forensic XAI &rarr;</span>
+          </button>
           <button onclick="closeDrawer()"
-            class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition cursor-pointer">
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition cursor-pointer">
             Close Dossier
           </button>
         </div>
@@ -1596,6 +1640,9 @@
     let donutChartInstance = null;
     let analyticsChartInstance = null;
     let liveAlertsCache = [];
+    let currentDrawerEvent = null;
+    let currentXaiFlow = null;
+    let activeXaiFlowIndex = null;
     let validatedCatalog = null;
     let apiSyncStatus = { metrics: false, models: false, compare: false };
     let syncErrors = [];
@@ -2286,6 +2333,10 @@
           liveAlertsCache = data.recent_alerts;
           renderLiveTable(liveAlertsCache);
           document.getElementById('live-last-updated').textContent = `Last ping: ${data.last_updated || new Date().toLocaleTimeString()}`;
+          updateXaiFlowDropdown(activeXaiFlowIndex);
+          if (!currentXaiFlow) {
+            loadLatestXaiAlert();
+          }
         }
       } catch (err) {
         console.error("Live feed fetch error:", err);
@@ -2386,6 +2437,7 @@
 
     // Slide-Over Event Forensic Drawer
     function openEventDrawer(eventData) {
+      currentDrawerEvent = eventData;
       document.getElementById('drawer-flow-id').textContent = `#FL-${String(eventData.flow_index).padStart(6, '0')} &middot; ${eventData.timestamp}`;
       document.getElementById('drawer-ground-truth').textContent = eventData.ground_truth;
       document.getElementById('drawer-latency').textContent = `${eventData.latency_ms || 0.02} ms`;
@@ -2451,84 +2503,259 @@
       if (e.key === 'Escape') closeDrawer();
     });
 
-    // Interactive XAI Sandbox
-    const interactiveSamplePool = [
-      {
-        id: "#FL-731291", label: "PortScan", verdict: "ANOMALY DETECTED (HIGH SEVERITY)",
-        score: "127.8759 (Threshold: 0.190885)",
-        narrative: "ALERT: Zero-day PortScan sweep identified. Forward flow velocity in 10s window surged 51.0% above benign baseline, coupled with rapid microsecond TCP SYN connection teardowns.",
-        features: [
-          { name: "Rolling_Flow_Velocity_10s", desc: "Forward flow arrival velocity in 10s window", pct: "51.0%", color: "bg-rose-500" },
-          { name: "Rolling_Single_Pkt_Ratio_10s", desc: "Ratio of single-packet probe flows", pct: "26.4%", color: "bg-rose-500" },
-          { name: "Init_Win_bytes_forward", desc: "Initial TCP window flag (29200 raw scan flag)", pct: "14.8%", color: "bg-amber-500" },
-          { name: "Flow Duration", desc: "Microsecond connection duration", pct: "5.2%", color: "bg-cyan-500" },
-          { name: "Fwd Packets/s", desc: "Forward packet transmission rate", pct: "2.6%", color: "bg-cyan-500" },
-        ]
-      },
-      {
-        id: "#FL-982143", label: "DoS Hulk", verdict: "ANOMALY DETECTED (CRITICAL)",
-        score: "15.8124 (Threshold: 0.190885)",
-        narrative: "ALERT: Volumetric HTTP DoS Hulk flooding detected. Extreme forward packet payload volume and burst velocity deviate sharply from benign baseline distributions.",
-        features: [
-          { name: "act_data_pkt_fwd", desc: "Count of packets containing actual data payload", pct: "45.3%", color: "bg-rose-500" },
-          { name: "Rolling_Flow_Velocity_10s", desc: "10-second forward burst rate", pct: "32.1%", color: "bg-rose-500" },
-          { name: "Total Length of Fwd Packets", desc: "Total forward payload volume", pct: "12.8%", color: "bg-amber-500" },
-          { name: "Subflow Fwd Bytes", desc: "Subflow forward byte rate", pct: "6.4%", color: "bg-cyan-500" },
-          { name: "Fwd Packet Length Mean", desc: "Mean forward packet length", pct: "3.4%", color: "bg-cyan-500" },
-        ]
-      },
-      {
-        id: "#FL-110294", label: "DDoS Volumetric", verdict: "ANOMALY DETECTED (CRITICAL)",
-        score: "4.0223 (Threshold: 0.190885)",
-        narrative: "ALERT: Distributed Denial-of-Service flooding. Forward inter-arrival time collapses to sub-microsecond intervals with massive forward byte volume.",
-        features: [
-          { name: "Rolling_Bytes_Velocity_10s", desc: "10s forward payload byte volume surge", pct: "52.1%", color: "bg-rose-500" },
-          { name: "Fwd IAT Min", desc: "Minimum forward packet inter-arrival time", pct: "25.1%", color: "bg-rose-500" },
-          { name: "Flow Bytes/s", desc: "Forward byte throughput rate", pct: "14.2%", color: "bg-amber-500" },
-          { name: "Total Fwd Packets", desc: "Total packet count in forward direction", pct: "5.4%", color: "bg-cyan-500" },
-          { name: "Avg Fwd Segment Size", desc: "Average forward segment size", pct: "3.2%", color: "bg-cyan-500" },
-        ]
-      },
-      {
-        id: "#FL-440182", label: "BENIGN", verdict: "NORMAL NETWORK TRAFFIC",
-        score: "0.0032 (Threshold: 0.190885)",
-        narrative: "NORMAL: Flow matches normal corporate workstation profile. Standard human cadence observed in forward inter-arrival time and TCP window values.",
-        features: [
-          { name: "Rolling_Flow_Velocity_10s", desc: "Normal Monday arrival cadence", pct: "21.9%", color: "bg-emerald-500" },
-          { name: "Avg Fwd Segment Size", desc: "Standard MTU segment sizing", pct: "18.2%", color: "bg-emerald-500" },
-          { name: "Fwd IAT Mean", desc: "Human web browsing inter-arrival pacing", pct: "12.4%", color: "bg-emerald-500" },
-          { name: "Subflow Fwd Packets", desc: "Standard TCP subflow packet volume", pct: "8.1%", color: "bg-emerald-500" },
-          { name: "Flow Duration", desc: "Normal TCP session hold time", pct: "5.4%", color: "bg-emerald-500" },
-        ]
+    // =========================================================================
+    // Real Forensic XAI & Residual Attribution Engine
+    // =========================================================================
+    function inspectCurrentFlowInXai() {
+      if (!currentDrawerEvent) return;
+      closeDrawer();
+      switchView('xai');
+      renderForensicFlow(currentDrawerEvent);
+      if (currentDrawerEvent.flow_index != null) {
+        activeXaiFlowIndex = currentDrawerEvent.flow_index;
+        updateXaiFlowDropdown(currentDrawerEvent.flow_index);
+        loadSelectedXaiFlow(currentDrawerEvent.flow_index);
       }
-    ];
+    }
 
-    let xaiSampleIdx = 0;
-    function simulateInteractiveFlow() {
-      xaiSampleIdx = (xaiSampleIdx + 1) % interactiveSamplePool.length;
-      const s = interactiveSamplePool[xaiSampleIdx];
+    function showXaiStatusBanner(msg, type = 'warning') {
+      const banner = document.getElementById('xai-status-banner');
+      const msgEl = document.getElementById('xai-status-msg');
+      const iconEl = document.getElementById('xai-status-icon');
+      if (!banner || !msgEl) return;
+      msgEl.textContent = msg;
+      if (type === 'error') {
+        banner.className = "glass-panel p-4 rounded-xl border border-rose-800 bg-rose-950/40 text-rose-300 flex items-center justify-between text-xs";
+        if (iconEl) iconEl.textContent = "❌";
+      } else if (type === 'warning') {
+        banner.className = "glass-panel p-4 rounded-xl border border-amber-800 bg-amber-950/40 text-amber-300 flex items-center justify-between text-xs";
+        if (iconEl) iconEl.textContent = "⚠️";
+      } else {
+        banner.className = "glass-panel p-4 rounded-xl border border-cyan-800 bg-cyan-950/40 text-cyan-300 flex items-center justify-between text-xs";
+        if (iconEl) iconEl.textContent = "ℹ️";
+      }
+      banner.classList.remove('hidden');
+    }
 
-      document.getElementById('xai-flow-id').textContent = s.id;
-      document.getElementById('xai-flow-label').textContent = s.label;
-      document.getElementById('xai-flow-label').className = s.label === "BENIGN" ? "text-sm font-bold font-mono text-emerald-400 mt-0.5" : "text-sm font-bold font-mono text-amber-400 mt-0.5";
-      document.getElementById('xai-flow-verdict').textContent = s.verdict;
-      document.getElementById('xai-flow-verdict').className = s.verdict.includes("ANOMALY") ? "text-sm font-bold font-mono text-rose-400 mt-0.5" : "text-sm font-bold font-mono text-emerald-400 mt-0.5";
-      document.getElementById('xai-flow-score').textContent = s.score;
-      document.getElementById('xai-flow-narrative').textContent = s.narrative;
+    function dismissXaiStatusBanner() {
+      const banner = document.getElementById('xai-status-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    function renderForensicFlow(flowData) {
+      if (!flowData) return;
+      currentXaiFlow = flowData;
+      activeXaiFlowIndex = flowData.flow_index;
+
+      const flowIdStr = flowData.flow_id || `#FL-${String(flowData.flow_index != null ? flowData.flow_index : 0).padStart(6, '0')}`;
+      const tsStr = flowData.timestamp ? ` · ${flowData.timestamp}` : '';
+      const flowIdEl = document.getElementById('xai-flow-id');
+      if (flowIdEl) flowIdEl.textContent = `${flowIdStr}${tsStr}`;
+
+      const labelEl = document.getElementById('xai-flow-label');
+      if (labelEl) {
+        labelEl.textContent = flowData.ground_truth || 'UNKNOWN';
+        labelEl.className = (flowData.ground_truth === 'BENIGN')
+          ? "text-sm font-bold font-mono text-emerald-400 mt-0.5"
+          : "text-sm font-bold font-mono text-amber-400 mt-0.5";
+      }
+
+      const isAnomaly = (typeof flowData.is_anomaly === 'boolean')
+        ? flowData.is_anomaly
+        : (flowData.verdict && flowData.verdict.includes('ANOMAL'));
+
+      const verdictEl = document.getElementById('xai-flow-verdict');
+      if (verdictEl) {
+        verdictEl.textContent = flowData.verdict || (isAnomaly ? 'ANOMALY DETECTED' : 'NORMAL TRAFFIC');
+        verdictEl.className = isAnomaly
+          ? "text-sm font-bold font-mono text-rose-400 mt-0.5"
+          : "text-sm font-bold font-mono text-emerald-400 mt-0.5";
+      }
+
+      const scoreVal = typeof flowData.score === 'number' ? flowData.score.toFixed(4) : (flowData.score || '0.0000');
+      const threshVal = flowData.threshold != null
+        ? (typeof flowData.threshold === 'number' ? flowData.threshold.toFixed(6) : flowData.threshold)
+        : '0.190885';
+      const scoreEl = document.getElementById('xai-flow-score');
+      if (scoreEl) scoreEl.textContent = `${scoreVal} (Thresh: ${threshVal})`;
+
+      const narrativeEl = document.getElementById('xai-flow-narrative');
+      if (narrativeEl) {
+        narrativeEl.textContent = flowData.narrative ||
+          (isAnomaly
+            ? `ALERT: Flow exceeds calibrated threshold (${scoreVal} > ${threshVal}). Primary anomalous residual observed in forward transmission metrics.`
+            : 'NORMAL: Flow conforms to baseline normal Monday profile.');
+      }
 
       const barsContainer = document.getElementById('xai-feature-bars');
-      barsContainer.innerHTML = s.features.map(f => `
-        <div class="space-y-1">
-          <div class="flex justify-between items-center text-xs">
-            <span class="font-medium text-slate-200">${f.name}</span>
-            <span class="font-mono text-slate-300 font-bold">${f.pct}</span>
-          </div>
-          <div class="text-[11px] text-slate-400">${f.desc}</div>
-          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-            <div class="${f.color} h-full rounded-full transition-all duration-500" style="width: ${f.pct}"></div>
-          </div>
-        </div>
-      `).join('');
+      if (!barsContainer) return;
+
+      const drivers = (flowData.top_drivers && flowData.top_drivers.length > 0)
+        ? flowData.top_drivers
+        : (flowData.features || []);
+
+      if (!drivers || drivers.length === 0) {
+        barsContainer.innerHTML = `<div class="p-6 text-center text-slate-500 font-sans text-xs italic">
+          No anomalous residual attribution recorded for this flow. All forward telemetry conforms within normal variance baselines.
+        </div>`;
+      } else {
+        barsContainer.innerHTML = drivers.slice(0, 5).map(d => {
+          const featName = d.feature || d.name || 'Unknown Feature';
+          const featDesc = d.description || d.desc || featName;
+          const pctRaw = d.residual_contribution_pct != null ? d.residual_contribution_pct : d.pct;
+          const pctNum = typeof pctRaw === 'number' ? pctRaw : parseFloat(pctRaw || 0);
+          const pctDisplay = `${pctNum.toFixed(1)}%`;
+
+          let barColor = 'bg-emerald-500';
+          if (isAnomaly) {
+            if (pctNum >= 30) barColor = 'bg-rose-500';
+            else if (pctNum >= 15) barColor = 'bg-amber-500';
+            else barColor = 'bg-cyan-500';
+          }
+
+          const rawDisplay = (d.raw_value != null && d.raw_value !== '') ? d.raw_value : 'N/A';
+          const attrDisplay = (d.attribution_score != null) ? d.attribution_score : 'N/A';
+
+          return `
+            <div class="space-y-1.5 bg-soc-elevated p-3 rounded-lg border border-soc-border">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-semibold text-slate-200">${featName}</span>
+                <span class="font-mono text-cyan-400 font-bold">${pctDisplay}</span>
+              </div>
+              <div class="text-[11px] text-slate-400">${featDesc}</div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="${barColor} h-full rounded-full transition-all duration-500" style="width: ${Math.min(pctNum, 100)}%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] text-slate-400 font-mono pt-0.5">
+                <span>Raw Value: ${rawDisplay}</span>
+                <span>Residual Attribution: ${attrDisplay}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function updateXaiFlowDropdown(selectedFlowId) {
+      const select = document.getElementById('xai-flow-select');
+      if (!select) return;
+
+      if (!liveAlertsCache || liveAlertsCache.length === 0) {
+        if (selectedFlowId != null) {
+          select.innerHTML = `<option value="${selectedFlowId}">#FL-${String(selectedFlowId).padStart(6, '0')}</option>`;
+        } else {
+          select.innerHTML = `<option value="">Awaiting live telemetry flows...</option>`;
+        }
+        return;
+      }
+
+      const recentFlows = liveAlertsCache.slice(-50).reverse();
+      const optionsHtml = recentFlows.map(f => {
+        const isAnom = f.verdict && f.verdict.includes('ANOMAL');
+        const badge = isAnom ? '🚨 ALERT' : '✅ PASS';
+        const idPad = `#FL-${String(f.flow_index).padStart(6, '0')}`;
+        return `<option value="${f.flow_index}">${idPad} · ${f.ground_truth} (${badge})</option>`;
+      }).join('');
+
+      select.innerHTML = optionsHtml;
+
+      if (selectedFlowId != null) {
+        const exists = recentFlows.some(f => String(f.flow_index) === String(selectedFlowId));
+        if (!exists) {
+          const customOpt = document.createElement('option');
+          customOpt.value = selectedFlowId;
+          customOpt.textContent = `#FL-${String(selectedFlowId).padStart(6, '0')} (Selected)`;
+          select.prepend(customOpt);
+        }
+        select.value = String(selectedFlowId);
+      }
+    }
+
+    async function loadSelectedXaiFlow(flowId) {
+      if (flowId == null || flowId === '') return;
+
+      // Check local cache first for instant rendering
+      const localMatch = liveAlertsCache.find(f => String(f.flow_index) === String(flowId) || f.flow_id === flowId);
+      if (localMatch && localMatch.top_drivers && localMatch.top_drivers.length > 0) {
+        renderForensicFlow(localMatch);
+        dismissXaiStatusBanner();
+      }
+
+      // Fetch from backend /api/explain
+      try {
+        const res = await fetch(`/api/explain?flow_id=${encodeURIComponent(flowId)}`);
+        if (res.status === 404) {
+          const errData = await res.json().catch(() => ({}));
+          showXaiStatusBanner(errData.detail || `Flow ${flowId} is no longer available in the active telemetry cache (HTTP 404).`, "warning");
+          showToast(`Flow ${flowId} expired or not found in live cache.`, "warning");
+          return;
+        }
+        if (!res.ok) {
+          showXaiStatusBanner(`Failed to load forensic explanation (HTTP ${res.status}).`, "error");
+          showToast(`Error loading flow ${flowId}: HTTP ${res.status}`, "error");
+          return;
+        }
+
+        const data = await res.json();
+        renderForensicFlow(data);
+        dismissXaiStatusBanner();
+        updateXaiFlowDropdown(data.flow_index);
+      } catch (e) {
+        console.error("XAI flow fetch error:", e);
+        if (!localMatch) {
+          showXaiStatusBanner(`Network error loading explanation: ${e.message}`, "error");
+        }
+      }
+    }
+
+    function navigateXaiFlow(direction) {
+      if (!liveAlertsCache || liveAlertsCache.length === 0) {
+        loadLatestXaiAlert();
+        return;
+      }
+      let currentIdx = liveAlertsCache.findIndex(f => String(f.flow_index) === String(activeXaiFlowIndex));
+      if (currentIdx === -1) {
+        currentIdx = liveAlertsCache.length - 1;
+      }
+      let nextIdx = (currentIdx + direction + liveAlertsCache.length) % liveAlertsCache.length;
+      const targetFlow = liveAlertsCache[nextIdx];
+      if (targetFlow) {
+        loadSelectedXaiFlow(targetFlow.flow_index);
+      }
+    }
+
+    async function loadLatestXaiAlert() {
+      // Check local cache for recent anomalous flow
+      if (liveAlertsCache && liveAlertsCache.length > 0) {
+        const latestAlert = [...liveAlertsCache].reverse().find(f => f.verdict && f.verdict.includes('ANOMAL')) || liveAlertsCache[liveAlertsCache.length - 1];
+        if (latestAlert) {
+          renderForensicFlow(latestAlert);
+          updateXaiFlowDropdown(latestAlert.flow_index);
+          dismissXaiStatusBanner();
+          loadSelectedXaiFlow(latestAlert.flow_index);
+          return;
+        }
+      }
+
+      // Query /api/explain?flow_id=latest
+      try {
+        const res = await fetch('/api/explain?flow_id=latest');
+        if (res.ok) {
+          const data = await res.json();
+          renderForensicFlow(data);
+          updateXaiFlowDropdown(data.flow_index);
+          dismissXaiStatusBanner();
+        } else {
+          showXaiStatusBanner("No live streaming telemetry recorded yet. Trigger stream broadcast to inspect real-time flows.", "info");
+        }
+      } catch (e) {
+        console.error("Load latest alert error:", e);
+      }
+    }
+
+    // Backward-compatibility alias
+    function simulateInteractiveFlow() {
+      navigateXaiFlow(1);
     }
 
     // Chart.js Visualizations
@@ -2712,7 +2939,7 @@
     // Startup
     window.addEventListener('DOMContentLoaded', () => {
       initCharts();
-      simulateInteractiveFlow();
+      loadLatestXaiAlert();
       setInterval(updateClock, 1000);
       updateClock();
 

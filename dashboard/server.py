@@ -61,6 +61,50 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=str(DASHBOARD_DIR), **kwargs)
 
     def do_POST(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+        if path == "/api/explain":
+            content_len = int(self.headers.get("Content-Length", 0))
+            if content_len > 0:
+                try:
+                    body = self.rfile.read(content_len).decode("utf-8")
+                    data = json.loads(body)
+                    features = data.get("flow_dict", data)
+                    explainer = get_explainer()
+                    if explainer is None:
+                        self.send_response(503)
+                        self.send_header("Content-Type", "application/json")
+                        self.send_header("Access-Control-Allow-Origin", "*")
+                        self.end_headers()
+                        self.wfile.write(json.dumps({"status": "ERROR", "error": "ThreatExplainer unavailable"}).encode("utf-8"))
+                        return
+
+                    explanation = explainer.explain_flow(features, top_n=5)
+                    response = {
+                        "status": "SUCCESS",
+                        "model": {
+                            "model_id": "legacy_champion",
+                            "model_name": "Legacy Temporal Autoencoder (v1)",
+                            "status": "PRODUCTION CHAMPION",
+                            "input_dimensions": 32,
+                            "scoring_method": "Inverse-Variance Weighted MSE",
+                            "attribution_method": "Feature Reconstruction-Error Attribution",
+                        },
+                        **explanation,
+                    }
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps(sanitize_for_json(response)).encode("utf-8"))
+                    return
+                except Exception as e:
+                    self.send_response(400)
+                    self.send_header("Content-Type", "application/json")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"status": "ERROR", "error": str(e)}).encode("utf-8"))
+                    return
         self.do_GET()
 
     def do_GET(self):
@@ -368,6 +412,119 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             }
             feed_data = safe_read_json(live_path, default=default_feed)
             self.wfile.write(json.dumps(sanitize_for_json(feed_data)).encode("utf-8"))
+            return
+
+        elif path == "/api/explain":
+            params = parse_qs(parsed.query)
+            flow_id_raw = (
+                params.get("flow_id", [None])[0]
+                or params.get("id", [None])[0]
+                or params.get("index", [None])[0]
+            )
+
+            live_path = EVAL_DIR / "live_stream_feed.json"
+            feed_data = safe_read_json(live_path, default=None)
+            if feed_data is None:
+                self.send_response(404)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "NOT_FOUND",
+                    "error": "Live stream feed is not currently active or telemetry file is unavailable.",
+                    "detail": "Live stream feed is not currently active or telemetry file is unavailable.",
+                    "flow_id": flow_id_raw,
+                }).encode("utf-8"))
+                return
+
+            recent_alerts = feed_data.get("recent_alerts", [])
+            if not recent_alerts:
+                self.send_response(404)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "NOT_FOUND",
+                    "error": "Live feed backlog is currently empty. No flows to explain.",
+                    "detail": "Live feed backlog is currently empty. No flows to explain.",
+                    "flow_id": flow_id_raw,
+                }).encode("utf-8"))
+                return
+
+            matched_alert = None
+            if not flow_id_raw or str(flow_id_raw).lower() in ("latest", "last"):
+                matched_alert = recent_alerts[-1]
+            else:
+                raw_str = str(flow_id_raw).strip()
+                cleaned_id = raw_str.lstrip("#").upper()
+                if cleaned_id.startswith("FL-"):
+                    cleaned_id = cleaned_id[3:]
+                elif cleaned_id.startswith("FL"):
+                    cleaned_id = cleaned_id[2:]
+
+                for alert in reversed(recent_alerts):
+                    f_idx = alert.get("flow_index")
+                    f_idx_str = str(f_idx) if f_idx is not None else ""
+                    f_id_formatted = f"#FL-{f_idx_str.zfill(6)}".upper()
+                    if (
+                        f_idx_str == cleaned_id
+                        or str(f_idx) == raw_str
+                        or f_id_formatted == raw_str.upper()
+                        or f_id_formatted.lstrip("#") == raw_str.upper().lstrip("#")
+                    ):
+                        matched_alert = alert
+                        break
+
+            if matched_alert is None:
+                self.send_response(404)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    "status": "NOT_FOUND",
+                    "error": f"Flow '{flow_id_raw}' is no longer available in the live feed backlog.",
+                    "detail": f"Flow '{flow_id_raw}' is no longer available in the active telemetry cache.",
+                    "flow_id": flow_id_raw,
+                    "available_count": len(recent_alerts),
+                }).encode("utf-8"))
+                return
+
+            flow_idx = matched_alert.get("flow_index", 0)
+            formatted_flow_id = f"#FL-{str(flow_idx).zfill(6)}"
+            top_drivers = matched_alert.get("top_drivers") or []
+
+            explanation_payload = {
+                "status": "SUCCESS",
+                "flow_id": formatted_flow_id,
+                "flow_index": flow_idx,
+                "timestamp": matched_alert.get("timestamp"),
+                "ground_truth": matched_alert.get("ground_truth", "UNKNOWN"),
+                "score": matched_alert.get("score"),
+                "threshold": matched_alert.get("threshold", 0.190885),
+                "verdict": matched_alert.get("verdict", "UNKNOWN"),
+                "severity": matched_alert.get("severity", "LOW"),
+                "latency_ms": matched_alert.get("latency_ms"),
+                "top_drivers": top_drivers,
+                "top_attributions": top_drivers,
+                "narrative": matched_alert.get("narrative", ""),
+                "analyst_narrative": matched_alert.get("narrative", ""),
+                "attribution_method": "Feature Reconstruction-Error Attribution",
+                "v2_shadow": matched_alert.get("v2_shadow"),
+                "model": {
+                    "model_id": "legacy_champion",
+                    "model_name": "Legacy Temporal Autoencoder (v1)",
+                    "status": "PRODUCTION CHAMPION",
+                    "input_dimensions": 32,
+                    "scoring_method": "Inverse-Variance Weighted MSE",
+                    "attribution_method": "Feature Reconstruction-Error Attribution",
+                },
+            }
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(json.dumps(sanitize_for_json(explanation_payload)).encode("utf-8"))
             return
 
         elif path == "/api/system_status":

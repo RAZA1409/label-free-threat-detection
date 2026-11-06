@@ -700,7 +700,7 @@ def run_stream_simulation(
             threshold = explanation["threshold"]
             verdict = explanation["verdict"]
             severity = explanation["severity"]
-            top_drivers = explanation["top_attributions"][:3]
+            top_drivers = explanation["top_attributions"][:5]
             top_driver = explanation["top_attributions"][0]["feature"] if explanation["top_attributions"] else "None"
             driver_pct = explanation["top_attributions"][0]["residual_contribution_pct"] if explanation["top_attributions"] else 0.0
             narrative = explanation["analyst_narrative"]
