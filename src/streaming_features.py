@@ -206,27 +206,123 @@ def compute_pure_forward_rates_batch(df: pd.DataFrame) -> pd.DataFrame:
 # 2. Chronological Stream Preparation & Timestamp Policy
 # --------------------------------------------------------------------------
 
+def find_contiguous_replay_window(
+    sorted_df: pd.DataFrame,
+    max_events: int,
+    label_col: str = "Label",
+    preferred_attack: Optional[str] = "DDoS",
+    target_ratio: float = 0.25,
+) -> Tuple[int, str]:
+    """
+    Identifies a deterministic, contiguous chronological window containing real
+    attack flows and surrounding baseline/benign traffic for realistic temporal replay.
+
+    Algorithm:
+    1. Detects contiguous attack runs using vectorized diff.
+    2. Evaluates candidate windows anchored around attack onsets.
+       For bursts longer than max_events, deterministically leads in with pre-attack
+       benign traffic (20% of max_events) to capture baseline-to-attack transition dynamics.
+    3. Scores candidate windows based on preferred attack match, presence of both
+       classes (attack and benign boundary), and natural proximity to target_ratio.
+    4. Deterministically breaks score ties by selecting the earliest chronological occurrence.
+
+    Returns:
+        (start_idx, selection_note)
+    """
+    n_total = len(sorted_df)
+    if n_total <= max_events:
+        return 0, f"Dataset length ({n_total}) <= requested window ({max_events}); full dataset selected."
+
+    # Identify label column
+    target_col = None
+    for cand in [label_col, "Clean_Label", "Label"]:
+        if cand in sorted_df.columns:
+            target_col = cand
+            break
+
+    if target_col is None:
+        return 0, f"No label column found; defaulting to initial {max_events}-flow contiguous window."
+
+    is_attack = ~sorted_df[target_col].astype(str).str.upper().str.contains("BENIGN")
+    if not is_attack.any():
+        return 0, f"No attack flows present in dataset; defaulting to initial {max_events}-flow contiguous window."
+
+    # Contiguous attack runs via vectorized diff
+    diff = np.diff(is_attack.to_numpy().astype(np.int8), prepend=0, append=0)
+    run_starts = np.where(diff == 1)[0]
+    run_ends = np.where(diff == -1)[0] - 1
+
+    if len(run_starts) == 0:
+        return 0, f"No attack runs detected; defaulting to initial {max_events}-flow contiguous window."
+
+    candidates = []
+    for r_start, r_end in zip(run_starts, run_ends):
+        burst_len = int(r_end - r_start + 1)
+        run_label = str(sorted_df[target_col].iloc[r_start])
+
+        # Deterministic anchor & lead-in policy
+        if burst_len <= max_events:
+            lead_in = min(r_start, max(1, (max_events - burst_len) // 2))
+        else:
+            lead_in = min(r_start, max(1, int(max_events * 0.20)))
+
+        cand_start = max(0, r_start - lead_in)
+        if cand_start + max_events > n_total:
+            cand_start = max(0, n_total - max_events)
+
+        n_atk = int(is_attack.iloc[cand_start : cand_start + max_events].sum())
+        cand_ratio = n_atk / float(max_events)
+
+        # Multi-criterion scoring
+        is_pref = 1.0 if (preferred_attack and preferred_attack.lower() in run_label.lower()) else 0.0
+        has_both = 1.0 if (0 < n_atk < max_events) else 0.0
+        ratio_penalty = abs(cand_ratio - float(target_ratio))
+
+        score = (is_pref * 100.0) + (has_both * 50.0) - (ratio_penalty * 10.0)
+        candidates.append((score, cand_start, run_label, burst_len, n_atk, cand_ratio))
+
+    # Highest score first, then earliest index
+    candidates.sort(key=lambda c: (-c[0], c[1]))
+    best = candidates[0]
+    note = (
+        f"Selected contiguous window at index {best[1]} containing {best[2]} attack "
+        f"(natural burst: {best[3]} flows, window attacks: {best[4]}/{max_events} = {best[5]*100:.1f}%)"
+    )
+    return best[1], note
+
+
 def prepare_chronological_stream(
     df: pd.DataFrame,
     max_events: Optional[int] = None,
     inject_attacks: bool = False,
     attack_ratio: float = 0.25,
     random_state: int = 42,
+    preferred_attack: Optional[str] = "DDoS",
 ) -> pd.DataFrame:
     """
     Prepares a chronologically ordered streaming event pool from historical captures.
 
-    Timestamp Policy:
+    Timestamp & Selection Policy:
     1. Valid timestamps: Parsed to datetime64[ns] and sorted monotonically.
     2. Duplicate timestamps: Preserved in stable original sequence order using
        '_orig_pos' as secondary sort key.
     3. Missing / Invalid timestamps (NaT / None): Rejected with ValueError.
-    4. Deterministic sampling: If inject_attacks is True, samples benign and attack pools
-       deterministically before sorting chronologically.
+    4. Deterministic contiguous window selection:
+       - If max_events is requested, selects a deterministic CONTIGUOUS chronological
+         window rather than sparse random sampling across multi-day captures.
+       - If inject_attacks is True and label information exists, identifies a contiguous
+         window containing a real attack burst (e.g. DDoS) and surrounding baseline traffic.
+       - Guarantees authentic inter-arrival times, physical flow velocities, and temporal fidelity.
+       - Never randomly drops intermediate records or synthesizes artificial timestamps.
 
-    Guarantees:
-    - Never silently reorders events across timestamp boundaries.
-    - Preserves stable sequence for simultaneous events.
+    Metadata Attached to attrs:
+    - min_timestamp: Earliest timestamp in stream.
+    - max_timestamp: Latest timestamp in stream.
+    - trusted_horizon: Replay safety horizon (max_ts + 10s).
+    - selection_mode: "full_dataset", "contiguous_attack_burst", or "contiguous_head".
+    - window_start_idx: Start offset in the sorted capture.
+    - window_end_idx: End offset in the sorted capture.
+    - selection_note: Diagnostic explanation of selected window.
     """
     if "Timestamp" not in df.columns:
         raise ValueError("DataFrame must contain a 'Timestamp' column for chronological streaming.")
@@ -247,40 +343,55 @@ def prepare_chronological_stream(
     # Retain original index position for stable tie-breaking
     pool["_orig_pos"] = np.arange(len(pool))
 
-    if max_events is not None and max_events > 0 and len(pool) > max_events:
-        if inject_attacks and "Label" in pool.columns:
-            benign_mask = pool["Label"].astype(str).str.upper().str.contains("BENIGN")
-            attack_mask = ~benign_mask
+    # Strictly stable chronological sort across entire input pool first
+    sorted_df = pool.sort_values(by=["Timestamp", "_orig_pos"], kind="stable").reset_index(drop=True)
+    n_total = len(sorted_df)
 
-            target_attacks = int(max_events * attack_ratio)
-            target_benign = max_events - target_attacks
+    # Window selection policy
+    if max_events is not None and max_events > 0 and n_total > max_events:
+        label_col = "Label" if "Label" in sorted_df.columns else ("Clean_Label" if "Clean_Label" in sorted_df.columns else None)
+        has_attacks = False
+        if label_col is not None:
+            has_attacks = bool((~sorted_df[label_col].astype(str).str.upper().str.contains("BENIGN")).any())
 
-            benign_sample = pool[benign_mask].sample(
-                n=min(len(pool[benign_mask]), target_benign),
-                random_state=random_state,
+        if inject_attacks and label_col is not None and has_attacks:
+            start_idx, note = find_contiguous_replay_window(
+                sorted_df,
+                max_events=max_events,
+                label_col=label_col,
+                preferred_attack=preferred_attack,
+                target_ratio=attack_ratio,
             )
-            attack_sample = pool[attack_mask].sample(
-                n=min(len(pool[attack_mask]), target_attacks),
-                random_state=random_state,
-            )
-            sampled = pd.concat([benign_sample, attack_sample], ignore_index=True)
+            mode = "contiguous_attack_burst"
         else:
-            sampled = pool.sample(n=max_events, random_state=random_state)
-    else:
-        sampled = pool
+            start_idx = 0
+            mode = "contiguous_head"
+            note = f"Contiguous window of {max_events} flows from start of chronological capture"
 
-    # Strictly stable chronological sort
-    sorted_df = sampled.sort_values(by=["Timestamp", "_orig_pos"], kind="stable").reset_index(drop=True)
-    sorted_df = sorted_df.drop(columns=["_orig_pos"])
+        end_idx = start_idx + max_events
+        result_df = sorted_df.iloc[start_idx:end_idx].copy().reset_index(drop=True)
+        w_start, w_end = start_idx, end_idx
+    else:
+        result_df = sorted_df
+        mode = "full_dataset"
+        w_start, w_end = 0, n_total
+        note = f"Full chronological dataset selected ({n_total} flows)"
+
+    result_df = result_df.drop(columns=["_orig_pos"])
 
     # Metadata attachment for trusted replay bounds
-    if len(sorted_df) > 0:
-        max_ts = sorted_df["Timestamp"].max()
-        sorted_df.attrs["max_timestamp"] = max_ts
-        sorted_df.attrs["min_timestamp"] = sorted_df["Timestamp"].min()
-        sorted_df.attrs["trusted_horizon"] = max_ts + pd.Timedelta(seconds=10.0)
+    if len(result_df) > 0:
+        max_ts = result_df["Timestamp"].max()
+        min_ts = result_df["Timestamp"].min()
+        result_df.attrs["max_timestamp"] = max_ts
+        result_df.attrs["min_timestamp"] = min_ts
+        result_df.attrs["trusted_horizon"] = max_ts + pd.Timedelta(seconds=10.0)
+        result_df.attrs["selection_mode"] = mode
+        result_df.attrs["window_start_idx"] = w_start
+        result_df.attrs["window_end_idx"] = w_end
+        result_df.attrs["selection_note"] = note
 
-    return sorted_df
+    return result_df
 
 
 # --------------------------------------------------------------------------
