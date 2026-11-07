@@ -273,12 +273,15 @@ def find_contiguous_replay_window(
         n_atk = int(is_attack.iloc[cand_start : cand_start + max_events].sum())
         cand_ratio = n_atk / float(max_events)
 
-        # Multi-criterion scoring
+        # Multi-criterion scoring:
+        # Prioritize matching preferred attack (+1000), retaining both baseline & attack (+500),
+        # authentic natural burst volume/density (+burst_len to favor genuine volumetric floods
+        # over stray 1-flow trickles), and target ratio alignment (-ratio_penalty * 10).
         is_pref = 1.0 if (preferred_attack and preferred_attack.lower() in run_label.lower()) else 0.0
         has_both = 1.0 if (0 < n_atk < max_events) else 0.0
         ratio_penalty = abs(cand_ratio - float(target_ratio))
 
-        score = (is_pref * 100.0) + (has_both * 50.0) - (ratio_penalty * 10.0)
+        score = (is_pref * 1000.0) + (has_both * 500.0) + (burst_len * 1.0) - (ratio_penalty * 10.0)
         candidates.append((score, cand_start, run_label, burst_len, n_atk, cand_ratio))
 
     # Highest score first, then earliest index

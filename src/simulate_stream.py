@@ -30,7 +30,12 @@ from typing import Dict, Any, List, Optional, Tuple, Union
 import pandas as pd
 import numpy as np
 
-sys.path.append(str(Path(__file__).resolve().parent))
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+if str(ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(ROOT / "src"))
+
 from features import (
     ONE_WAY_FEATURES,
     AUGMENTED_ONE_WAY_FEATURES,
@@ -470,7 +475,7 @@ def score_v2_shadow(
 
 def run_stream_simulation(
     speed_eps: float = 20.0,
-    max_events: int = 700,
+    max_events: int = 2000,
     inject_attacks: bool = True,
     chunk_size: int = 50,
     v1_only: bool = False,
@@ -1020,7 +1025,7 @@ def run_stream_simulation(
 def main():
     parser = argparse.ArgumentParser(description="One-Way Network Traffic Streaming Simulator (AEGIS Phase 3)")
     parser.add_argument("--eps", type=float, default=20.0, help="Events per second (simulation speed, 0 for unthrottled)")
-    parser.add_argument("--events", type=int, default=700, help="Total events to simulate (default: 700)")
+    parser.add_argument("--events", type=int, default=2000, help="Total events to simulate (default: 2000)")
     parser.add_argument("--chunk-size", type=int, default=50, help="Streaming batch chunk size (default: 50)")
     parser.add_argument("--v1-only", action="store_true", help="Run in Legacy v1 Champion mode only (disable v2 shadow)")
     parser.add_argument("--max-capacity", type=int, default=10_000, help="Context buffer max capacity (default: 10,000)")

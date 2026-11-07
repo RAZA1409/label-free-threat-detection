@@ -33,12 +33,20 @@ import uuid
 import numpy as np
 import pandas as pd
 
-from src.telemetry import (
-    atomic_write_json,
-    safe_read_json,
-    sanitize_for_json,
-    TelemetryManager,
-)
+try:
+    from src.telemetry import (
+        atomic_write_json,
+        safe_read_json,
+        sanitize_for_json,
+        TelemetryManager,
+    )
+except ImportError:
+    from telemetry import (
+        atomic_write_json,
+        safe_read_json,
+        sanitize_for_json,
+        TelemetryManager,
+    )
 
 logger = logging.getLogger("aegis.checkpoint")
 

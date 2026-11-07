@@ -869,7 +869,7 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             self.end_headers()
 
             query = parse_qs(parsed.query)
-            events = int(query.get("events", ["500"])[0])
+            events = int(query.get("events", ["2000"])[0])
             eps = float(query.get("eps", ["15"])[0])
 
             if STREAM_PROCESS is not None and STREAM_PROCESS.poll() is None:

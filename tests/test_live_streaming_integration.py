@@ -588,3 +588,20 @@ def test_14_existing_v1_only_simulator_behavior_remains_available(tmp_path, synt
         assert "v2_shadow" not in alert
     assert summary["v2_primary_anomalies"] == 0
     assert summary["v2_reference_anomalies"] == 0
+
+
+# --------------------------------------------------------------------------
+# Test 15: Direct Script Execution and Import Resilience
+# --------------------------------------------------------------------------
+
+def test_15_direct_script_execution_and_import_resilience():
+    """Verify simulate_stream.py and checkpoint.py execute directly without ModuleNotFoundError."""
+    import subprocess
+    res = subprocess.run(
+        [sys.executable, str(ROOT / "src" / "simulate_stream.py"), "--events", "10", "--eps", "0", "--no-attacks"],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+    )
+    assert res.returncode == 0, f"Script failed with code {res.returncode}:\nSTDOUT:\n{res.stdout}\nSTDERR:\n{res.stderr}"
+    assert "Stream simulation complete" in res.stdout

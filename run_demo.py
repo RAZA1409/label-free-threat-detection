@@ -84,8 +84,8 @@ def main():
     from simulate_stream import run_stream_simulation
 
     try:
-        # Stream 700 flows at 15 flows/sec so the audience can observe alerts live
-        run_stream_simulation(speed_eps=15.0, max_events=700, inject_attacks=True)
+        # Stream 2,000 flows at 15 flows/sec so the audience can observe alerts live
+        run_stream_simulation(speed_eps=15.0, max_events=2000, inject_attacks=True)
     except KeyboardInterrupt:
         print("\n\n[!] Demo stopped by user. Dashboard server remains reachable.")
     

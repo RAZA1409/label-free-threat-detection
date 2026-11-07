@@ -723,9 +723,9 @@
             </select>
 
             <!-- Trigger Stream Button -->
-            <button onclick="startLiveStream(500, 15)"
+            <button onclick="startLiveStream(2000, 15)"
               class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow transition flex items-center gap-1.5 cursor-pointer">
-              <span>▶ Start Stream (500)</span>
+              <span>▶ Start Stream (2000)</span>
             </button>
 
             <!-- Pause / Resume Button -->
@@ -2487,7 +2487,7 @@
     }
 
     // Trigger Stream from UI
-    async function startLiveStream(events = 500, eps = 15) {
+    async function startLiveStream(events = 2000, eps = 15) {
       showToast(`Starting live stream of ${events} flows at ${eps} EPS...`, "info");
       try {
         const res = await fetch(`/api/start_stream?events=${events}&eps=${eps}`);
