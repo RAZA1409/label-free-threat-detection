@@ -17,8 +17,9 @@ from pathlib import Path
 
 # Automatically re-execute inside project .venv if invoked with system python
 _ROOT = Path(__file__).resolve().parent
-_VENV_PYTHON = _ROOT / ".venv" / "Scripts" / "python.exe"
-if _VENV_PYTHON.exists() and Path(sys.executable).resolve() != _VENV_PYTHON.resolve():
+_VENV_DIR = _ROOT / ".venv"
+_VENV_PYTHON = _VENV_DIR / "Scripts" / "python.exe"
+if _VENV_PYTHON.exists() and Path(sys.prefix).resolve() != _VENV_DIR.resolve():
     _res = subprocess.run([str(_VENV_PYTHON)] + sys.argv)
     sys.exit(_res.returncode)
 
@@ -31,6 +32,8 @@ ROOT = _ROOT
 sys.path.append(str(ROOT / "src"))
 
 PORT = 8501
+SERVER = None
+SERVER_THREAD = None
 
 
 def is_port_in_use(port: int) -> bool:
@@ -39,20 +42,44 @@ def is_port_in_use(port: int) -> bool:
 
 
 def start_server_if_needed():
+    global SERVER, SERVER_THREAD
     if is_port_in_use(PORT):
         print(f"[+] Dashboard server already active on http://localhost:{PORT}")
-        return
+        return None, None
 
-    from http.server import HTTPServer
+    try:
+        from http.server import ThreadingHTTPServer as ServerClass
+    except ImportError:
+        from http.server import HTTPServer as ServerClass
     sys.path.append(str(ROOT / "dashboard"))
     from server import ThreatDetectionDashboardHandler
 
     print(f"[*] Starting local SOC Dashboard server on http://localhost:{PORT}...")
-    server = HTTPServer(("127.0.0.1", PORT), ThreatDetectionDashboardHandler)
-    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
-    server_thread.start()
+    SERVER = ServerClass(("127.0.0.1", PORT), ThreatDetectionDashboardHandler)
+    SERVER_THREAD = threading.Thread(target=SERVER.serve_forever, daemon=True)
+    SERVER_THREAD.start()
     time.sleep(1.0)
     print(f"[+] Dashboard server is running on http://localhost:{PORT}")
+    return SERVER, SERVER_THREAD
+
+
+def stop_server():
+    global SERVER, SERVER_THREAD
+    if SERVER is not None:
+        print("\n[*] Shutting down SOC Dashboard server...")
+        try:
+            SERVER.shutdown()
+        except Exception:
+            pass
+        try:
+            SERVER.server_close()
+        except Exception:
+            pass
+        if SERVER_THREAD is not None and SERVER_THREAD.is_alive():
+            SERVER_THREAD.join(timeout=3.0)
+        SERVER = None
+        SERVER_THREAD = None
+        print("[+] Dashboard server stopped and port 8501 released.")
 
 
 def main():
@@ -75,21 +102,52 @@ def main():
 
     time.sleep(1.5)
 
+    # Optional CLI parameters (defaults strictly preserved: 2,000 events, 15 EPS)
+    events = 2000
+    eps = 15.0
+    if "--events" in sys.argv:
+        try:
+            events = int(sys.argv[sys.argv.index("--events") + 1])
+        except (ValueError, IndexError):
+            pass
+    if "--eps" in sys.argv:
+        try:
+            eps = float(sys.argv[sys.argv.index("--eps") + 1])
+        except (ValueError, IndexError):
+            pass
+
     # 3. Run stream simulator
     print("\n" + "=" * 80)
-    print("  STARTING LIVE OPTICAL TAP TRAFFIC STREAM (93% RECALL AUTOENCODER)")
+    print(f"  STARTING LIVE OPTICAL TAP TRAFFIC STREAM ({events} FLOWS)")
     print("  Watching incoming flows in real-time. Press Ctrl+C anytime to stop.")
     print("=" * 80 + "\n")
 
     from simulate_stream import run_stream_simulation
 
     try:
-        # Stream 2,000 flows at 15 flows/sec so the audience can observe alerts live
-        run_stream_simulation(speed_eps=15.0, max_events=2000, inject_attacks=True)
+        try:
+            # Stream flows at requested rate (default: 2,000 flows at 15 flows/sec)
+            run_stream_simulation(speed_eps=eps, max_events=events, inject_attacks=True)
+        except KeyboardInterrupt:
+            print("\n\n[!] Stream replay interrupted by user.")
+            return
+
+        print("\n" + "=" * 80)
+        print("  [+] STREAM COMPLETE — SOC DASHBOARD REMAINS ACTIVE & FULLY INTERACTIVE")
+        print(f"  URL: {dashboard_url}")
+        print("  All 5 views (Overview, Radar, Threats, XAI, Calibration) are live.")
+        print("  Press Ctrl+C anytime to stop the dashboard server and exit.")
+        print("=" * 80 + "\n")
+
+        # Main-thread keep-alive: keeps server alive until user sends Ctrl+C
+        while True:
+            time.sleep(1.0)
+
     except KeyboardInterrupt:
-        print("\n\n[!] Demo stopped by user. Dashboard server remains reachable.")
-    
-    print("\n[+] Demo completed! Dashboard remains accessible at: " + dashboard_url)
+        print("\n[!] Shutdown requested by user.")
+    finally:
+        stop_server()
+        print("\n[+] AEGIS session ended cleanly.")
 
 
 if __name__ == "__main__":
