@@ -294,6 +294,11 @@ def find_contiguous_replay_window(
     return best[1], note
 
 
+PORTSCAN_REPLAY_SLICE: Tuple[int, int] = (1685068, 1686068)
+DDOS_ONSET_REPLAY_SLICE: Tuple[int, int] = (1903272, 1904272)
+SUPPORTED_REPLAY_SCENARIOS = {"two_episode", "legacy_ddos", "contiguous_burst"}
+
+
 def prepare_chronological_stream(
     df: pd.DataFrame,
     max_events: Optional[int] = None,
@@ -301,6 +306,7 @@ def prepare_chronological_stream(
     attack_ratio: float = 0.25,
     random_state: int = 42,
     preferred_attack: Optional[str] = "DDoS",
+    replay_scenario: str = "two_episode",
 ) -> pd.DataFrame:
     """
     Prepares a chronologically ordered streaming event pool from historical captures.
@@ -330,6 +336,18 @@ def prepare_chronological_stream(
     if "Timestamp" not in df.columns:
         raise ValueError("DataFrame must contain a 'Timestamp' column for chronological streaming.")
 
+    if replay_scenario not in SUPPORTED_REPLAY_SCENARIOS:
+        raise ValueError(
+            f"Unsupported replay_scenario '{replay_scenario}'. "
+            f"Supported scenarios are: {sorted(SUPPORTED_REPLAY_SCENARIOS)}"
+        )
+
+    if max_events is not None and not isinstance(max_events, (int, np.integer)):
+        raise TypeError(f"max_events must be an integer or None, got {type(max_events).__name__}")
+
+    if max_events is not None and max_events < 0:
+        raise ValueError(f"max_events cannot be negative, got {max_events}")
+
     pool = df.copy()
 
     # Reject null timestamps
@@ -350,6 +368,19 @@ def prepare_chronological_stream(
     sorted_df = pool.sort_values(by=["Timestamp", "_orig_pos"], kind="stable").reset_index(drop=True)
     n_total = len(sorted_df)
 
+    if max_events == 0:
+        empty_df = sorted_df.iloc[0:0].copy()
+        if "_orig_pos" in empty_df.columns:
+            empty_df = empty_df.drop(columns=["_orig_pos"])
+        empty_df.attrs["max_timestamp"] = None
+        empty_df.attrs["min_timestamp"] = None
+        empty_df.attrs["trusted_horizon"] = None
+        empty_df.attrs["selection_mode"] = "empty"
+        empty_df.attrs["window_start_idx"] = 0
+        empty_df.attrs["window_end_idx"] = 0
+        empty_df.attrs["selection_note"] = "Empty stream selected (max_events=0)"
+        return empty_df
+
     # Window selection policy
     if max_events is not None and max_events > 0 and n_total > max_events:
         label_col = "Label" if "Label" in sorted_df.columns else ("Clean_Label" if "Clean_Label" in sorted_df.columns else None)
@@ -358,29 +389,59 @@ def prepare_chronological_stream(
             has_attacks = bool((~sorted_df[label_col].astype(str).str.upper().str.contains("BENIGN")).any())
 
         if inject_attacks and label_col is not None and has_attacks:
-            start_idx, note = find_contiguous_replay_window(
-                sorted_df,
-                max_events=max_events,
-                label_col=label_col,
-                preferred_attack=preferred_attack,
-                target_ratio=attack_ratio,
-            )
-            mode = "contiguous_attack_burst"
+            if replay_scenario == "two_episode" and n_total >= DDOS_ONSET_REPLAY_SLICE[1]:
+                # Option B-1: Two-episode authentic chronological replay
+                # Episode 1: PortScan [1685068 : 1686068] (1,000 flows @ 02:50:00 - 02:51:00)
+                # Episode 2: DDoS Onset [1903272 : 1904272] (1,000 flows @ 03:56:00)
+                if max_events == 2000:
+                    ep1 = sorted_df.iloc[PORTSCAN_REPLAY_SLICE[0] : PORTSCAN_REPLAY_SLICE[1]].copy()
+                    ep2 = sorted_df.iloc[DDOS_ONSET_REPLAY_SLICE[0] : DDOS_ONSET_REPLAY_SLICE[1]].copy()
+                elif max_events == 1:
+                    ep1 = sorted_df.iloc[PORTSCAN_REPLAY_SLICE[0] : PORTSCAN_REPLAY_SLICE[0] + 1].copy()
+                    ep2 = sorted_df.iloc[DDOS_ONSET_REPLAY_SLICE[0] : DDOS_ONSET_REPLAY_SLICE[0]].copy()
+                else:
+                    n1 = max_events // 2
+                    n2 = max_events - n1
+                    ep1 = sorted_df.iloc[PORTSCAN_REPLAY_SLICE[0] : PORTSCAN_REPLAY_SLICE[0] + n1].copy()
+                    ep2 = sorted_df.iloc[DDOS_ONSET_REPLAY_SLICE[0] : DDOS_ONSET_REPLAY_SLICE[0] + n2].copy()
+
+                result_df = pd.concat([ep1, ep2], ignore_index=True)
+                mode = "two_episode_composite"
+                w_start = PORTSCAN_REPLAY_SLICE[0]
+                w_end = DDOS_ONSET_REPLAY_SLICE[1]
+                t_ps = ep1["Timestamp"].iloc[0].strftime("%H:%M:%S") if len(ep1) > 0 else "N/A"
+                t_ddos = ep2["Timestamp"].iloc[0].strftime("%H:%M:%S") if len(ep2) > 0 else "N/A"
+                note = (
+                    f"Two-episode authentic chronological replay: PortScan ({len(ep1)} flows @ {t_ps}) "
+                    f"followed by DDoS onset ({len(ep2)} flows @ {t_ddos}). Total: {len(result_df)} flows."
+                )
+            else:
+                start_idx, note = find_contiguous_replay_window(
+                    sorted_df,
+                    max_events=max_events,
+                    label_col=label_col,
+                    preferred_attack=preferred_attack,
+                    target_ratio=attack_ratio,
+                )
+                mode = "contiguous_attack_burst"
+                end_idx = start_idx + max_events
+                result_df = sorted_df.iloc[start_idx:end_idx].copy().reset_index(drop=True)
+                w_start, w_end = start_idx, end_idx
         else:
             start_idx = 0
             mode = "contiguous_head"
             note = f"Contiguous window of {max_events} flows from start of chronological capture"
-
-        end_idx = start_idx + max_events
-        result_df = sorted_df.iloc[start_idx:end_idx].copy().reset_index(drop=True)
-        w_start, w_end = start_idx, end_idx
+            end_idx = start_idx + max_events
+            result_df = sorted_df.iloc[start_idx:end_idx].copy().reset_index(drop=True)
+            w_start, w_end = start_idx, end_idx
     else:
         result_df = sorted_df
         mode = "full_dataset"
         w_start, w_end = 0, n_total
         note = f"Full chronological dataset selected ({n_total} flows)"
 
-    result_df = result_df.drop(columns=["_orig_pos"])
+    if "_orig_pos" in result_df.columns:
+        result_df = result_df.drop(columns=["_orig_pos"])
 
     # Metadata attachment for trusted replay bounds
     if len(result_df) > 0:
@@ -393,6 +454,11 @@ def prepare_chronological_stream(
         result_df.attrs["window_start_idx"] = w_start
         result_df.attrs["window_end_idx"] = w_end
         result_df.attrs["selection_note"] = note
+        if mode == "two_episode_composite":
+            result_df.attrs["episode_slices"] = [
+                {"episode": 1, "attack": "PortScan", "start_idx": PORTSCAN_REPLAY_SLICE[0], "end_idx": PORTSCAN_REPLAY_SLICE[0] + len(ep1), "count": len(ep1)},
+                {"episode": 2, "attack": "DDoS", "start_idx": DDOS_ONSET_REPLAY_SLICE[0], "end_idx": DDOS_ONSET_REPLAY_SLICE[0] + len(ep2), "count": len(ep2)},
+            ]
 
     return result_df
 

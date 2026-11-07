@@ -491,6 +491,7 @@ def run_stream_simulation(
     checkpoint_interval_events: Optional[int] = None,
     save_checkpoint_on_shutdown: bool = True,
     stop_after_events: Optional[int] = None,
+    replay_scenario: str = "two_episode",
 ) -> Dict[str, Any]:
     """
     Simulates a streaming network tap / data diode ingest with chronological playback
@@ -509,9 +510,17 @@ def run_stream_simulation(
     checkpoint_interval_events: Save checkpoint every N flows (None for shutdown only).
     save_checkpoint_on_shutdown: Save final checkpoint upon stream completion/shutdown.
     stop_after_events: Optional early termination limit to test restart recovery midway.
+    replay_scenario: Replay composition scenario ('two_episode' default or 'legacy_ddos').
     """
     feed_path = Path(live_feed_file) if live_feed_file else LIVE_FEED_FILE
     parquet_path = Path(test_file) if test_file else TEST_FILE
+
+    valid_scenarios = {"two_episode", "legacy_ddos", "contiguous_burst"}
+    if replay_scenario not in valid_scenarios:
+        raise ValueError(
+            f"Unsupported replay_scenario '{replay_scenario}'. "
+            f"Supported scenarios are: {sorted(valid_scenarios)}"
+        )
 
     telemetry_mgr = TelemetryManager(
         feed_path=feed_path if write_feed else None,
@@ -573,6 +582,7 @@ def run_stream_simulation(
         inject_attacks=inject_attacks,
         attack_ratio=0.25,
         random_state=42,
+        replay_scenario=replay_scenario,
     )
 
     # Derive trusted replay horizon from complete stream pool before chunking
@@ -1008,6 +1018,7 @@ def run_stream_simulation(
         "total_processed": total_processed,
         "total_anomalies": total_anomalies,
         "anomaly_rate_pct": round((total_anomalies / total_processed) * 100, 2) if total_processed > 0 else 0.0,
+        "replay_scenario": replay_scenario,
         "v2_primary_anomalies": v2_primary_anomalies,
         "v2_reference_anomalies": v2_reference_anomalies,
         "v2_degraded_count": v2_degraded_count,
@@ -1030,6 +1041,13 @@ def main():
     parser.add_argument("--v1-only", action="store_true", help="Run in Legacy v1 Champion mode only (disable v2 shadow)")
     parser.add_argument("--max-capacity", type=int, default=10_000, help="Context buffer max capacity (default: 10,000)")
     parser.add_argument("--no-attacks", action="store_false", dest="inject_attacks", help="Disable synthetic attack injection")
+    parser.add_argument(
+        "--replay-scenario",
+        type=str,
+        default="two_episode",
+        choices=["two_episode", "legacy_ddos"],
+        help="Replay scenario: 'two_episode' (default: 1,000 PortScan + 1,000 DDoS onset) or 'legacy_ddos' (contiguous DDoS)",
+    )
     parser.add_argument("--telemetry-throttle-sec", type=float, default=0.25, help="Telemetry disk write throttle interval in seconds (default: 0.25)")
     parser.add_argument("--telemetry-throttle-flows", type=int, default=20, help="Telemetry disk write flow batch size (default: 20)")
     parser.add_argument("--checkpoint-file", type=str, default=None, help="Path to checkpoint file for persistence and recovery")
@@ -1049,6 +1067,7 @@ def main():
         checkpoint_file=args.checkpoint_file,
         auto_restore=args.auto_restore,
         checkpoint_interval_events=args.checkpoint_interval,
+        replay_scenario=args.replay_scenario,
     )
 
 
