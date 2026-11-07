@@ -1,0 +1,663 @@
+{
+  "evaluation_metadata": {
+    "dataset": "outputs/experiment/test_tue_fri.parquet",
+    "total_flows": 2300825,
+    "benign_flows": 1743179,
+    "attack_flows": 557646,
+    "attack_categories_count": 14,
+    "evaluated_at": "2026-11-04 12:59:56 UTC"
+  },
+  "models": {
+    "pure_one_way_v2_primary": {
+      "model_name": "Pure One-Way Autoencoder (v2)",
+      "threshold_name": "Primary (alpha=0.002)",
+      "threshold_value": 0.314036,
+      "total_flows": 2300825,
+      "benign_flows": 1743179,
+      "attack_flows": 557646,
+      "confusion_matrix": {
+        "tp": 476125,
+        "fp": 186489,
+        "tn": 1556690,
+        "fn": 81521
+      },
+      "rates": {
+        "detection_rate_pct": 85.3812,
+        "false_positive_rate_pct": 10.6982,
+        "false_negative_rate_pct": 14.6188,
+        "specificity_pct": 89.3018
+      },
+      "classification_metrics": {
+        "precision_pct": 71.8556,
+        "f1_score": 0.7804,
+        "accuracy_pct": 88.3516,
+        "balanced_accuracy_pct": 87.3415
+      },
+      "continuous_curves": {
+        "roc_auc": 0.947789,
+        "pr_auc": 0.868662
+      },
+      "timing_and_throughput": {
+        "feature_engineering_seconds": 1.7,
+        "transformation_seconds": 6.6,
+        "scoring_inference_seconds": 1.09,
+        "total_processing_seconds": 9.38,
+        "total_throughput_flows_per_second": 245193.7,
+        "latency_microseconds_per_flow": 4.08
+      },
+      "per_category": {
+        "BENIGN": {
+          "total": 1743179,
+          "detected_as_anomaly": 186489,
+          "classified_benign": 1556690,
+          "false_positive_rate_pct": 10.6982,
+          "accuracy_pct": 89.3018
+        },
+        "Bot": {
+          "total": 1966,
+          "detected": 44,
+          "missed": 1922,
+          "recall_pct": 2.238,
+          "specific_precision_pct": 0.0066,
+          "specific_f1_score": 0.0001
+        },
+        "DDoS": {
+          "total": 128027,
+          "detected": 84886,
+          "missed": 43141,
+          "recall_pct": 66.3032,
+          "specific_precision_pct": 12.8108,
+          "specific_f1_score": 0.2147
+        },
+        "DoS GoldenEye": {
+          "total": 10293,
+          "detected": 528,
+          "missed": 9765,
+          "recall_pct": 5.1297,
+          "specific_precision_pct": 0.0797,
+          "specific_f1_score": 0.0016
+        },
+        "DoS Hulk": {
+          "total": 231073,
+          "detected": 230726,
+          "missed": 347,
+          "recall_pct": 99.8498,
+          "specific_precision_pct": 34.8206,
+          "specific_f1_score": 0.5163
+        },
+        "DoS Slowhttptest": {
+          "total": 5499,
+          "detected": 700,
+          "missed": 4799,
+          "recall_pct": 12.7296,
+          "specific_precision_pct": 0.1056,
+          "specific_f1_score": 0.0021
+        },
+        "DoS slowloris": {
+          "total": 5796,
+          "detected": 1598,
+          "missed": 4198,
+          "recall_pct": 27.5707,
+          "specific_precision_pct": 0.2412,
+          "specific_f1_score": 0.0048
+        },
+        "FTP-Patator": {
+          "total": 7938,
+          "detected": 58,
+          "missed": 7880,
+          "recall_pct": 0.7307,
+          "specific_precision_pct": 0.0088,
+          "specific_f1_score": 0.0002
+        },
+        "Heartbleed": {
+          "total": 11,
+          "detected": 0,
+          "missed": 11,
+          "recall_pct": 0.0,
+          "specific_precision_pct": 0.0,
+          "specific_f1_score": 0.0
+        },
+        "Infiltration": {
+          "total": 36,
+          "detected": 17,
+          "missed": 19,
+          "recall_pct": 47.2222,
+          "specific_precision_pct": 0.0026,
+          "specific_f1_score": 0.0001
+        },
+        "PortScan": {
+          "total": 158930,
+          "detected": 157568,
+          "missed": 1362,
+          "recall_pct": 99.143,
+          "specific_precision_pct": 23.7798,
+          "specific_f1_score": 0.3836
+        },
+        "SSH-Patator": {
+          "total": 5897,
+          "detected": 0,
+          "missed": 5897,
+          "recall_pct": 0.0,
+          "specific_precision_pct": 0.0,
+          "specific_f1_score": 0.0
+        },
+        "Web Attack - Brute Force": {
+          "total": 1507,
+          "detected": 0,
+          "missed": 1507,
+          "recall_pct": 0.0,
+          "specific_precision_pct": 0.0,
+          "specific_f1_score": 0.0
+        },
+        "Web Attack - Sql Injection": {
+          "total": 21,
+          "detected": 0,
+          "missed": 21,
+          "recall_pct": 0.0,
+          "specific_precision_pct": 0.0,
+          "specific_f1_score": 0.0
+        },
+        "Web Attack - XSS": {
+          "total": 652,
+          "detected": 0,
+          "missed": 652,
+          "recall_pct": 0.0,
+          "specific_precision_pct": 0.0,
+          "specific_f1_score": 0.0
+        }
+      },
+      "per_day": {
+        "Tuesday": {
+          "date": "2017-07-04",
+          "total_flows": 445909,
+          "benign_flows": 432074,
+          "attack_flows": 13835,
+          "tp": 58,
+          "fp": 11828,
+          "tn": 420246,
+          "fn": 13777,
+          "recall_pct": 0.4192,
+          "false_positive_rate_pct": 2.7375,
+          "precision_pct": 0.488,
+          "f1_score": 0.0045
+        },
+        "Wednesday": {
+          "date": "2017-07-05",
+          "total_flows": 692703,
+          "benign_flows": 440031,
+          "attack_flows": 252672,
+          "tp": 233552,
+          "fp": 28328,
+          "tn": 411703,
+          "fn": 19120,
+          "recall_pct": 92.4329,
+          "false_positive_rate_pct": 6.4377,
+          "precision_pct": 89.1828,
+          "f1_score": 0.9078
+        },
+        "Thursday": {
+          "date": "2017-07-06",
+          "total_flows": 458968,
+          "benign_flows": 456752,
+          "attack_flows": 2216,
+          "tp": 17,
+          "fp": 79294,
+          "tn": 377458,
+          "fn": 2199,
+          "recall_pct": 0.7671,
+          "false_positive_rate_pct": 17.3604,
+          "precision_pct": 0.0214,
+          "f1_score": 0.0004
+        },
+        "Friday": {
+          "date": "2017-07-07",
+          "total_flows": 703245,
+          "benign_flows": 414322,
+          "attack_flows": 288923,
+          "tp": 242498,
+          "fp": 67039,
+          "tn": 347283,
+          "fn": 46425,
+          "recall_pct": 83.9317,
+          "false_positive_rate_pct": 16.1804,
+          "precision_pct": 78.3422,
+          "f1_score": 0.8104
+        }
+      }
+    },
+    "pure_one_way_v2_reference": {
+      "model_name": "Pure One-Way Autoencoder (v2)",
+      "threshold_name": "Reference (alpha=0.010)",
+      "threshold_value": 0.099018,
+      "total_flows": 2300825,
+      "benign_flows": 1743179,
+      "attack_flows": 557646,
+      "confusion_matrix": {
+        "tp": 518647,
+        "fp": 302461,
+        "tn": 1440718,
+        "fn": 38999
+      },
+      "rates": {
+        "detection_rate_pct": 93.0065,
+        "false_positive_rate_pct": 17.3511,
+        "false_negative_rate_pct": 6.9935,
+        "specificity_pct": 82.6489
+      },
+      "classification_metrics": {
+        "precision_pct": 63.1643,
+        "f1_score": 0.7523,
+        "accuracy_pct": 85.1592,
+        "balanced_accuracy_pct": 87.8277
+      },
+      "continuous_curves": {
+        "roc_auc": 0.947789,
+        "pr_auc": 0.868662
+      },
+      "timing_and_throughput": {
+        "feature_engineering_seconds": 1.7,
+        "transformation_seconds": 6.6,
+        "scoring_inference_seconds": 1.09,
+        "total_processing_seconds": 9.38,
+        "total_throughput_flows_per_second": 245193.7,
+        "latency_microseconds_per_flow": 4.08
+      },
+      "per_category": {
+        "BENIGN": {
+          "total": 1743179,
+          "detected_as_anomaly": 302461,
+          "classified_benign": 1440718,
+          "false_positive_rate_pct": 17.3511,
+          "accuracy_pct": 82.6489
+        },
+        "Bot": {
+          "total": 1966,
+          "detected": 60,
+          "missed": 1906,
+          "recall_pct": 3.0519,
+          "specific_precision_pct": 0.0073,
+          "specific_f1_score": 0.0001
+        },
+        "DDoS": {
+          "total": 128027,
+          "detected": 125422,
+          "missed": 2605,
+          "recall_pct": 97.9653,
+          "specific_precision_pct": 15.2747,
+          "specific_f1_score": 0.2643
+        },
+        "DoS GoldenEye": {
+          "total": 10293,
+          "detected": 1217,
+          "missed": 9076,
+          "recall_pct": 11.8236,
+          "specific_precision_pct": 0.1482,
+          "specific_f1_score": 0.0029
+        },
+        "DoS Hulk": {
+          "total": 231073,
+          "detected": 230726,
+          "missed": 347,
+          "recall_pct": 99.8498,
+          "specific_precision_pct": 28.0993,
+          "specific_f1_score": 0.4386
+        },
+        "DoS Slowhttptest": {
+          "total": 5499,
+          "detected": 990,
+          "missed": 4509,
+          "recall_pct": 18.0033,
+          "specific_precision_pct": 0.1206,
+          "specific_f1_score": 0.0024
+        },
+        "DoS slowloris": {
+          "total": 5796,
+          "detected": 1837,
+          "missed": 3959,
+          "recall_pct": 31.6943,
+          "specific_precision_pct": 0.2237,
+          "specific_f1_score": 0.0044
+        },
+        "FTP-Patator": {
+          "total": 7938,
+          "detected": 598,
+          "missed": 7340,
+          "recall_pct": 7.5334,
+          "specific_precision_pct": 0.0728,
+          "specific_f1_score": 0.0014
+        },
+        "Heartbleed": {
+          "total": 11,
+          "detected": 2,
+          "missed": 9,
+          "recall_pct": 18.1818,
+          "specific_precision_pct": 0.0002,
+          "specific_f1_score": 0.0
+        },
+        "Infiltration": {
+          "total": 36,
+          "detected": 27,
+          "missed": 9,
+          "recall_pct": 75.0,
+          "specific_precision_pct": 0.0033,
+          "specific_f1_score": 0.0001
+        },
+        "PortScan": {
+          "total": 158930,
+          "detected": 157573,
+          "missed": 1357,
+          "recall_pct": 99.1462,
+          "specific_precision_pct": 19.1903,
+          "specific_f1_score": 0.3216
+        },
+        "SSH-Patator": {
+          "total": 5897,
+          "detected": 191,
+          "missed": 5706,
+          "recall_pct": 3.2389,
+          "specific_precision_pct": 0.0233,
+          "specific_f1_score": 0.0005
+        },
+        "Web Attack - Brute Force": {
+          "total": 1507,
+          "detected": 4,
+          "missed": 1503,
+          "recall_pct": 0.2654,
+          "specific_precision_pct": 0.0005,
+          "specific_f1_score": 0.0
+        },
+        "Web Attack - Sql Injection": {
+          "total": 21,
+          "detected": 0,
+          "missed": 21,
+          "recall_pct": 0.0,
+          "specific_precision_pct": 0.0,
+          "specific_f1_score": 0.0
+        },
+        "Web Attack - XSS": {
+          "total": 652,
+          "detected": 0,
+          "missed": 652,
+          "recall_pct": 0.0,
+          "specific_precision_pct": 0.0,
+          "specific_f1_score": 0.0
+        }
+      },
+      "per_day": {
+        "Tuesday": {
+          "date": "2017-07-04",
+          "total_flows": 445909,
+          "benign_flows": 432074,
+          "attack_flows": 13835,
+          "tp": 789,
+          "fp": 49592,
+          "tn": 382482,
+          "fn": 13046,
+          "recall_pct": 5.7029,
+          "false_positive_rate_pct": 11.4777,
+          "precision_pct": 1.5661,
+          "f1_score": 0.0246
+        },
+        "Wednesday": {
+          "date": "2017-07-05",
+          "total_flows": 692703,
+          "benign_flows": 440031,
+          "attack_flows": 252672,
+          "tp": 234772,
+          "fp": 53848,
+          "tn": 386183,
+          "fn": 17900,
+          "recall_pct": 92.9157,
+          "false_positive_rate_pct": 12.2373,
+          "precision_pct": 81.3429,
+          "f1_score": 0.8675
+        },
+        "Thursday": {
+          "date": "2017-07-06",
+          "total_flows": 458968,
+          "benign_flows": 456752,
+          "attack_flows": 2216,
+          "tp": 31,
+          "fp": 113624,
+          "tn": 343128,
+          "fn": 2185,
+          "recall_pct": 1.3989,
+          "false_positive_rate_pct": 24.8765,
+          "precision_pct": 0.0273,
+          "f1_score": 0.0005
+        },
+        "Friday": {
+          "date": "2017-07-07",
+          "total_flows": 703245,
+          "benign_flows": 414322,
+          "attack_flows": 288923,
+          "tp": 283055,
+          "fp": 85397,
+          "tn": 328925,
+          "fn": 5868,
+          "recall_pct": 97.969,
+          "false_positive_rate_pct": 20.6113,
+          "precision_pct": 76.8228,
+          "f1_score": 0.8612
+        }
+      }
+    },
+    "legacy_champion_v1": {
+      "model_name": "Legacy Temporal Autoencoder (v1)",
+      "threshold_name": "Established (alpha=0.002)",
+      "threshold_value": 0.19088475755009496,
+      "total_flows": 2300825,
+      "benign_flows": 1743179,
+      "attack_flows": 557646,
+      "confusion_matrix": {
+        "tp": 519031,
+        "fp": 217598,
+        "tn": 1525581,
+        "fn": 38615
+      },
+      "rates": {
+        "detection_rate_pct": 93.0754,
+        "false_positive_rate_pct": 12.4828,
+        "false_negative_rate_pct": 6.9246,
+        "specificity_pct": 87.5172
+      },
+      "classification_metrics": {
+        "precision_pct": 70.4603,
+        "f1_score": 0.802,
+        "accuracy_pct": 88.8643,
+        "balanced_accuracy_pct": 90.2963
+      },
+      "continuous_curves": {
+        "roc_auc": 0.953797,
+        "pr_auc": 0.878262
+      },
+      "timing_and_throughput": {
+        "feature_engineering_seconds": 0.63,
+        "transformation_seconds": 4.42,
+        "scoring_inference_seconds": 2.1,
+        "total_processing_seconds": 7.16,
+        "total_throughput_flows_per_second": 321466.6,
+        "latency_microseconds_per_flow": 3.11
+      },
+      "per_category": {
+        "BENIGN": {
+          "total": 1743179,
+          "detected_as_anomaly": 217598,
+          "classified_benign": 1525581,
+          "false_positive_rate_pct": 12.4828,
+          "accuracy_pct": 87.5172
+        },
+        "Bot": {
+          "total": 1966,
+          "detected": 45,
+          "missed": 1921,
+          "recall_pct": 2.2889,
+          "specific_precision_pct": 0.0061,
+          "specific_f1_score": 0.0001
+        },
+        "DDoS": {
+          "total": 128027,
+          "detected": 125253,
+          "missed": 2774,
+          "recall_pct": 97.8333,
+          "specific_precision_pct": 17.0035,
+          "specific_f1_score": 0.2897
+        },
+        "DoS GoldenEye": {
+          "total": 10293,
+          "detected": 1544,
+          "missed": 8749,
+          "recall_pct": 15.0005,
+          "specific_precision_pct": 0.2096,
+          "specific_f1_score": 0.0041
+        },
+        "DoS Hulk": {
+          "total": 231073,
+          "detected": 230726,
+          "missed": 347,
+          "recall_pct": 99.8498,
+          "specific_precision_pct": 31.3219,
+          "specific_f1_score": 0.4769
+        },
+        "DoS Slowhttptest": {
+          "total": 5499,
+          "detected": 1376,
+          "missed": 4123,
+          "recall_pct": 25.0227,
+          "specific_precision_pct": 0.1868,
+          "specific_f1_score": 0.0037
+        },
+        "DoS slowloris": {
+          "total": 5796,
+          "detected": 1279,
+          "missed": 4517,
+          "recall_pct": 22.0669,
+          "specific_precision_pct": 0.1736,
+          "specific_f1_score": 0.0034
+        },
+        "FTP-Patator": {
+          "total": 7938,
+          "detected": 180,
+          "missed": 7758,
+          "recall_pct": 2.2676,
+          "specific_precision_pct": 0.0244,
+          "specific_f1_score": 0.0005
+        },
+        "Heartbleed": {
+          "total": 11,
+          "detected": 6,
+          "missed": 5,
+          "recall_pct": 54.5455,
+          "specific_precision_pct": 0.0008,
+          "specific_f1_score": 0.0
+        },
+        "Infiltration": {
+          "total": 36,
+          "detected": 21,
+          "missed": 15,
+          "recall_pct": 58.3333,
+          "specific_precision_pct": 0.0029,
+          "specific_f1_score": 0.0001
+        },
+        "PortScan": {
+          "total": 158930,
+          "detected": 158601,
+          "missed": 329,
+          "recall_pct": 99.793,
+          "specific_precision_pct": 21.5306,
+          "specific_f1_score": 0.3542
+        },
+        "SSH-Patator": {
+          "total": 5897,
+          "detected": 0,
+          "missed": 5897,
+          "recall_pct": 0.0,
+          "specific_precision_pct": 0.0,
+          "specific_f1_score": 0.0
+        },
+        "Web Attack - Brute Force": {
+          "total": 1507,
+          "detected": 0,
+          "missed": 1507,
+          "recall_pct": 0.0,
+          "specific_precision_pct": 0.0,
+          "specific_f1_score": 0.0
+        },
+        "Web Attack - Sql Injection": {
+          "total": 21,
+          "detected": 0,
+          "missed": 21,
+          "recall_pct": 0.0,
+          "specific_precision_pct": 0.0,
+          "specific_f1_score": 0.0
+        },
+        "Web Attack - XSS": {
+          "total": 652,
+          "detected": 0,
+          "missed": 652,
+          "recall_pct": 0.0,
+          "specific_precision_pct": 0.0,
+          "specific_f1_score": 0.0
+        }
+      },
+      "per_day": {
+        "Tuesday": {
+          "date": "2017-07-04",
+          "total_flows": 445909,
+          "benign_flows": 432074,
+          "attack_flows": 13835,
+          "tp": 180,
+          "fp": 24251,
+          "tn": 407823,
+          "fn": 13655,
+          "recall_pct": 1.301,
+          "false_positive_rate_pct": 5.6127,
+          "precision_pct": 0.7368,
+          "f1_score": 0.0094
+        },
+        "Wednesday": {
+          "date": "2017-07-05",
+          "total_flows": 692703,
+          "benign_flows": 440031,
+          "attack_flows": 252672,
+          "tp": 234931,
+          "fp": 32442,
+          "tn": 407589,
+          "fn": 17741,
+          "recall_pct": 92.9786,
+          "false_positive_rate_pct": 7.3727,
+          "precision_pct": 87.8664,
+          "f1_score": 0.9035
+        },
+        "Thursday": {
+          "date": "2017-07-06",
+          "total_flows": 458968,
+          "benign_flows": 456752,
+          "attack_flows": 2216,
+          "tp": 21,
+          "fp": 91760,
+          "tn": 364992,
+          "fn": 2195,
+          "recall_pct": 0.9477,
+          "false_positive_rate_pct": 20.0897,
+          "precision_pct": 0.0229,
+          "f1_score": 0.0004
+        },
+        "Friday": {
+          "date": "2017-07-07",
+          "total_flows": 703245,
+          "benign_flows": 414322,
+          "attack_flows": 288923,
+          "tp": 283899,
+          "fp": 69145,
+          "tn": 345177,
+          "fn": 5024,
+          "recall_pct": 98.2611,
+          "false_positive_rate_pct": 16.6887,
+          "precision_pct": 80.4146,
+          "f1_score": 0.8845
+        }
+      }
+    }
+  }
+}

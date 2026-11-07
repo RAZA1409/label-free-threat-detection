@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" class="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,9 @@
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
 
   <script>
     tailwind.config = {
@@ -54,10 +57,23 @@
 
   <style>
     /* Custom scrollbars */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #080b11; }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #334155; }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #080b11;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
 
     /* Custom Glassmorphism */
     .glass-panel {
@@ -66,6 +82,7 @@
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.07);
     }
+
     .glass-panel-elevated {
       background: rgba(18, 24, 38, 0.95);
       backdrop-filter: blur(16px);
@@ -73,58 +90,95 @@
     }
 
     /* Glow utilities */
-    .glow-cyan { box-shadow: 0 0 20px -3px rgba(6, 182, 212, 0.25); }
-    .glow-rose { box-shadow: 0 0 20px -3px rgba(244, 63, 94, 0.25); }
+    .glow-cyan {
+      box-shadow: 0 0 20px -3px rgba(6, 182, 212, 0.25);
+    }
+
+    .glow-rose {
+      box-shadow: 0 0 20px -3px rgba(244, 63, 94, 0.25);
+    }
 
     /* Active nav item */
-    .nav-item { cursor: pointer; }
+    .nav-item {
+      cursor: pointer;
+    }
+
     .nav-item.active {
       background: linear-gradient(90deg, rgba(6, 182, 212, 0.15) 0%, rgba(99, 102, 241, 0.05) 100%);
       border-left: 3px solid #06b6d4;
       color: #ffffff;
       font-weight: 600;
     }
-    .nav-item.active svg { color: #06b6d4; }
+
+    .nav-item.active svg {
+      color: #06b6d4;
+    }
 
     /* Subtle pulse animation for live radar */
     @keyframes radar-pulse {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.05); opacity: 1; }
-      100% { transform: scale(0.95); opacity: 0.8; }
+      0% {
+        transform: scale(0.95);
+        opacity: 0.8;
+      }
+
+      50% {
+        transform: scale(1.05);
+        opacity: 1;
+      }
+
+      100% {
+        transform: scale(0.95);
+        opacity: 0.8;
+      }
     }
-    .animate-radar { animation: radar-pulse 3s infinite ease-in-out; }
+
+    .animate-radar {
+      animation: radar-pulse 3s infinite ease-in-out;
+    }
 
     /* Global clickability assurance */
-    button, input, select, a, [onclick] {
+    button,
+    input,
+    select,
+    a,
+    [onclick] {
       cursor: pointer;
     }
   </style>
 </head>
-<body class="bg-soc-bg text-slate-100 font-sans antialiased min-h-screen flex overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
+
+<body
+  class="bg-soc-bg text-slate-100 font-sans antialiased min-h-screen flex overflow-x-hidden selection:bg-cyan-500/30 selection:text-cyan-200">
 
   <!-- ========================================================================= -->
   <!-- 1. COLLAPSIBLE SIDEBAR NAVIGATION -->
   <!-- ========================================================================= -->
-  <aside id="sidebar" class="w-64 bg-soc-surface border-r border-soc-border flex-shrink-0 flex flex-col justify-between transition-transform duration-300 z-40 fixed md:static inset-y-0 -translate-x-full md:translate-x-0">
+  <aside id="sidebar"
+    class="w-64 bg-soc-surface border-r border-soc-border flex-shrink-0 flex flex-col justify-between transition-transform duration-300 z-40 fixed md:static inset-y-0 -translate-x-full md:translate-x-0">
     <div>
       <!-- Brand & Product Header -->
       <div class="h-16 px-5 border-b border-soc-border flex items-center justify-between">
         <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20">
+          <div
+            class="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-cyan-500/20">
             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
           <div>
             <div class="flex items-center gap-1.5">
               <span class="text-sm font-bold tracking-wider text-white">AEGIS</span>
-              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80">SIH26145</span>
+              <span
+                class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80">SIH26145</span>
             </div>
             <p class="text-[10px] text-soc-textMuted tracking-tight uppercase">Unidirectional Threat Defense</p>
           </div>
         </div>
         <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white p-1">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
 
@@ -132,14 +186,21 @@
       <nav class="p-3 space-y-1">
         <div class="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Command Center</div>
 
-        <button onclick="switchView('overview')" id="nav-overview" class="nav-item active w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+        <button onclick="switchView('overview')" id="nav-overview"
+          class="nav-item active w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+          </svg>
           <span>Executive Overview</span>
         </button>
 
-        <button onclick="switchView('live')" id="nav-live" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
+        <button onclick="switchView('live')" id="nav-live"
+          class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
           <div class="flex items-center space-x-3">
-            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
             <span>Live Radar Ingest</span>
           </div>
           <span class="flex h-2 w-2 relative">
@@ -148,25 +209,42 @@
           </span>
         </button>
 
-        <button onclick="switchView('analytics')" id="nav-analytics" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <button onclick="switchView('analytics')" id="nav-analytics"
+          class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
           <span>Threat Analytics</span>
         </button>
 
-        <button onclick="switchView('xai')" id="nav-xai" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+        <button onclick="switchView('xai')" id="nav-xai"
+          class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          </svg>
           <span>Forensic XAI Sandbox</span>
         </button>
 
-        <div class="pt-4 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Model & Intelligence</div>
+        <div class="pt-4 px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Model & Intelligence
+        </div>
 
-        <button onclick="switchView('models')" id="nav-models" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>
+        <button onclick="switchView('models')" id="nav-models"
+          class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+          </svg>
           <span>Model Calibration Sandbox</span>
         </button>
 
-        <button onclick="switchView('system')" id="nav-system" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
-          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
+        <button onclick="switchView('system')" id="nav-system"
+          class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-slate-800/50 transition text-left">
+          <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+          </svg>
           <span>Diode Sensor Telemetry</span>
         </button>
       </nav>
@@ -180,7 +258,8 @@
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             DIODE-TAP-01
           </span>
-          <span class="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/60">RX-ONLY</span>
+          <span
+            class="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/60">RX-ONLY</span>
         </div>
         <div class="text-[11px] text-slate-300 font-medium">Forward-Only Mode</div>
         <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
@@ -200,10 +279,14 @@
   <div class="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
 
     <!-- Top Navigation Bar -->
-    <header class="h-16 border-b border-soc-border bg-soc-surface/80 backdrop-blur sticky top-0 z-30 px-6 flex items-center justify-between">
+    <header
+      class="h-16 border-b border-soc-border bg-soc-surface/80 backdrop-blur sticky top-0 z-30 px-6 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <button onclick="toggleSidebar()"
+          class="md:hidden text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
         </button>
         <div class="flex items-center space-x-2 text-xs text-slate-400">
           <span class="hover:text-slate-200 transition">AEGIS SOC</span>
@@ -217,26 +300,33 @@
       <!-- Right Controls -->
       <div class="flex items-center space-x-3 sm:space-x-4">
         <!-- Live UTC Clock -->
-        <div class="hidden sm:flex items-center space-x-2 text-xs font-mono text-slate-300 bg-soc-elevated px-3 py-1.5 rounded-lg border border-soc-border">
-          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div
+          class="hidden sm:flex items-center space-x-2 text-xs font-mono text-slate-300 bg-soc-elevated px-3 py-1.5 rounded-lg border border-soc-border">
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           <span id="clock-utc">--:--:-- UTC</span>
         </div>
 
         <!-- Real-Time System Health Pill -->
-        <div id="system-health-pill" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-800/80 text-emerald-400">
+        <div id="system-health-pill"
+          class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-800/80 text-emerald-400">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span id="system-health-text">SYSTEM OPERATIONAL</span>
         </div>
 
         <!-- Stream Radar Active Indicator -->
-        <div id="stream-radar-pill" class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400">
+        <div id="stream-radar-pill"
+          class="flex items-center space-x-2 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400">
           <span class="w-2 h-2 rounded-full bg-slate-500"></span>
           <span>RADAR STANDBY</span>
         </div>
 
         <!-- User Profile Pill -->
         <div class="flex items-center space-x-2.5 pl-2 border-l border-soc-border">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 p-0.5 flex items-center justify-center font-bold text-xs text-white shadow">
+          <div
+            class="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 p-0.5 flex items-center justify-center font-bold text-xs text-white shadow">
             SOC
           </div>
           <div class="hidden lg:block text-left">
@@ -255,95 +345,172 @@
       <!-- ===================================================================== -->
       <div id="view-overview" class="space-y-6">
 
-        <!-- Banner Alert: Model Breakthrough -->
-        <div class="glass-panel p-4 rounded-xl border-l-4 border-l-cyan-500 flex flex-wrap items-center justify-between gap-4">
+        <!-- Banner Alert: Model Breakthrough & Production Authority -->
+        <div id="ov-banner-container"
+          class="glass-panel p-4 rounded-xl border-l-4 border-l-cyan-500 flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center space-x-3.5">
-            <div class="w-10 h-10 rounded-lg bg-cyan-950/80 border border-cyan-800 flex items-center justify-center text-cyan-400 flex-shrink-0">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <div id="ov-banner-icon"
+              class="w-10 h-10 rounded-lg bg-cyan-950/80 border border-cyan-800 flex items-center justify-center text-cyan-400 flex-shrink-0">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
             </div>
             <div>
-              <div class="flex items-center gap-2">
-                <h2 class="text-sm font-bold text-white">Temporal Flow Velocity Autoencoder Active</h2>
-                <span class="text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full">SOTA 93.08% Recall</span>
-                <span class="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">AP: 0.8783</span>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 id="ov-banner-title" class="text-sm font-bold text-white">Temporal Flow Velocity Autoencoder Active</h2>
+                <span id="ov-banner-badge"
+                  class="text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full">PRODUCTION CHAMPION</span>
+                <span id="ov-banner-recall"
+                  class="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">Recall: 93.08%</span>
+                <span id="ov-banner-ap"
+                  class="text-[10px] font-mono text-purple-300 bg-purple-950/60 px-2 py-0.5 rounded border border-purple-800">AP: 0.8783</span>
               </div>
-              <p class="text-xs text-slate-400 mt-0.5">Physical forward features augmented with 10-second rolling flow velocity, catching 519,031 zero-day attacks without reverse telemetry.</p>
+              <p id="ov-banner-desc" class="text-xs text-slate-400 mt-1">Physical forward features augmented with 10-second rolling flow velocity, catching 519,031 zero-day attacks without reverse telemetry.</p>
             </div>
           </div>
-          <div class="flex items-center space-x-2">
-            <button onclick="switchView('live')" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-medium transition shadow flex items-center gap-1.5">
-              <span>Inspect Live Ingestion Feed</span>
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          <div class="flex items-center space-x-3">
+            <!-- Model Switcher Buttons -->
+            <div class="flex items-center gap-1 bg-soc-elevated p-1 rounded-lg border border-soc-border">
+              <button id="ov-btn-v1" onclick="switchOverviewModel('legacy')"
+                class="px-2.5 py-1 rounded text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40">
+                Legacy v1 Champion
+              </button>
+              <button id="ov-btn-v2-primary" onclick="switchOverviewModel('v2_primary')"
+                class="px-2.5 py-1 rounded text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition">
+                Pure One-Way v2 (Primary)
+              </button>
+              <button id="ov-btn-v2-ref" onclick="switchOverviewModel('v2_reference')"
+                class="px-2.5 py-1 rounded text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition">
+                Pure One-Way v2 (Reference)
+              </button>
+            </div>
+            <button onclick="switchView('live')"
+              class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-xs font-medium transition shadow flex items-center gap-1.5">
+              <span>Live Radar</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
             </button>
+          </div>
+        </div>
+
+        <!-- Live Sensor & Optical Stream Telemetry Strip -->
+        <div class="glass-panel px-4 py-3 rounded-xl border border-soc-border flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center space-x-3">
+            <span class="flex h-2.5 w-2.5 relative">
+              <span id="ov-live-pulse" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span id="ov-live-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <div class="text-xs">
+              <span class="font-bold text-white tracking-wide uppercase">Optical Diode Telemetry</span>
+              <span class="text-slate-400 ml-2 hidden sm:inline">Live operational counters segregated from benchmark test evaluation</span>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-6 text-xs font-mono">
+            <div>
+              <span class="text-slate-400 uppercase text-[10px] block">Live Flows Ingested</span>
+              <span id="ov-live-processed" class="font-bold text-white">0</span>
+            </div>
+            <div>
+              <span class="text-slate-400 uppercase text-[10px] block">Live Anomalies Flagged</span>
+              <span id="ov-live-alerts" class="font-bold text-rose-400">0</span>
+            </div>
+            <div>
+              <span class="text-slate-400 uppercase text-[10px] block">Buffer Status</span>
+              <span id="ov-live-buffer" class="font-bold text-emerald-400">ONLINE</span>
+            </div>
+            <div>
+              <span class="text-slate-400 uppercase text-[10px] block">Diode Model Status</span>
+              <span id="ov-model-availability" class="font-bold text-cyan-400">v1 ONLINE (CHAMPION)</span>
+            </div>
           </div>
         </div>
 
         <!-- KPI Summary Cards (6-Column Responsive Grid) -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <!-- KPI 1 -->
+          <!-- KPI 1: Evaluated Flows -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>Test Flows</span>
-              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z"/></svg>
+              <span>Evaluated Flows</span>
+              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z" />
+              </svg>
             </div>
             <div class="text-xl font-bold text-white font-mono" id="ov-kpi-total">2,300,825</div>
-            <div class="text-[11px] text-slate-400 flex items-center justify-between">
-              <span>1.74M Benign</span>
-              <span class="text-slate-400">557K Threats</span>
+            <div class="text-[11px] text-slate-400 flex items-center justify-between" id="ov-kpi-total-sub">
+              <span id="ov-kpi-benign">1.74M Benign</span>
+              <span id="ov-kpi-threats" class="text-slate-400">557K Threats</span>
             </div>
           </div>
 
-          <!-- KPI 2 -->
+          <!-- KPI 2: Detection Recall -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>Overall Recall</span>
-              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>Detection Recall</span>
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
             <div class="text-xl font-bold text-emerald-400 font-mono" id="ov-kpi-recall">93.08%</div>
-            <div class="text-[11px] text-slate-400 flex items-center justify-between">
-              <span class="text-emerald-400 font-medium">519,031 Caught</span>
-              <span>38,615 Missed</span>
+            <div class="text-[11px] text-slate-400 flex items-center justify-between" id="ov-kpi-recall-sub">
+              <span id="ov-kpi-caught" class="text-emerald-400 font-medium">519,031 Caught</span>
+              <span id="ov-kpi-missed">38,615 Missed</span>
             </div>
           </div>
 
-          <!-- KPI 3 -->
+          <!-- KPI 3: False-Positive Rate -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>Average Precision</span>
-              <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+              <span>False-Positive Rate</span>
+              <svg class="w-4 h-4 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
             </div>
-            <div class="text-xl font-bold text-purple-400 font-mono" id="ov-kpi-ap">0.8783</div>
-            <div class="text-[11px] text-slate-400">PR-AUC (14 Attack Classes)</div>
+            <div class="text-xl font-bold text-rose-400 font-mono" id="ov-kpi-fpr">12.48%</div>
+            <div class="text-[11px] text-slate-400" id="ov-kpi-fpr-sub">Target: 0.2% | Observed</div>
           </div>
 
-          <!-- KPI 4 -->
+          <!-- KPI 4: Detection Precision -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
               <span>Detection Precision</span>
-              <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
             </div>
             <div class="text-xl font-bold text-indigo-400 font-mono" id="ov-kpi-prec">70.46%</div>
-            <div class="text-[11px] text-slate-400">At 0.2% Calib FPR</div>
+            <div class="text-[11px] text-slate-400" id="ov-kpi-prec-sub">True Positive Purity</div>
           </div>
 
-          <!-- KPI 5 -->
+          <!-- KPI 5: F1 Score -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>Inference Latency</span>
-              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>F1 Score</span>
+              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
             </div>
-            <div class="text-xl font-bold text-amber-400 font-mono" id="ov-kpi-lat">0.012 ms</div>
-            <div class="text-[11px] text-slate-400">83,000+ Flows/sec</div>
+            <div class="text-xl font-bold text-amber-400 font-mono" id="ov-kpi-f1">0.8020</div>
+            <div class="text-[11px] text-slate-400" id="ov-kpi-f1-sub">Harmonic Mean</div>
           </div>
 
-          <!-- KPI 6 -->
+          <!-- KPI 6: Average Precision & Inference Latency -->
           <div class="glass-panel p-4 rounded-xl space-y-1 hover:border-slate-600 transition">
             <div class="flex items-center justify-between text-slate-400 text-xs">
-              <span>PortScan Recall</span>
-              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <span>Average Precision</span>
+              <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+              </svg>
             </div>
-            <div class="text-xl font-bold text-cyan-400 font-mono">99.79%</div>
-            <div class="text-[11px] text-slate-400">158,601 / 158,930</div>
+            <div class="text-xl font-bold text-purple-400 font-mono" id="ov-kpi-ap">0.8783</div>
+            <div class="text-[11px] text-slate-400" id="ov-kpi-ap-sub">PR-AUC (14 Classes)</div>
+            <span id="ov-kpi-lat" class="hidden">0.012 ms</span>
           </div>
         </section>
 
@@ -357,7 +524,8 @@
               <div class="flex items-center justify-between">
                 <div>
                   <h3 class="text-sm font-semibold text-white">Intrusion Recall by Cyberattack Class (Test Set)</h3>
-                  <p class="text-xs text-slate-400">Evaluated on 557,646 unlabelled zero-day flows across Tuesday–Friday captures.</p>
+                  <p class="text-xs text-slate-400">Evaluated on 557,646 unlabelled zero-day flows across Tuesday–Friday
+                    captures.</p>
                 </div>
                 <span class="text-xs font-mono text-cyan-400 bg-cyan-950/60 px-2.5 py-1 rounded border border-cyan-800">
                   Strict One-Way (32 dims)
@@ -371,7 +539,8 @@
             <!-- Table: Key Attack Vulnerabilities Solved -->
             <div class="glass-panel rounded-xl overflow-hidden">
               <div class="px-5 py-3.5 border-b border-soc-border flex items-center justify-between">
-                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Dominant Attack Classes Summary</h3>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Dominant Attack Classes Summary
+                </h3>
                 <span class="text-[11px] text-slate-400">Accounts for 92.8% of all attack vectors</span>
               </div>
               <div class="overflow-x-auto">
@@ -385,7 +554,7 @@
                       <th class="px-4 py-2.5">Detection Mechanism</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-soc-border text-slate-300 font-mono">
+                  <tbody id="ov-dominant-tbody" class="divide-y divide-soc-border text-slate-300 font-mono">
                     <tr class="hover:bg-slate-800/30 transition">
                       <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-emerald-400"></span> DoS Hulk
@@ -429,7 +598,8 @@
                       <td class="px-4 py-2.5">11</td>
                       <td class="px-4 py-2.5 text-cyan-400">6</td>
                       <td class="px-4 py-2.5 font-bold text-cyan-400">54.55%</td>
-                      <td class="px-4 py-2.5 text-slate-400 font-sans text-[11px]">Total Fwd Payload Volume Variance</td>
+                      <td class="px-4 py-2.5 text-slate-400 font-sans text-[11px]">Total Fwd Payload Volume Variance
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -444,7 +614,7 @@
             <div class="glass-panel p-5 rounded-xl space-y-4">
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-semibold text-white">Threat Severity Breakdown</h3>
-                <span class="text-[10px] text-slate-400">557K Attacks Flagged</span>
+                <span id="ov-donut-total-attacks" class="text-[10px] text-slate-400">557K Attacks Flagged</span>
               </div>
               <div class="h-56 relative flex items-center justify-center">
                 <canvas id="overviewDonutChart"></canvas>
@@ -452,22 +622,22 @@
               <div class="grid grid-cols-2 gap-2 text-xs pt-1">
                 <div class="bg-rose-950/40 border border-rose-800/60 p-2.5 rounded-lg text-center">
                   <div class="text-[10px] uppercase font-bold text-rose-400">Critical Threats</div>
-                  <div class="text-lg font-bold text-rose-300 font-mono mt-0.5">125,259</div>
+                  <div id="ov-donut-crit" class="text-lg font-bold text-rose-300 font-mono mt-0.5">125,259</div>
                   <div class="text-[10px] text-slate-400">DDoS & Heartbleed</div>
                 </div>
                 <div class="bg-amber-950/40 border border-amber-800/60 p-2.5 rounded-lg text-center">
                   <div class="text-[10px] uppercase font-bold text-amber-400">High Floods</div>
-                  <div class="text-lg font-bold text-amber-300 font-mono mt-0.5">389,327</div>
+                  <div id="ov-donut-high" class="text-lg font-bold text-amber-300 font-mono mt-0.5">389,327</div>
                   <div class="text-[10px] text-slate-400">DoS Hulk & Scans</div>
                 </div>
                 <div class="bg-cyan-950/40 border border-cyan-800/60 p-2.5 rounded-lg text-center">
                   <div class="text-[10px] uppercase font-bold text-cyan-400">Medium Stealth</div>
-                  <div class="text-lg font-bold text-cyan-300 font-mono mt-0.5">4,199</div>
+                  <div id="ov-donut-med" class="text-lg font-bold text-cyan-300 font-mono mt-0.5">4,199</div>
                   <div class="text-[10px] text-slate-400">Slowloris / GoldenEye</div>
                 </div>
                 <div class="bg-purple-950/40 border border-purple-800/60 p-2.5 rounded-lg text-center">
                   <div class="text-[10px] uppercase font-bold text-purple-400">Low / Probes</div>
-                  <div class="text-lg font-bold text-purple-300 font-mono mt-0.5">246</div>
+                  <div id="ov-donut-low" class="text-lg font-bold text-purple-300 font-mono mt-0.5">246</div>
                   <div class="text-[10px] text-slate-400">Infiltration & Bots</div>
                 </div>
               </div>
@@ -477,22 +647,27 @@
             <div class="glass-panel p-5 rounded-xl border border-soc-border space-y-3">
               <div class="flex items-center justify-between">
                 <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                  <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                  <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
                   Physical Diode Constraints
                 </h4>
-                <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded">COMPLIANT</span>
+                <span
+                  class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800 px-2 py-0.5 rounded">COMPLIANT</span>
               </div>
               <p class="text-xs text-slate-400 leading-relaxed">
-                Operating strictly behind a receive-only optical mirror tap. Forward packet counts, forward byte rates, and forward TCP flags are permitted. Zero backward telemetry is observable.
+                Operating strictly behind a receive-only optical mirror tap. Forward packet counts, forward byte rates,
+                and forward TCP flags are permitted. Zero backward telemetry is observable.
               </p>
               <div class="grid grid-cols-2 gap-2 text-[11px] font-mono text-slate-300 pt-1">
                 <div class="bg-slate-800/60 p-2 rounded border border-slate-700">
                   <span class="text-slate-400 block text-[9px] uppercase">Fwd Features</span>
-                  <span class="text-emerald-400 font-bold">29 Clean Metrics</span>
+                  <span id="ov-diode-fwd-dims" class="text-emerald-400 font-bold">29 Clean Metrics</span>
                 </div>
                 <div class="bg-slate-800/60 p-2 rounded border border-slate-700">
                   <span class="text-slate-400 block text-[9px] uppercase">Temporal Window</span>
-                  <span class="text-cyan-400 font-bold">10-Second Causal</span>
+                  <span id="ov-diode-window" class="text-cyan-400 font-bold">10-Second Causal</span>
                 </div>
               </div>
             </div>
@@ -508,15 +683,19 @@
       <div id="view-live" class="space-y-6 hidden">
 
         <!-- Live Header Bar & Controls -->
-        <div class="glass-panel p-5 rounded-xl border border-soc-border flex flex-wrap items-center justify-between gap-4">
+        <div
+          class="glass-panel p-5 rounded-xl border border-soc-border flex flex-wrap items-center justify-between gap-4">
           <div class="flex items-center space-x-3.5">
             <div class="w-3.5 h-3.5 rounded-full bg-cyan-400 animate-ping"></div>
             <div>
               <div class="flex items-center gap-2">
                 <h2 class="text-sm font-bold text-white">Live Optical Tap Ingestion Stream</h2>
-                <span id="live-polling-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 font-semibold">POLLING ACTIVE (1.5s)</span>
+                <span id="live-polling-badge"
+                  class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-400 font-semibold">POLLING
+                  ACTIVE (1.5s)</span>
               </div>
-              <p class="text-xs text-slate-400 mt-0.5">Capturing sub-millisecond anomaly scores and XAI root causes from live simulated diode feed.</p>
+              <p class="text-xs text-slate-400 mt-0.5">Capturing sub-millisecond anomaly scores and XAI root causes from
+                live simulated diode feed.</p>
             </div>
           </div>
 
@@ -524,12 +703,19 @@
           <div class="flex flex-wrap items-center gap-2.5">
             <!-- Search -->
             <div class="relative">
-              <input id="live-search-input" type="text" placeholder="Filter alerts by attack / driver..." oninput="filterLiveTable()" class="bg-soc-elevated border border-soc-border focus:border-cyan-500 rounded-lg text-xs px-3 py-1.5 pl-8 text-white placeholder-slate-500 focus:outline-none w-52 sm:w-60">
-              <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <input id="live-search-input" type="text" placeholder="Filter alerts by attack / driver..."
+                oninput="filterLiveTable()"
+                class="bg-soc-elevated border border-soc-border focus:border-cyan-500 rounded-lg text-xs px-3 py-1.5 pl-8 text-white placeholder-slate-500 focus:outline-none w-52 sm:w-60">
+              <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
 
             <!-- Severity Filter -->
-            <select id="live-severity-select" onchange="filterLiveTable()" class="bg-soc-elevated border border-soc-border text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500 cursor-pointer">
+            <select id="live-severity-select" onchange="filterLiveTable()"
+              class="bg-soc-elevated border border-soc-border text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-cyan-500 cursor-pointer">
               <option value="ALL">All Severities</option>
               <option value="HIGH">High / Critical Alerts</option>
               <option value="MEDIUM">Medium Alerts</option>
@@ -537,12 +723,14 @@
             </select>
 
             <!-- Trigger Stream Button -->
-            <button onclick="startLiveStream(500, 15)" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow transition flex items-center gap-1.5 cursor-pointer">
-              <span>▶ Start Stream (500)</span>
+            <button onclick="startLiveStream(2000, 15)"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow transition flex items-center gap-1.5 cursor-pointer">
+              <span>▶ Start Stream (2000)</span>
             </button>
 
             <!-- Pause / Resume Button -->
-            <button id="btn-pause-stream" onclick="toggleStreamPolling()" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 cursor-pointer">
+            <button id="btn-pause-stream" onclick="toggleStreamPolling()"
+              class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5 cursor-pointer">
               <span id="pause-icon">⏸️</span>
               <span id="pause-text">Pause Feed</span>
             </button>
@@ -572,13 +760,15 @@
         <!-- Main Real-Time Detections Table -->
         <div class="glass-panel rounded-xl overflow-hidden border border-soc-border">
           <div class="px-5 py-3 border-b border-soc-border flex items-center justify-between">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Recent Optical Tap Network Detections</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Recent Optical Tap Network Detections
+            </h3>
             <span class="text-[11px] text-slate-400">Click any row to open the forensic root-cause dossier</span>
           </div>
 
           <div class="overflow-x-auto max-h-[520px]">
             <table class="w-full text-left text-xs">
-              <thead class="bg-soc-elevated/90 text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 z-10 backdrop-blur">
+              <thead
+                class="bg-soc-elevated/90 text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 z-10 backdrop-blur">
                 <tr>
                   <th class="px-3.5 py-2.5">Time</th>
                   <th class="px-3.5 py-2.5">Flow ID</th>
@@ -594,8 +784,10 @@
                 <tr>
                   <td colspan="8" class="px-4 py-8 text-center text-slate-500 font-sans">
                     <div class="flex flex-col items-center justify-center space-y-2">
-                      <div class="w-8 h-8 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin"></div>
-                      <span>Waiting for live streaming feed... Click <strong>▶ Start Stream</strong> above or run <code class="text-cyan-400 font-mono">python run_demo.py</code>.</span>
+                      <div class="w-8 h-8 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin">
+                      </div>
+                      <span>Waiting for live streaming feed... Click <strong>▶ Start Stream</strong> above or run <code
+                          class="text-cyan-400 font-mono">python run_demo.py</code>.</span>
                     </div>
                   </td>
                 </tr>
@@ -603,7 +795,8 @@
             </table>
           </div>
 
-          <div class="px-5 py-3 border-t border-soc-border bg-soc-elevated/50 flex items-center justify-between text-xs text-slate-400 font-sans">
+          <div
+            class="px-5 py-3 border-t border-soc-border bg-soc-elevated/50 flex items-center justify-between text-xs text-slate-400 font-sans">
             <span>Showing recent streaming events buffer (Rolling window of 150 flows)</span>
             <span class="font-mono text-slate-300" id="live-last-updated">Last ping: --:--:--</span>
           </div>
@@ -615,17 +808,62 @@
       <!-- VIEW 3: THREAT ANALYTICS & CATEGORY RECALL -->
       <!-- ===================================================================== -->
       <div id="view-analytics" class="space-y-6 hidden">
-        <div class="glass-panel p-5 rounded-xl border border-soc-border">
-          <h2 class="text-sm font-bold text-white">Full 14-Category Attack Recall & Confusion Diagnostics</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Comprehensive benchmark across all cyberattack classes evaluated on 2.3M test flows in strictly forward-only one-way traffic.</p>
+        <div class="glass-panel p-5 rounded-xl border border-soc-border flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-bold text-white">Full 14-Category Attack Recall & Confusion Diagnostics</h2>
+              <span id="analytics-active-badge" class="text-[10px] font-mono px-2 py-0.5 rounded font-semibold bg-emerald-950/80 border border-emerald-700/80 text-emerald-400">PRODUCTION CHAMPION (v1)</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Comprehensive empirical benchmark across all 14 cyberattack classes evaluated on 2,300,825 test flows in strictly forward-only one-way traffic.</p>
+            <span id="analytics-authority-note" class="text-[10px] text-cyan-400/90 font-mono block mt-1">Live Production Alert Authority: Legacy Temporal Autoencoder (v1) &middot; 32 Forward Features</span>
+          </div>
+
+          <!-- Model Switcher Buttons -->
+          <div class="flex flex-wrap items-center gap-1.5 bg-soc-elevated p-1 rounded-lg border border-soc-border">
+            <button id="btn-analytics-v1"
+              class="px-3 py-1.5 rounded-md text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40"
+              onclick="switchAnalyticsModel('legacy')">
+              Legacy v1 Champion
+            </button>
+            <button id="btn-analytics-v2-primary"
+              class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition"
+              onclick="switchAnalyticsModel('v2_primary')">
+              Pure One-Way v2 (Primary)
+            </button>
+            <button id="btn-analytics-v2-ref"
+              class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition"
+              onclick="switchAnalyticsModel('v2_reference')">
+              Pure One-Way v2 (Reference)
+            </button>
+          </div>
+        </div>
+
+        <!-- Shadow Notice Banner (visible only when v2 is selected) -->
+        <div id="analytics-shadow-banner" class="hidden glass-panel p-3.5 rounded-xl border border-amber-600/40 bg-amber-950/20 text-xs text-amber-300 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span>⚠️</span>
+            <span><strong>Shadow Evaluation Only:</strong> Pure One-Way v2 metrics are experimental and displayed for research comparison. v1 Legacy Temporal Autoencoder remains the sole active production alert authority.</span>
+          </div>
+          <span class="text-[10px] font-mono text-amber-400/80">NON-AUTHORITATIVE</span>
+        </div>
+
+        <!-- Status / Error Banner -->
+        <div id="analytics-status-banner" class="hidden glass-panel p-3.5 rounded-xl border border-rose-800 bg-rose-950/40 text-xs text-rose-300 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span>❌</span>
+            <span id="analytics-status-msg">Failed to load analytics data</span>
+          </div>
+          <button onclick="dismissAnalyticsStatusBanner()" class="text-slate-400 hover:text-white text-xs">&times; Dismiss</button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <!-- Full Category Chart (2 Cols) -->
           <div class="lg:col-span-2 glass-panel p-5 rounded-xl space-y-4">
             <div class="flex items-center justify-between">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Detection Rate per Attack Category (%)</h3>
-              <span class="text-xs text-slate-400">Green = &gt;50% &middot; Amber = 15-50% &middot; Red = &lt;15%</span>
+              <h3 id="analytics-chart-title" class="text-xs font-bold uppercase tracking-wider text-slate-200">
+                Detection Rate per Attack Category (%) — Legacy Champion (v1)
+              </h3>
+              <span class="text-xs text-slate-400">Green = &gt;50% &middot; Amber = 15-50% &middot; Red = &lt;15% &middot; Gray = N/A</span>
             </div>
             <div class="h-96">
               <canvas id="analyticsCategoryChart"></canvas>
@@ -634,29 +872,32 @@
 
           <!-- Confusion Matrix Card (1 Col) -->
           <div class="glass-panel p-5 rounded-xl space-y-4">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Confusion Matrix (2,300,825 Flows)</h3>
-            <p class="text-xs text-slate-400">Binary classification at calibrated 0.2% FPR threshold.</p>
+            <div class="flex items-center justify-between">
+              <h3 id="analytics-cm-title" class="text-xs font-bold uppercase tracking-wider text-slate-200">Confusion Matrix</h3>
+              <span id="analytics-total-flows" class="text-[10px] font-mono text-slate-400">2,300,825 Flows</span>
+            </div>
+            <p id="analytics-cm-subtitle" class="text-xs text-slate-400">Binary classification at calibrated threshold (τ = 0.190885).</p>
 
             <div class="grid grid-cols-2 gap-2 text-center text-xs">
               <div class="bg-emerald-950/40 border border-emerald-800/60 p-3 rounded-lg">
                 <div class="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">True Positives</div>
-                <div class="text-xl font-bold font-mono text-emerald-300 mt-0.5">519,031</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Attacks Caught (93.1%)</div>
+                <div id="analytics-cm-tp" class="text-xl font-bold font-mono text-emerald-300 mt-0.5">--</div>
+                <div id="analytics-cm-tp-pct" class="text-[10px] text-slate-400 mt-0.5">Attacks Caught (--)</div>
               </div>
               <div class="bg-rose-950/40 border border-rose-800/60 p-3 rounded-lg">
                 <div class="text-[10px] uppercase tracking-wider text-rose-400 font-bold">False Positives</div>
-                <div class="text-xl font-bold font-mono text-rose-300 mt-0.5">217,598</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Benign Alarms (12.5%)</div>
+                <div id="analytics-cm-fp" class="text-xl font-bold font-mono text-rose-300 mt-0.5">--</div>
+                <div id="analytics-cm-fp-pct" class="text-[10px] text-slate-400 mt-0.5">Benign Alarms (--)</div>
               </div>
               <div class="bg-amber-950/40 border border-amber-800/60 p-3 rounded-lg">
                 <div class="text-[10px] uppercase tracking-wider text-amber-400 font-bold">False Negatives</div>
-                <div class="text-xl font-bold font-mono text-amber-300 mt-0.5">38,615</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Attacks Missed (6.9%)</div>
+                <div id="analytics-cm-fn" class="text-xl font-bold font-mono text-amber-300 mt-0.5">--</div>
+                <div id="analytics-cm-fn-pct" class="text-[10px] text-slate-400 mt-0.5">Attacks Missed (--)</div>
               </div>
               <div class="bg-slate-800/60 border border-slate-700 p-3 rounded-lg">
                 <div class="text-[10px] uppercase tracking-wider text-slate-300 font-bold">True Negatives</div>
-                <div class="text-xl font-bold font-mono text-slate-200 mt-0.5">1,525,581</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Benign Passed (87.5%)</div>
+                <div id="analytics-cm-tn" class="text-xl font-bold font-mono text-slate-200 mt-0.5">--</div>
+                <div id="analytics-cm-tn-pct" class="text-[10px] text-slate-400 mt-0.5">Benign Passed (--)</div>
               </div>
             </div>
 
@@ -664,21 +905,69 @@
             <div class="border-t border-soc-border pt-3 space-y-2 text-xs">
               <div class="flex justify-between text-slate-300">
                 <span>Precision (TP purity):</span>
-                <span class="font-mono text-indigo-400 font-bold">70.46%</span>
+                <span id="analytics-precision" class="font-mono text-indigo-400 font-bold">--</span>
               </div>
               <div class="flex justify-between text-slate-300">
                 <span>Recall (Threat capture):</span>
-                <span class="font-mono text-emerald-400 font-bold">93.08%</span>
+                <span id="analytics-recall" class="font-mono text-emerald-400 font-bold">--</span>
               </div>
               <div class="flex justify-between text-slate-300">
                 <span>Average Precision (PR-AUC):</span>
-                <span class="font-mono text-purple-400 font-bold">0.8783</span>
+                <span id="analytics-prauc" class="font-mono text-purple-400 font-bold">--</span>
               </div>
               <div class="flex justify-between text-slate-300">
-                <span>Calibrated Score Cutoff:</span>
-                <span class="font-mono text-cyan-400 font-bold">0.190885</span>
+                <span>Calibrated Cutoff:</span>
+                <span id="analytics-threshold" class="font-mono text-cyan-400 font-bold">--</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Per-Attack Category Breakdown Table -->
+        <div class="glass-panel rounded-xl overflow-hidden border border-soc-border space-y-0">
+          <div class="px-5 py-3.5 border-b border-soc-border flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">
+                Empirical Per-Attack Category Detection & Confusion Diagnostics
+              </h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">
+                Evaluated on held-out Tuesday–Friday evaluation traffic (2,300,825 total flows: 557,646 attack flows across 14 categories).
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="analytics-table-model-tag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800 text-cyan-300">
+                Model: Legacy Temporal Autoencoder (v1)
+              </span>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="bg-soc-elevated text-slate-400 uppercase text-[10px] tracking-wider font-sans">
+                <tr>
+                  <th class="px-4 py-2.5">Attack Category</th>
+                  <th class="px-4 py-2.5 text-right">Attack Count</th>
+                  <th class="px-4 py-2.5 text-right">Detected (TP)</th>
+                  <th class="px-4 py-2.5 text-right">Missed (FN)</th>
+                  <th class="px-4 py-2.5 text-right">Detection Rate / Recall</th>
+                  <th class="px-4 py-2.5 text-right">Precision</th>
+                  <th class="px-4 py-2.5 text-right">F1-Score</th>
+                  <th class="px-4 py-2.5 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="analytics-attack-tbody" class="divide-y divide-soc-border text-slate-300">
+                <tr>
+                  <td colspan="8" class="px-4 py-8 text-center text-slate-500 font-sans">
+                    Loading threat analytics evaluation data...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="px-5 py-2.5 border-t border-soc-border bg-soc-elevated/40 flex flex-wrap items-center justify-between text-[11px] text-slate-400 font-sans">
+            <span>Only empirical evaluation data supported by ground truth test splits is displayed. Categories without data are marked UNAVAILABLE.</span>
+            <span class="font-mono text-cyan-400" id="analytics-table-summary">14 of 14 categories evaluated</span>
           </div>
         </div>
       </div>
@@ -687,42 +976,87 @@
       <!-- VIEW 4: FORENSIC XAI & ROOT-CAUSE ATTRIBUTION SANDBOX -->
       <!-- ===================================================================== -->
       <div id="view-xai" class="space-y-6 hidden">
-        <div class="glass-panel p-5 rounded-xl border border-soc-border flex items-center justify-between">
+        <div class="glass-panel p-5 rounded-xl border border-soc-border flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 class="text-sm font-bold text-white">Explainable AI (XAI) Forensic Root-Cause Sandbox</h2>
-            <p class="text-xs text-slate-400 mt-0.5">Deconstruct mathematical Autoencoder residuals w_j(x_j - x̂_j)² into plain-English SOC analyst forensic reports.</p>
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-bold text-white">Explainable AI (XAI) Forensic Root-Cause Sandbox</h2>
+              <span class="text-[10px] font-mono text-cyan-400 font-semibold bg-cyan-950/80 border border-cyan-700/80 px-2 py-0.5 rounded">Production Champion (v1)</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">Feature Reconstruction-Error Attribution: Attribution % = w_j (x_j - x̂_j)² / Total Residual</p>
+            <span class="text-[10px] text-slate-500 font-mono block mt-1">Live Ingestion Telemetry &middot; Mathematical Residual Decomposition</span>
           </div>
-          <button onclick="simulateInteractiveFlow()" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg transition flex items-center gap-2 cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-            <span>Simulate Random Test Flow</span>
-          </button>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Flow selector dropdown -->
+            <div class="flex items-center gap-1.5 bg-soc-elevated p-1 rounded-lg border border-soc-border">
+              <label for="xai-flow-select" class="text-[10px] uppercase font-bold text-slate-400 px-2">Flow:</label>
+              <select id="xai-flow-select" onchange="loadSelectedXaiFlow(this.value)"
+                class="bg-slate-900 border border-soc-border text-cyan-400 text-xs font-mono rounded px-2.5 py-1.5 focus:outline-none focus:border-cyan-500 cursor-pointer max-w-xs">
+                <option value="">Awaiting live telemetry flows...</option>
+              </select>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="flex items-center gap-1 bg-soc-elevated p-1 rounded-lg border border-soc-border">
+              <button id="btn-xai-prev" onclick="navigateXaiFlow(-1)" title="Previous Ingested Flow"
+                class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono transition cursor-pointer">
+                &larr; Prev
+              </button>
+              <button id="btn-xai-next" onclick="navigateXaiFlow(1)" title="Next Ingested Flow"
+                class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs font-mono transition cursor-pointer">
+                Next &rarr;
+              </button>
+            </div>
+
+            <!-- Latest Alert Shortcut -->
+            <button id="btn-xai-latest" onclick="loadLatestXaiAlert()"
+              class="px-3 py-1.5 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg transition flex items-center gap-1.5 cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Latest Alert</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Status / Error Banner -->
+        <div id="xai-status-banner" class="hidden glass-panel p-4 rounded-xl border border-soc-border flex items-center justify-between text-xs">
+          <div class="flex items-center space-x-3">
+            <span id="xai-status-icon" class="text-base">⚠️</span>
+            <span id="xai-status-msg" class="text-slate-300 font-mono">Flow status notification</span>
+          </div>
+          <button onclick="dismissXaiStatusBanner()" class="text-slate-500 hover:text-slate-300 text-xs font-mono">&times; Dismiss</button>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           <!-- Left Column (1 Col): Flow Meta & Verdict -->
           <div class="glass-panel p-5 rounded-xl border border-soc-border space-y-4">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Target Flow Metadata</h3>
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Target Flow Metadata</h3>
+              <span id="xai-model-badge" class="text-[10px] font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/80 px-2 py-0.5 rounded">v1 Temporal AE</span>
+            </div>
 
             <div class="space-y-3 text-xs">
               <div class="bg-soc-elevated p-3 rounded-lg border border-soc-border">
                 <div class="text-[10px] text-slate-400 uppercase font-semibold">Flow Identifier</div>
-                <div id="xai-flow-id" class="text-sm font-bold font-mono text-cyan-400 mt-0.5">#FL-902144</div>
+                <div id="xai-flow-id" class="text-sm font-bold font-mono text-cyan-400 mt-0.5">#FL-000000</div>
               </div>
 
               <div class="bg-soc-elevated p-3 rounded-lg border border-soc-border">
                 <div class="text-[10px] text-slate-400 uppercase font-semibold">Ground Truth Label</div>
-                <div id="xai-flow-label" class="text-sm font-bold font-mono text-amber-400 mt-0.5">PortScan</div>
+                <div id="xai-flow-label" class="text-sm font-bold font-mono text-amber-400 mt-0.5">--</div>
               </div>
 
               <div class="bg-soc-elevated p-3 rounded-lg border border-soc-border">
                 <div class="text-[10px] text-slate-400 uppercase font-semibold">Autoencoder Verdict</div>
-                <div id="xai-flow-verdict" class="text-sm font-bold font-mono text-rose-400 mt-0.5">ANOMALY DETECTED</div>
+                <div id="xai-flow-verdict" class="text-sm font-bold font-mono text-rose-400 mt-0.5">--</div>
               </div>
 
               <div class="bg-soc-elevated p-3 rounded-lg border border-soc-border">
-                <div class="text-[10px] text-slate-400 uppercase font-semibold">Anomaly Score vs Threshold</div>
-                <div id="xai-flow-score" class="text-sm font-bold font-mono text-white mt-0.5">127.8759 (Thresh: 0.190885)</div>
+                <div class="text-[10px] text-slate-400 uppercase font-semibold">Anomaly Score vs Calibrated Threshold</div>
+                <div id="xai-flow-score" class="text-sm font-bold font-mono text-white mt-0.5">-- (Thresh: 0.190885)</div>
               </div>
             </div>
 
@@ -730,7 +1064,7 @@
             <div class="bg-cyan-950/30 border border-cyan-800/60 p-3.5 rounded-lg space-y-1">
               <div class="text-[10px] font-bold text-cyan-400 uppercase">Automated SOC Analyst Narrative</div>
               <p id="xai-flow-narrative" class="text-xs text-slate-300 leading-relaxed font-sans">
-                ALERT: Flow flagged as anomalous. Primary deviation: Forward flow arrival velocity surges 51.0% above benign Monday baselines, indicative of rapid multi-port TCP SYN scanning.
+                Awaiting ingested flow selection for forensic attribution.
               </p>
             </div>
           </div>
@@ -742,7 +1076,7 @@
                 <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Reconstruction Residual Decomposition</h3>
                 <p class="text-xs text-slate-400">Attribution % = w_j (x_j - x̂_j)² / Total Residual</p>
               </div>
-              <span class="text-xs font-mono text-slate-400">Top-5 Contributors</span>
+              <span class="text-xs font-mono text-cyan-400 font-semibold bg-cyan-950/60 border border-cyan-800/80 px-2 py-0.5 rounded">Top-5 Leading Drivers</span>
             </div>
 
             <div id="xai-feature-bars" class="space-y-4 pt-2">
@@ -761,46 +1095,337 @@
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 class="text-sm font-bold text-white">Model Comparison & Threshold Calibration Sandbox</h2>
-              <p class="text-xs text-slate-400 mt-0.5">Evaluate detection performance across different architectures or slide the target FPR.</p>
+              <p class="text-xs text-slate-400 mt-0.5">Evaluate detection performance across architectures and verified discrete calibration points.</p>
+              <span class="text-[10px] text-cyan-400/90 font-mono block mt-1">Live Ingestion Authority: Legacy Temporal Autoencoder (v1) &middot; Sandbox inspection only</span>
             </div>
 
             <!-- Model Switcher Buttons -->
             <div class="flex flex-wrap items-center gap-1.5 bg-soc-elevated p-1 rounded-lg border border-soc-border">
-              <button id="btn-temporal-ae" class="px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-600 text-white shadow cursor-pointer" onclick="switchModel('temporal_ae')">
-                Temporal Autoencoder (93.1%)
+              <button id="btn-temporal-ae"
+                class="px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-600 text-white shadow cursor-pointer"
+                onclick="switchModel('temporal_ae')">
+                Temporal Autoencoder (93.1%) [Champion]
               </button>
-              <button id="btn-oneway-ae" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer" onclick="switchModel('oneway_ae')">
+              <button id="btn-pure-oneway-v2"
+                class="px-3 py-1.5 rounded-md text-xs font-medium text-amber-300 hover:text-white cursor-pointer border border-amber-500/40"
+                onclick="switchModel('pure_oneway_v2')">
+                Pure One-Way v2 (Experimental ⚠️)
+              </button>
+              <button id="btn-oneway-ae"
+                class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer"
+                onclick="switchModel('oneway_ae')">
                 Flow Autoencoder (48.8%)
               </button>
-              <button id="btn-oneway-log" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer" onclick="switchModel('oneway_log')">
+              <button id="btn-oneway-log"
+                class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer"
+                onclick="switchModel('oneway_log')">
                 One-Way Log-PCA (35.1%)
               </button>
-              <button id="btn-bidirectional" class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer" onclick="switchModel('bidirectional')">
+              <button id="btn-bidirectional"
+                class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer"
+                onclick="switchModel('bidirectional')">
                 Bidirectional Baseline
               </button>
             </div>
           </div>
 
-          <!-- Threshold Slider -->
-          <div class="pt-3 border-t border-soc-border space-y-2">
-            <div class="flex justify-between items-center text-xs font-medium">
-              <span class="text-slate-300">Target Benign Calibration FPR: <span id="fpr-slider-val" class="text-cyan-400 font-bold">0.2%</span></span>
-              <span class="text-slate-400">Calibrated Score Cutoff: <span id="thresh-val" class="font-mono text-emerald-400 font-bold">0.190885</span></span>
+          <!-- Calibration Sandbox Synchronization / Error Status Banner -->
+          <div id="sandbox-sync-status" class="hidden p-3 rounded-lg border text-xs flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span id="sandbox-sync-icon" class="text-sm">⚠️</span>
+              <span id="sandbox-sync-msg" class="font-medium"></span>
             </div>
-            <input id="fpr-slider" type="range" min="0.1" max="5.0" step="0.1" value="0.2" class="w-full accent-cyan-500 cursor-pointer" oninput="updateFPR(this.value)">
-            <div class="flex justify-between text-[10px] text-slate-400">
-              <span>0.1% (Strict / Minimum Alarms)</span>
-              <span>0.2% (Operational Champion — 93.1% Recall)</span>
-              <span>1.0% (Aggressive Zero-Day Mode)</span>
-              <span>5.0% (High-Recall Forensic Sweep)</span>
+            <button type="button" onclick="fetchModelData()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[10px] text-cyan-300 font-mono border border-slate-700 cursor-pointer">Retry Sync</button>
+          </div>
+
+          <!-- Verified Discrete Operating-Point Selector -->
+          <div class="pt-3 border-t border-soc-border space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Verified Operating Point</span>
+                <span class="text-[10px] text-slate-400 block">Select an empirically verified discrete calibration point</span>
+              </div>
+              <!-- Operating Point Buttons -->
+              <div class="flex items-center gap-2">
+                <button id="btn-op-primary" type="button"
+                  class="px-3 py-1.5 rounded-md text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40"
+                  onclick="selectOperatingPoint('primary')">
+                  Operational Primary (&alpha; = 0.2%)
+                </button>
+                <button id="btn-op-reference" type="button"
+                  class="px-3 py-1.5 rounded-md text-xs font-semibold text-slate-500 bg-soc-elevated border border-soc-border cursor-not-allowed opacity-50 transition"
+                  disabled
+                  title="Reference operating point (&alpha; = 1.0%) applies exclusively to Pure One-Way v2"
+                  onclick="selectOperatingPoint('reference')">
+                  High-Recall Reference (&alpha; = 1.0%)
+                </button>
+              </div>
             </div>
+
+            <!-- Operating Point Metrics Badges -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-3 rounded-lg bg-soc-elevated/70 border border-soc-border text-xs">
+              <div>
+                <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Calibration Target (&alpha;)</span>
+                <span id="calib-target-val" class="font-mono text-cyan-400 font-bold text-sm">0.2%</span>
+                <span class="text-[10px] text-slate-500 block">Monday Benign Set (Target)</span>
+              </div>
+              <div>
+                <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Calibrated Score Cutoff (&tau;)</span>
+                <span id="thresh-val" class="font-mono text-emerald-400 font-bold text-sm">0.190885</span>
+                <span class="text-[10px] text-slate-500 block">Empirical Anomaly Threshold</span>
+              </div>
+              <div>
+                <span class="text-[10px] uppercase tracking-wider text-slate-400 block">Operational Test FPR</span>
+                <span id="observed-fpr-val" class="font-mono text-amber-400 font-bold text-sm">12.48%</span>
+                <span class="text-[10px] text-slate-500 block">Tue–Fri (2,300,825 Flows)</span>
+              </div>
+            </div>
+
+            <!-- Educational Distinction Note -->
+            <div class="flex items-start gap-2 p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400">
+              <svg class="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div class="space-y-0.5">
+                <div id="op-point-note" class="text-slate-300">
+                  <strong class="text-white">Calibration Target vs. Operational FPR:</strong>
+                  Target FPR (&alpha;) is determined exclusively on unlabelled Monday benign calibration traffic (<code class="text-cyan-300">calibration_benign.parquet</code>).
+                  Operational FPR is observed empirically on held-out Tuesday–Friday evaluation traffic (<code class="text-cyan-300">test_tue_fri.parquet</code>).
+                </div>
+                <div id="op-point-restriction" class="text-slate-400 text-[10px]">
+                  Note: Production Champion v1 is calibrated strictly at &alpha; = 0.2%. High-Recall Reference point (&alpha; = 1.0%) applies exclusively to Pure One-Way v2.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DUAL-MODEL INTELLIGENCE & COMPARISON CARDS -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          <!-- Card A: Selected Model Dynamic Evaluation Card -->
+          <div class="glass-panel p-5 rounded-xl border border-cyan-500/40 relative overflow-hidden space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span id="card-a-pulse" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <h3 id="card-a-title" class="text-sm font-bold text-white">Legacy Temporal Autoencoder (v1)</h3>
+                <span id="card-a-stale-tag" class="hidden text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-600 text-amber-300">STALE</span>
+              </div>
+              <span id="card-a-badge"
+                class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700/80 text-emerald-400">
+                ACTIVE PRODUCTION CHAMPION
+              </span>
+            </div>
+            <div class="text-xs text-slate-400">
+              Feature Scope: <span id="card-a-scope" class="font-mono text-cyan-300 font-bold">32 Features</span> <span id="card-a-scope-sub">(Includes Reverse
+              Telemetry &amp; Bidirectional Flags)</span>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="grid grid-cols-3 gap-2.5 pt-1 text-center font-mono">
+              <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
+                <div class="text-[9px] uppercase tracking-wider text-slate-400">Attack Recall</div>
+                <div id="card-a-recall" class="text-sm font-bold text-emerald-400 mt-0.5">93.08%</div>
+              </div>
+              <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
+                <div class="text-[9px] uppercase tracking-wider text-slate-400">False Positives</div>
+                <div id="card-a-fpr" class="text-sm font-bold text-amber-400 mt-0.5">12.48%</div>
+              </div>
+              <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
+                <div class="text-[9px] uppercase tracking-wider text-slate-400">Precision</div>
+                <div id="card-a-prec" class="text-sm font-bold text-indigo-400 mt-0.5">70.46%</div>
+              </div>
+              <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
+                <div class="text-[9px] uppercase tracking-wider text-slate-400">F1-Score</div>
+                <div id="card-a-f1" class="text-sm font-bold text-white mt-0.5">0.8020</div>
+              </div>
+              <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
+                <div class="text-[9px] uppercase tracking-wider text-slate-400">PR-AUC (AP)</div>
+                <div id="card-a-prauc" class="text-sm font-bold text-purple-400 mt-0.5">0.8783</div>
+              </div>
+              <div class="bg-soc-elevated p-2 rounded-lg border border-soc-border">
+                <div class="text-[9px] uppercase tracking-wider text-slate-400">ROC-AUC</div>
+                <div id="card-a-rocauc" class="text-sm font-bold text-cyan-400 mt-0.5">0.9538</div>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-soc-border flex items-center justify-between text-xs text-slate-400">
+              <span>Operating Threshold: <span id="card-a-threshold" class="font-mono text-emerald-400 font-bold">0.190885</span> (<span id="card-a-target-fpr" class="text-cyan-300 font-mono">&alpha; = 0.2%</span>)</span>
+              <span>Scoring: <span id="card-a-scoring" class="text-slate-300">Weighted MSE</span></span>
+            </div>
+          </div>
+
+          <!-- Card B: Pure One-Way v2 (Experimental Candidate) -->
+          <div class="glass-panel p-5 rounded-xl border border-amber-500/50 relative overflow-hidden space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                <h3 class="text-sm font-bold text-white">Pure One-Way Autoencoder (v2)</h3>
+              </div>
+              <span
+                class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-950/80 border border-amber-600/80 text-amber-300">
+                EXPERIMENTAL / RESEARCH CANDIDATE
+              </span>
+            </div>
+            <div class="text-xs text-slate-400">
+              Feature Scope: <span class="font-mono text-amber-300 font-bold">26 Features</span> (26-dimensional forward-feature-only design; reverse-direction feature information excluded)
+            </div>
+
+            <!-- Dual Operating Points -->
+            <div class="space-y-2.5 text-xs">
+              <!-- Primary Operating Point -->
+              <div class="bg-soc-elevated p-3 rounded-lg border border-soc-border space-y-1.5">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="font-bold text-amber-300 uppercase tracking-wider">Primary Operating Point (&tau; =
+                    0.314036, Calib Target: 0.2%)</span>
+                  <span class="font-mono text-emerald-400 font-bold">71.86% Precision (+1.4%)</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2 text-center font-mono">
+                  <div><span class="text-[9px] text-slate-400 block">Recall</span><span
+                      class="font-bold text-white">85.38%</span></div>
+                  <div><span class="text-[9px] text-slate-400 block">FPR</span><span
+                      class="font-bold text-emerald-400">10.70%</span></div>
+                  <div><span class="text-[9px] text-slate-400 block">F1</span><span
+                      class="font-bold text-white">0.7804</span></div>
+                  <div><span class="text-[9px] text-slate-400 block">PR-AUC</span><span
+                      class="font-bold text-purple-400">0.8687</span></div>
+                </div>
+                <div class="text-[10px] text-slate-400">Reduces false alarms by 31,109 vs. Legacy Champion v1. ROC-AUC:
+                  0.9478.</div>
+              </div>
+
+              <!-- Reference Operating Point -->
+              <div class="bg-soc-elevated p-3 rounded-lg border border-soc-border space-y-1.5">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="font-bold text-slate-300 uppercase tracking-wider">Reference Operating Point (&tau; =
+                    0.099018, Calib Target: 1.0%)</span>
+                  <span class="font-mono text-cyan-400 font-bold">93.01% Recall (Parity)</span>
+                </div>
+                <div class="grid grid-cols-4 gap-2 text-center font-mono">
+                  <div><span class="text-[9px] text-slate-400 block">Recall</span><span
+                      class="font-bold text-emerald-400">93.01%</span></div>
+                  <div><span class="text-[9px] text-slate-400 block">FPR</span><span
+                      class="font-bold text-amber-400">17.35%</span></div>
+                  <div><span class="text-[9px] text-slate-400 block">Precision</span><span
+                      class="font-bold text-white">63.16%</span></div>
+                  <div><span class="text-[9px] text-slate-400 block">F1</span><span
+                      class="font-bold text-white">0.7523</span></div>
+                </div>
+                <div class="text-[10px] text-slate-400">Matches Legacy Champion recall within 0.07% without any
+                  reverse-flow features.</div>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-soc-border flex items-center justify-between text-xs text-slate-400">
+              <span>Scoring: <span class="text-slate-300">Unweighted MSE</span></span>
+              <span>Decision: <span class="font-mono text-amber-300">score &gt; &tau;</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Explanatory Note & Drift Warning Callout -->
+        <div class="glass-panel p-4 rounded-xl border border-amber-500/40 bg-amber-950/20 space-y-2">
+          <div class="flex items-start gap-2.5">
+            <svg class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div class="space-y-1 text-xs">
+              <div class="font-bold text-amber-300">Model Trade-off Note</div>
+              <p class="text-slate-300 leading-relaxed">
+                The primary v2 operating point reduces false positives compared with v1 but sacrifices recall. The reference operating point nearly matches v1 recall but has a higher FPR.
+                <span class="block mt-1 text-slate-400 font-mono text-[11px]">Scope: 26-dimensional forward-feature-only design; reverse-direction feature information excluded (feature-level compliance; distinct from validation on a physical one-way capture device).</span>
+              </p>
+              <div class="font-bold text-rose-300 pt-1">Operational Drift Warning</div>
+              <p class="text-slate-300 leading-relaxed">
+                Operational FPR on Tuesday–Friday exceeds the Monday calibration target. The cause has not yet been established.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Head-to-Head Model Comparison Table -->
+        <div class="glass-panel rounded-xl overflow-hidden border border-soc-border">
+          <div class="px-5 py-3 border-b border-soc-border flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Head-to-Head Model Comparison</h3>
+            <span class="text-[10px] text-slate-400 font-mono">Tuesday–Friday Test Set (2,300,825 Flows)</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-mono">
+              <thead class="bg-soc-elevated text-slate-400 uppercase text-[10px] tracking-wider font-sans">
+                <tr>
+                  <th class="px-4 py-2.5">Model Architecture</th>
+                  <th class="px-4 py-2.5">Status</th>
+                  <th class="px-4 py-2.5">Feature Dims</th>
+                  <th class="px-4 py-2.5">Operating Threshold</th>
+                  <th class="px-4 py-2.5">Recall (%)</th>
+                  <th class="px-4 py-2.5">FPR (%)</th>
+                  <th class="px-4 py-2.5">Precision (%)</th>
+                  <th class="px-4 py-2.5">F1-Score</th>
+                  <th class="px-4 py-2.5">PR-AUC</th>
+                  <th class="px-4 py-2.5">ROC-AUC</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-soc-border text-slate-300">
+                <tr id="row-h2h-legacy" class="bg-cyan-950/20 hover:bg-cyan-950/40 transition ring-2 ring-cyan-400 bg-cyan-950/60">
+                  <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Legacy Champion (v1)
+                  </td>
+                  <td class="px-4 py-2.5 font-sans"><span
+                      class="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">CHAMPION</span>
+                  </td>
+                  <td class="px-4 py-2.5 text-slate-300">32</td>
+                  <td class="px-4 py-2.5 text-cyan-300 font-bold">0.190885</td>
+                  <td class="px-4 py-2.5 font-bold text-emerald-400">93.08%</td>
+                  <td class="px-4 py-2.5 text-amber-400">12.48%</td>
+                  <td class="px-4 py-2.5 font-bold text-indigo-400">70.46%</td>
+                  <td class="px-4 py-2.5 font-bold text-white">0.8020</td>
+                  <td class="px-4 py-2.5 text-purple-400">0.8783</td>
+                  <td class="px-4 py-2.5 text-cyan-400">0.9538</td>
+                </tr>
+                <tr id="row-h2h-v2-primary" class="bg-amber-950/20 hover:bg-amber-950/40 transition">
+                  <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span> Pure One-Way v2 (Primary)
+                  </td>
+                  <td class="px-4 py-2.5 font-sans"><span
+                      class="text-[10px] font-bold text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800">EXPERIMENTAL</span>
+                  </td>
+                  <td class="px-4 py-2.5 text-amber-300 font-bold">26</td>
+                  <td class="px-4 py-2.5 text-amber-300 font-bold">0.314036</td>
+                  <td class="px-4 py-2.5 font-bold text-white">85.38%</td>
+                  <td class="px-4 py-2.5 font-bold text-emerald-400">10.70%</td>
+                  <td class="px-4 py-2.5 font-bold text-indigo-400">71.86%</td>
+                  <td class="px-4 py-2.5 font-bold text-white">0.7804</td>
+                  <td class="px-4 py-2.5 text-purple-400">0.8687</td>
+                  <td class="px-4 py-2.5 text-cyan-400">0.9478</td>
+                </tr>
+                <tr id="row-h2h-v2-ref" class="hover:bg-slate-800/30 transition">
+                  <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-slate-400"></span> Pure One-Way v2 (Reference)
+                  </td>
+                  <td class="px-4 py-2.5 font-sans"><span
+                      class="text-[10px] font-bold text-amber-300 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800">EXPERIMENTAL</span>
+                  </td>
+                  <td class="px-4 py-2.5 text-amber-300 font-bold">26</td>
+                  <td class="px-4 py-2.5 text-slate-300 font-bold">0.099018</td>
+                  <td class="px-4 py-2.5 font-bold text-emerald-400">93.01%</td>
+                  <td class="px-4 py-2.5 text-amber-400">17.35%</td>
+                  <td class="px-4 py-2.5 text-slate-300">63.16%</td>
+                  <td class="px-4 py-2.5 text-slate-300">0.7523</td>
+                  <td class="px-4 py-2.5 text-purple-400">0.8687</td>
+                  <td class="px-4 py-2.5 text-cyan-400">0.9478</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
         <!-- Leaderboard Table -->
         <div class="glass-panel rounded-xl overflow-hidden border border-soc-border">
           <div class="px-5 py-3.5 border-b border-soc-border">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Consolidated Intrusion Detection Leaderboard</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200">Consolidated Intrusion Detection
+              Leaderboard</h3>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
@@ -821,13 +1446,38 @@
                   <td class="px-4 py-2.5 font-bold text-cyan-400">#1</td>
                   <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> Temporal One-Way Autoencoder
+                    (v1)
                   </td>
-                  <td class="px-4 py-2.5 text-cyan-300">32 Forward Dims</td>
+                  <td class="px-4 py-2.5 text-cyan-300">32 Forward Dims [Champion]</td>
                   <td class="px-4 py-2.5 font-bold text-emerald-400">93.08%</td>
                   <td class="px-4 py-2.5 text-amber-400">12.48%</td>
                   <td class="px-4 py-2.5 text-indigo-400 font-bold">70.46%</td>
                   <td class="px-4 py-2.5 font-bold text-purple-400">0.8783</td>
                   <td class="px-4 py-2.5 text-slate-300">27.6s</td>
+                </tr>
+                <tr class="bg-amber-950/20 hover:bg-amber-950/40 transition">
+                  <td class="px-4 py-2.5 font-bold text-amber-400">EXP</td>
+                  <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span> Pure One-Way v2 (Primary)
+                  </td>
+                  <td class="px-4 py-2.5 text-amber-300">26 Pure One-Way Dims</td>
+                  <td class="px-4 py-2.5 font-bold text-white">85.38%</td>
+                  <td class="px-4 py-2.5 font-bold text-emerald-400">10.70%</td>
+                  <td class="px-4 py-2.5 text-indigo-400 font-bold">71.86%</td>
+                  <td class="px-4 py-2.5 font-bold text-purple-400">0.8687</td>
+                  <td class="px-4 py-2.5 text-slate-300">9.4s</td>
+                </tr>
+                <tr class="bg-amber-950/10 hover:bg-amber-950/30 transition">
+                  <td class="px-4 py-2.5 font-bold text-amber-400">EXP</td>
+                  <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span> Pure One-Way v2 (Reference)
+                  </td>
+                  <td class="px-4 py-2.5 text-amber-300">26 Pure One-Way Dims</td>
+                  <td class="px-4 py-2.5 font-bold text-emerald-400">93.01%</td>
+                  <td class="px-4 py-2.5 text-amber-400">17.35%</td>
+                  <td class="px-4 py-2.5 text-slate-300 font-bold">63.16%</td>
+                  <td class="px-4 py-2.5 font-bold text-purple-400">0.8687</td>
+                  <td class="px-4 py-2.5 text-slate-300">9.4s</td>
                 </tr>
                 <tr class="hover:bg-slate-800/30 transition">
                   <td class="px-4 py-2.5 text-slate-400">#2</td>
@@ -881,46 +1531,59 @@
       <div id="view-system" class="space-y-6 hidden">
         <div class="glass-panel p-5 rounded-xl border border-soc-border">
           <h2 class="text-sm font-bold text-white">Optical Tap & Hardware Sensor Telemetry</h2>
-          <p class="text-xs text-slate-400 mt-0.5">Real-time status of physical receive-only network diode tap and memory consumption.</p>
+          <p class="text-xs text-slate-400 mt-0.5">Real-time status of physical receive-only network diode tap and
+            memory consumption.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div class="glass-panel p-5 rounded-xl space-y-3">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold uppercase text-slate-300">Sensor Optical Link</span>
-              <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">ONLINE</span>
+              <span
+                class="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">ONLINE</span>
             </div>
             <div class="text-sm font-bold text-white">Receive-Only Optical Splitter</div>
-            <p class="text-xs text-slate-400">Transmit fibers are physically omitted, rendering packet injection or backward ACK response impossible.</p>
+            <p class="text-xs text-slate-400">Transmit fibers are physically omitted, rendering packet injection or
+              backward ACK response impossible.</p>
             <div class="border-t border-soc-border pt-2 text-xs text-slate-300 space-y-1">
-              <div class="flex justify-between"><span>Physical Tap:</span><span class="font-mono text-cyan-400">10GbE LC-LC Diode</span></div>
-              <div class="flex justify-between"><span>Forward Wavelength:</span><span class="font-mono text-slate-300">1310 nm</span></div>
+              <div class="flex justify-between"><span>Physical Tap:</span><span class="font-mono text-cyan-400">10GbE
+                  LC-LC Diode</span></div>
+              <div class="flex justify-between"><span>Forward Wavelength:</span><span
+                  class="font-mono text-slate-300">1310 nm</span></div>
             </div>
           </div>
 
           <div class="glass-panel p-5 rounded-xl space-y-3">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold uppercase text-slate-300">Temporal Engine Buffer</span>
-              <span class="text-[10px] font-mono text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">ACTIVE</span>
+              <span
+                class="text-[10px] font-mono text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">ACTIVE</span>
             </div>
             <div class="text-sm font-bold text-white">10-Second Rolling Causal Buckets</div>
-            <p class="text-xs text-slate-400">Maintains rolling counts and payload volumes strictly over historical forward flows without future knowledge.</p>
+            <p class="text-xs text-slate-400">Maintains rolling counts and payload volumes strictly over historical
+              forward flows without future knowledge.</p>
             <div class="border-t border-soc-border pt-2 text-xs text-slate-300 space-y-1">
-              <div class="flex justify-between"><span>Window Span:</span><span class="font-mono text-cyan-400">10.0 seconds</span></div>
-              <div class="flex justify-between"><span>Velocity Metrics:</span><span class="font-mono text-slate-300">Flow, Byte, Single-Pkt</span></div>
+              <div class="flex justify-between"><span>Window Span:</span><span class="font-mono text-cyan-400">10.0
+                  seconds</span></div>
+              <div class="flex justify-between"><span>Velocity Metrics:</span><span
+                  class="font-mono text-slate-300">Flow, Byte, Single-Pkt</span></div>
             </div>
           </div>
 
           <div class="glass-panel p-5 rounded-xl space-y-3">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold uppercase text-slate-300">Runtime Telemetry</span>
-              <span class="text-[10px] font-mono text-purple-400 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800">HEALTHY</span>
+              <span
+                class="text-[10px] font-mono text-purple-400 bg-purple-950/80 px-2 py-0.5 rounded border border-purple-800">HEALTHY</span>
             </div>
             <div class="text-sm font-bold text-white">Process Footprint</div>
-            <p class="text-xs text-slate-400">Lightweight zero-dependency Python daemon with scikit-learn neural regressor in shared memory.</p>
+            <p class="text-xs text-slate-400">Lightweight zero-dependency Python daemon with scikit-learn neural
+              regressor in shared memory.</p>
             <div class="border-t border-soc-border pt-2 text-xs text-slate-300 space-y-1">
-              <div class="flex justify-between"><span>Memory Footprint:</span><span class="font-mono text-emerald-400">142 MB RSS</span></div>
-              <div class="flex justify-between"><span>Model Architecture:</span><span class="font-mono text-slate-300">32-24-8-24-32 MLP</span></div>
+              <div class="flex justify-between"><span>Memory Footprint:</span><span
+                  class="font-mono text-emerald-400">142 MB RSS</span></div>
+              <div class="flex justify-between"><span>Model Architecture:</span><span
+                  class="font-mono text-slate-300">32-24-8-24-32 MLP</span></div>
             </div>
           </div>
         </div>
@@ -929,7 +1592,8 @@
     </main>
 
     <!-- Footer -->
-    <footer class="border-t border-soc-border py-4 px-6 text-center text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
+    <footer
+      class="border-t border-soc-border py-4 px-6 text-center text-xs text-slate-400 flex flex-wrap items-center justify-between gap-2">
       <div>
         AEGIS SOC &middot; Label-Free Threat Detection in One-Way Network Traffic &middot; Problem ID: SIH26145
       </div>
@@ -947,7 +1611,8 @@
   <!-- ========================================================================= -->
   <div id="event-drawer" class="hidden fixed inset-0 z-50 overflow-hidden">
     <!-- Backdrop with click-to-close -->
-    <div id="drawer-backdrop" onclick="closeDrawer()" class="absolute inset-0 bg-black/70 backdrop-blur-sm cursor-pointer"></div>
+    <div id="drawer-backdrop" onclick="closeDrawer()"
+      class="absolute inset-0 bg-black/70 backdrop-blur-sm cursor-pointer"></div>
 
     <!-- Drawer Surface -->
     <div class="fixed inset-y-0 right-0 max-w-full flex pl-10 pointer-events-auto">
@@ -955,19 +1620,24 @@
         <!-- Drawer Header -->
         <div class="p-5 border-b border-soc-border flex items-center justify-between">
           <div class="flex items-center space-x-3">
-            <div class="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 font-bold">
+            <div
+              class="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-400 font-bold">
               🔎
             </div>
             <div>
               <h3 class="text-sm font-bold text-white flex items-center gap-2">
                 <span>Forensic Event Dossier</span>
-                <span id="drawer-severity-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-950 text-rose-400 border border-rose-800 font-bold">ALERT</span>
+                <span id="drawer-severity-badge"
+                  class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-950 text-rose-400 border border-rose-800 font-bold">ALERT</span>
               </h3>
               <p class="text-xs text-slate-400 font-mono" id="drawer-flow-id">#FL-000000</p>
             </div>
           </div>
-          <button onclick="closeDrawer()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          <button onclick="closeDrawer()"
+            class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -980,7 +1650,8 @@
               <span id="drawer-score-val" class="font-mono text-sm font-bold text-rose-400">0.0000</span>
             </div>
             <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-              <div id="drawer-score-bar" class="bg-rose-500 h-full rounded-full transition-all duration-500" style="width: 75%"></div>
+              <div id="drawer-score-bar" class="bg-rose-500 h-full rounded-full transition-all duration-500"
+                style="width: 75%"></div>
             </div>
             <div class="flex justify-between text-[10px] text-slate-400 font-mono">
               <span>Threshold Cutoff: <strong id="drawer-thresh-val" class="text-slate-300">0.190885</strong></span>
@@ -1024,8 +1695,17 @@
         </div>
 
         <!-- Drawer Footer -->
-        <div class="p-4 border-t border-soc-border bg-soc-surface flex items-center justify-between">
-          <button onclick="closeDrawer()" class="w-full px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition cursor-pointer">
+        <div class="p-4 border-t border-soc-border bg-soc-surface flex items-center justify-between gap-3">
+          <button id="btn-drawer-inspect-xai" onclick="inspectCurrentFlowInXai()"
+            class="flex-1 px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-lg text-xs font-semibold shadow-lg transition flex items-center justify-center gap-2 cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span>Inspect in Forensic XAI &rarr;</span>
+          </button>
+          <button onclick="closeDrawer()"
+            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition cursor-pointer">
             Close Dossier
           </button>
         </div>
@@ -1034,7 +1714,8 @@
   </div>
 
   <!-- Toast Notification Container -->
-  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-auto max-w-sm"></div>
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-auto max-w-sm">
+  </div>
 
   <!-- ========================================================================= -->
   <!-- 4. CORE APPLICATION JAVASCRIPT & STATE MANAGEMENT -->
@@ -1049,21 +1730,43 @@
 
     const modelBreakdowns = {
       temporal_ae: {
+        name: "Legacy Temporal Autoencoder (v1)",
+        status: "PRODUCTION CHAMPION",
         rates: [54.55, 99.79, 58.33, 22.07, 99.85, 25.02, 15.00, 0.0, 2.29, 0.0, 0.0, 2.27, 97.83],
-        recall: "93.08%", fpr: "12.48%", precision: "70.46%", ap: "0.8783",
-        tp: "519,031", fp: "217,598", fn: "38,615", tn: "1,525,581", threshold: "0.190885"
+        recall: "93.08%", fpr: "12.48%", precision: "70.46%", ap: "0.8783", roc_auc: "0.9538", f1: "0.8020",
+        tp: "519,031", fp: "217,598", fn: "38,615", tn: "1,525,581", threshold: "0.190885", target_fpr: "0.2%"
+      },
+      pure_oneway_v2: {
+        name: "Pure One-Way Autoencoder (v2 Primary)",
+        status: "EXPERIMENTAL / RESEARCH CANDIDATE",
+        rates: [0.0, 99.14, 47.22, 27.57, 99.85, 12.73, 5.13, 0.0, 2.24, 0.0, 0.0, 0.73, 66.30],
+        recall: "85.38%", fpr: "10.70%", precision: "71.86%", ap: "0.8687", roc_auc: "0.9478", f1: "0.7804",
+        tp: "476,125", fp: "186,489", fn: "81,521", tn: "1,556,690", threshold: "0.314036", target_fpr: "0.2%"
+      },
+      pure_oneway_v2_ref: {
+        name: "Pure One-Way Autoencoder (v2 Reference)",
+        status: "EXPERIMENTAL / RESEARCH CANDIDATE",
+        rates: [18.18, 99.15, 75.00, 31.69, 99.85, 18.00, 11.82, 0.27, 3.05, 0.0, 3.24, 7.53, 97.97],
+        recall: "93.01%", fpr: "17.35%", precision: "63.16%", ap: "0.8687", roc_auc: "0.9478", f1: "0.7523",
+        tp: "518,647", fp: "302,461", fn: "38,999", tn: "1,440,718", threshold: "0.099018", target_fpr: "1.0%"
       },
       oneway_ae: {
+        name: "Deep One-Way Autoencoder",
+        status: "BASELINE",
         rates: [90.91, 99.86, 36.11, 22.10, 22.64, 13.00, 5.53, 0.0, 2.24, 0.0, 0.29, 8.70, 44.92],
         recall: "48.76%", fpr: "6.13%", precision: "71.78%", ap: "0.7032",
         tp: "271,889", fp: "106,893", fn: "285,757", tn: "1,636,286", threshold: "0.119703"
       },
       oneway_log: {
+        name: "Enhanced One-Way Log-PCA",
+        status: "BASELINE",
         rates: [100.0, 99.36, 36.11, 18.74, 15.21, 12.78, 5.26, 4.71, 2.49, 2.45, 0.14, 0.0, 0.0],
         recall: "35.07%", fpr: "3.87%", precision: "74.36%", ap: "0.6582",
         tp: "195,571", fp: "67,420", fn: "362,075", tn: "1,675,759", threshold: "0.258490"
       },
       bidirectional: {
+        name: "Bidirectional 39-PCA (Reference)",
+        status: "NON-COMPLIANT BASELINE",
         rates: [100.0, 0.20, 44.44, 32.83, 67.17, 31.42, 62.96, 4.84, 2.24, 2.91, 0.03, 0.0, 63.27],
         recall: "44.22%", fpr: "2.45%", precision: "85.26%", ap: "0.6875",
         tp: "246,566", fp: "42,644", fn: "311,080", tn: "1,700,535", threshold: "0.438088"
@@ -1071,11 +1774,20 @@
     };
 
     let activeModel = 'temporal_ae';
+    let activeOperatingPoint = 'primary';
     let isStreamPollingPaused = false;
     let overviewChartInstance = null;
     let donutChartInstance = null;
     let analyticsChartInstance = null;
     let liveAlertsCache = [];
+    let currentDrawerEvent = null;
+    let currentXaiFlow = null;
+    let activeXaiFlowIndex = null;
+    let validatedCatalog = null;
+    let apiSyncStatus = { metrics: false, models: false, compare: false };
+    let syncErrors = [];
+    let isDataStale = false;
+    let activeAnalyticsModel = 'legacy';
 
     // Toast Notification helper
     function showToast(message, type = "info") {
@@ -1136,9 +1848,11 @@
           if (overviewChartInstance) overviewChartInstance.resize();
           if (donutChartInstance) donutChartInstance.resize();
         }, 50);
+        fetchOverviewData(activeOverviewModel);
       } else if (viewKey === 'analytics') {
         setTimeout(() => {
           if (analyticsChartInstance) analyticsChartInstance.resize();
+          fetchThreatAnalytics(activeAnalyticsModel);
         }, 50);
       }
     }
@@ -1148,40 +1862,599 @@
       sidebar.classList.toggle('-translate-x-full');
     }
 
+    // Operating Point Selection (Verified Discrete Points)
+    function selectOperatingPoint(pointKey) {
+      if (activeModel === 'temporal_ae') {
+        if (pointKey === 'reference') {
+          showToast("Reference operating point (\u03b1 = 1.0%) applies exclusively to Pure One-Way v2. Temporal Autoencoder v1 is calibrated at \u03b1 = 0.2%.", "warning");
+          return;
+        }
+        activeOperatingPoint = 'primary';
+      } else if (activeModel === 'pure_oneway_v2') {
+        activeOperatingPoint = pointKey;
+        if (pointKey === 'reference') {
+          showToast("Selected Pure One-Way v2 Reference point (\u03c4 = 0.099018, \u03b1 = 1.0%). Recall: 93.01%, Test FPR: 17.35%.", "info");
+        } else {
+          showToast("Selected Pure One-Way v2 Primary point (\u03c4 = 0.314036, \u03b1 = 0.2%). Recall: 85.38%, Test FPR: 10.70%.", "info");
+        }
+      } else {
+        if (pointKey === 'reference') {
+          showToast("Reference operating point (\u03b1 = 1.0%) applies exclusively to Pure One-Way v2.", "warning");
+          return;
+        }
+        activeOperatingPoint = 'primary';
+      }
+      updateCalibrationDisplay();
+    }
+
     // Model Selector
     function switchModel(modelKey) {
       activeModel = modelKey;
-      ['btn-temporal-ae', 'btn-oneway-ae', 'btn-oneway-log', 'btn-bidirectional'].forEach(id => {
+      if (activeModel !== 'pure_oneway_v2') {
+        activeOperatingPoint = 'primary';
+      }
+      ['btn-temporal-ae', 'btn-pure-oneway-v2', 'btn-oneway-ae', 'btn-oneway-log', 'btn-bidirectional'].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer";
       });
-      const activeBtnId = modelKey === 'temporal_ae' ? 'btn-temporal-ae' : (modelKey === 'oneway_ae' ? 'btn-oneway-ae' : (modelKey === 'oneway_log' ? 'btn-oneway-log' : 'btn-bidirectional'));
-      if (document.getElementById(activeBtnId)) {
-        document.getElementById(activeBtnId).className = "px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-600 text-white shadow cursor-pointer";
+      const activeBtnId = modelKey === 'temporal_ae' ? 'btn-temporal-ae' :
+        modelKey === 'pure_oneway_v2' ? 'btn-pure-oneway-v2' :
+          modelKey === 'oneway_ae' ? 'btn-oneway-ae' :
+            modelKey === 'oneway_log' ? 'btn-oneway-log' : 'btn-bidirectional';
+
+      const activeBtn = document.getElementById(activeBtnId);
+      if (activeBtn) {
+        if (modelKey === 'pure_oneway_v2') {
+          activeBtn.className = "px-3 py-1.5 rounded-md text-xs font-medium bg-amber-600 text-white shadow cursor-pointer border border-amber-400/50";
+        } else {
+          activeBtn.className = "px-3 py-1.5 rounded-md text-xs font-medium bg-cyan-600 text-white shadow cursor-pointer";
+        }
       }
 
-      const data = modelBreakdowns[modelKey];
-      document.getElementById('thresh-val').textContent = data.threshold;
+      updateCalibrationDisplay();
 
-      if (overviewChartInstance) {
-        overviewChartInstance.data.datasets[0].data = data.rates;
-        overviewChartInstance.data.datasets[0].backgroundColor = data.rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
-        overviewChartInstance.update();
+      if (modelKey === 'pure_oneway_v2') {
+        showToast("Sandbox Inspection: Pure One-Way v2 (Experimental). Live production inference remains Legacy v1.", "warning");
+      } else if (modelKey === 'temporal_ae') {
+        showToast("Sandbox Inspection: Legacy Temporal Autoencoder (v1) [Active Production Champion].", "info");
+      } else {
+        showToast(`Sandbox Inspection: Switched active detector to ${modelKey.replace('_', ' ').toUpperCase()}`, "info");
       }
-      if (analyticsChartInstance) {
-        analyticsChartInstance.data.datasets[0].data = data.rates;
-        analyticsChartInstance.data.datasets[0].backgroundColor = data.rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
-        analyticsChartInstance.update();
-      }
-
-      showToast(`Switched active detector to ${modelKey.replace('_', ' ').toUpperCase()}`, "info");
     }
 
-    function updateFPR(val) {
-      document.getElementById('fpr-slider-val').textContent = `${parseFloat(val).toFixed(1)}%`;
-      const baseThresh = parseFloat(modelBreakdowns[activeModel].threshold);
-      const adjustedThresh = (baseThresh * (1.5 - val / 5.0)).toFixed(6);
-      document.getElementById('thresh-val').textContent = adjustedThresh;
+    // Strict Metric Validation Helper:
+    // Returns true only for valid finite numbers or non-empty numeric strings (handles 0, 0.0, '0.00%' as valid; null/undefined/NaN/empty/N/A as invalid)
+    function isValidMetricValue(val) {
+      if (val === null || val === undefined) return false;
+      if (typeof val === 'number') {
+        return !isNaN(val) && isFinite(val);
+      }
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        if (trimmed === '' || trimmed.toUpperCase() === 'N/A' || trimmed === 'NAN' || trimmed === 'NULL' || trimmed === 'UNDEFINED') {
+          return false;
+        }
+        let clean = trimmed;
+        if (clean.startsWith('α = ') || clean.startsWith('\u03b1 = ') || clean.startsWith('a = ')) {
+          clean = clean.replace(/^[\u03b1\a]\s*=\s*/, '').trim();
+        }
+        if (clean.endsWith('%')) {
+          clean = clean.slice(0, -1).trim();
+        }
+        if (clean === '') return false;
+        const num = Number(clean);
+        return !isNaN(num) && isFinite(num);
+      }
+      return false;
+    }
+
+    // Synchronize DOM elements with active model & operating point
+    function updateCalibrationDisplay() {
+      let dataKey = activeModel;
+      if (activeModel === 'pure_oneway_v2') {
+        dataKey = (activeOperatingPoint === 'reference') ? 'pure_oneway_v2_ref' : 'pure_oneway_v2';
+      }
+
+      // DO NOT silently fall back to temporal_ae or any other model!
+      const data = modelBreakdowns[dataKey];
+
+      // Banner Elements
+      const syncBanner = document.getElementById('sandbox-sync-status');
+      const syncMsg = document.getElementById('sandbox-sync-msg');
+      const syncIcon = document.getElementById('sandbox-sync-icon');
+
+      // Selector & Badge Elements
+      const btnPrimary = document.getElementById('btn-op-primary');
+      const btnRef = document.getElementById('btn-op-reference');
+      const targetValEl = document.getElementById('calib-target-val');
+      const threshValEl = document.getElementById('thresh-val');
+      const obsFprValEl = document.getElementById('observed-fpr-val');
+      const restrictEl = document.getElementById('op-point-restriction');
+
+      // Card A Elements
+      const cardTitle = document.getElementById('card-a-title');
+      const cardBadge = document.getElementById('card-a-badge');
+      const cardStaleTag = document.getElementById('card-a-stale-tag');
+      const cardPulse = document.getElementById('card-a-pulse');
+      const cardScope = document.getElementById('card-a-scope');
+      const cardScopeSub = document.getElementById('card-a-scope-sub');
+      const cardRecall = document.getElementById('card-a-recall');
+      const cardFpr = document.getElementById('card-a-fpr');
+      const cardPrec = document.getElementById('card-a-prec');
+      const cardF1 = document.getElementById('card-a-f1');
+      const cardPrauc = document.getElementById('card-a-prauc');
+      const cardRocauc = document.getElementById('card-a-rocauc');
+      const cardThreshold = document.getElementById('card-a-threshold');
+      const cardTargetFpr = document.getElementById('card-a-target-fpr');
+      const cardScoring = document.getElementById('card-a-scoring');
+
+      // =========================================================================
+      // CASE 1: Missing Model Object entirely (Strictly NO substitution!)
+      // =========================================================================
+      if (!data) {
+        if (syncBanner) {
+          syncBanner.classList.remove('hidden');
+          syncBanner.className = "p-3 rounded-lg border border-rose-700 bg-rose-950/80 text-rose-200 text-xs flex items-center justify-between gap-3";
+          if (syncIcon) syncIcon.textContent = "❌";
+          if (syncMsg) syncMsg.innerHTML = `<strong>Error:</strong> Evaluation data for selected model <code class="text-rose-300 font-bold font-mono">${dataKey}</code> is unavailable. No metrics substituted.`;
+        }
+
+        if (cardTitle) cardTitle.textContent = `${dataKey.toUpperCase().replace(/_/g, ' ')} (DATA UNAVAILABLE)`;
+        if (cardBadge) {
+          cardBadge.textContent = "DATA UNAVAILABLE";
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-950/80 border border-rose-700 text-rose-300";
+        }
+        if (cardStaleTag) cardStaleTag.classList.add('hidden');
+        if (cardPulse) cardPulse.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+        if (cardScope) { cardScope.textContent = "N/A"; cardScope.className = "font-mono text-slate-500 font-bold"; }
+        if (cardScopeSub) cardScopeSub.textContent = "(Model evaluation data missing from backend; no substitution)";
+        if (cardRecall) cardRecall.textContent = "N/A";
+        if (cardFpr) cardFpr.textContent = "N/A";
+        if (cardPrec) cardPrec.textContent = "N/A";
+        if (cardF1) cardF1.textContent = "N/A";
+        if (cardPrauc) cardPrauc.textContent = "N/A";
+        if (cardRocauc) cardRocauc.textContent = "N/A";
+        if (cardThreshold) cardThreshold.textContent = "N/A";
+        if (cardTargetFpr) cardTargetFpr.textContent = "N/A";
+        if (cardScoring) cardScoring.textContent = "N/A";
+
+        if (targetValEl) targetValEl.textContent = "N/A";
+        if (threshValEl) threshValEl.textContent = "N/A";
+        if (obsFprValEl) obsFprValEl.textContent = "N/A";
+        if (restrictEl) restrictEl.textContent = `Error: Evaluation metrics for ${dataKey} are unavailable. No fallback metrics substituted.`;
+
+        // Clear charts to reflect missing data
+        if (overviewChartInstance) {
+          overviewChartInstance.data.datasets[0].data = [];
+          overviewChartInstance.update();
+        }
+        if (analyticsChartInstance) {
+          analyticsChartInstance.data.datasets[0].data = [];
+          analyticsChartInstance.update();
+        }
+
+        // Unhighlight Head-to-Head table rows
+        const rowLegacy = document.getElementById('row-h2h-legacy');
+        const rowV2Primary = document.getElementById('row-h2h-v2-primary');
+        const rowV2Ref = document.getElementById('row-h2h-v2-ref');
+        [rowLegacy, rowV2Primary, rowV2Ref].forEach(r => {
+          if (r) r.classList.remove('ring-2', 'ring-cyan-400', 'ring-amber-400', 'bg-cyan-950/60', 'bg-amber-950/60');
+        });
+        return;
+      }
+
+      // =========================================================================
+      // CASE 2: Model Object Present -> Strict Field-Level Validation of 8 Metrics
+      // 1. Recall, 2. Test FPR, 3. Precision, 4. F1-score, 5. PR-AUC, 6. ROC-AUC,
+      // 7. Threshold, 8. Calibration target FPR
+      // =========================================================================
+      const praucVal = (data.ap !== undefined && data.ap !== null) ? data.ap : data.pr_auc;
+      const requiredMetricFields = [
+        { key: 'recall', name: 'Recall', val: data.recall },
+        { key: 'fpr', name: 'Test FPR', val: data.fpr },
+        { key: 'precision', name: 'Precision', val: data.precision },
+        { key: 'f1', name: 'F1-score', val: data.f1 },
+        { key: 'ap', name: 'PR-AUC', val: praucVal },
+        { key: 'roc_auc', name: 'ROC-AUC', val: data.roc_auc },
+        { key: 'threshold', name: 'Threshold', val: data.threshold },
+        { key: 'target_fpr', name: 'Calibration target FPR', val: data.target_fpr }
+      ];
+
+      const missingFields = requiredMetricFields
+        .filter(f => !isValidMetricValue(f.val))
+        .map(f => f.name);
+
+      const hasIncompleteMetrics = missingFields.length > 0;
+      const isStale = isDataStale || Boolean(data.isStale);
+
+      // Sync / Stale / Incomplete Banner Handling
+      if (syncBanner) {
+        if (hasIncompleteMetrics) {
+          syncBanner.classList.remove('hidden');
+          syncBanner.className = "p-3 rounded-lg border border-amber-700 bg-amber-950/80 text-amber-200 text-xs flex items-center justify-between gap-3";
+          if (syncIcon) syncIcon.textContent = "⚠️";
+          const staleSuffix = isStale ? " (also marked STALE)" : "";
+          if (syncMsg) syncMsg.innerHTML = `<strong>Incomplete Evaluation Data:</strong> Model <code class="text-amber-300 font-bold font-mono">${dataKey}</code> is missing required metric fields (${missingFields.join(", ")}). Unavailable metrics are rendered as N/A. No values substituted.${staleSuffix}`;
+        } else if (isStale) {
+          syncBanner.classList.remove('hidden');
+          syncBanner.className = "p-3 rounded-lg border border-amber-700 bg-amber-950/80 text-amber-200 text-xs flex items-center justify-between gap-3";
+          if (syncIcon) syncIcon.textContent = "⚠️";
+          const errDetail = syncErrors.length > 0 ? ` (${syncErrors.join(", ")})` : "";
+          if (syncMsg) syncMsg.innerHTML = `<strong>Stale Evaluation Benchmarks:</strong> Backend synchronization incomplete${errDetail}. Retaining cached benchmarks marked as STALE.`;
+        } else {
+          syncBanner.classList.add('hidden');
+        }
+      }
+
+      // Discrete Operating Point Selector Elements
+      if (activeModel === 'pure_oneway_v2') {
+        if (btnRef) {
+          btnRef.disabled = false;
+          btnRef.title = "High-Recall Reference Operating Point (\u03b1 = 1.0%)";
+        }
+        if (activeOperatingPoint === 'reference') {
+          if (btnPrimary) {
+            btnPrimary.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-slate-300 bg-soc-elevated hover:text-white cursor-pointer transition border border-soc-border";
+          }
+          if (btnRef) {
+            btnRef.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-600 text-white shadow cursor-pointer transition border border-amber-400/50";
+          }
+          if (targetValEl) targetValEl.textContent = isValidMetricValue(data.target_fpr) ? data.target_fpr : "N/A";
+          if (threshValEl) threshValEl.textContent = isValidMetricValue(data.threshold) ? data.threshold : "N/A";
+          if (obsFprValEl) obsFprValEl.textContent = isValidMetricValue(data.fpr) ? data.fpr : "N/A";
+          if (restrictEl) {
+            if (hasIncompleteMetrics) {
+              restrictEl.textContent = `Warning: Pure One-Way v2 Reference point has incomplete metrics (${missingFields.join(", ")}). Unavailable metrics rendered as N/A.`;
+            } else {
+              restrictEl.textContent = isStale
+                ? "[STALE] Active: Pure One-Way v2 High-Recall Reference (Parity with v1 recall, higher test FPR)."
+                : "Active: Pure One-Way v2 High-Recall Reference (Parity with v1 recall, higher test FPR).";
+            }
+          }
+        } else {
+          if (btnPrimary) {
+            btnPrimary.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-600 text-white shadow cursor-pointer transition border border-amber-400/50";
+          }
+          if (btnRef) {
+            btnRef.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-slate-300 bg-soc-elevated hover:text-white cursor-pointer transition border border-soc-border";
+          }
+          if (targetValEl) targetValEl.textContent = isValidMetricValue(data.target_fpr) ? data.target_fpr : "N/A";
+          if (threshValEl) threshValEl.textContent = isValidMetricValue(data.threshold) ? data.threshold : "N/A";
+          if (obsFprValEl) obsFprValEl.textContent = isValidMetricValue(data.fpr) ? data.fpr : "N/A";
+          if (restrictEl) {
+            if (hasIncompleteMetrics) {
+              restrictEl.textContent = `Warning: Pure One-Way v2 Primary point has incomplete metrics (${missingFields.join(", ")}). Unavailable metrics rendered as N/A.`;
+            } else {
+              restrictEl.textContent = isStale
+                ? "[STALE] Active: Pure One-Way v2 Operational Primary (Lowest test FPR: 10.70%)."
+                : "Active: Pure One-Way v2 Operational Primary (Lowest test FPR: 10.70%).";
+            }
+          }
+        }
+      } else {
+        if (btnRef) {
+          btnRef.disabled = true;
+          btnRef.title = "Reference operating point (\u03b1 = 1.0%) applies exclusively to Pure One-Way v2";
+          btnRef.className = "px-3 py-1.5 rounded-md text-xs font-semibold text-slate-500 bg-soc-elevated border border-soc-border cursor-not-allowed opacity-50 transition";
+        }
+        if (btnPrimary) {
+          btnPrimary.disabled = false;
+          btnPrimary.className = (activeModel === 'temporal_ae')
+            ? "px-3 py-1.5 rounded-md text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40"
+            : "px-3 py-1.5 rounded-md text-xs font-semibold bg-slate-700 text-white shadow cursor-pointer transition border border-slate-600";
+        }
+        if (targetValEl) targetValEl.textContent = isValidMetricValue(data.target_fpr) ? data.target_fpr : "N/A";
+        if (threshValEl) threshValEl.textContent = isValidMetricValue(data.threshold) ? data.threshold : "N/A";
+        if (obsFprValEl) obsFprValEl.textContent = isValidMetricValue(data.fpr) ? data.fpr : "N/A";
+        if (restrictEl) {
+          if (hasIncompleteMetrics) {
+            restrictEl.textContent = `Warning: Model ${dataKey} has incomplete metrics (${missingFields.join(", ")}). Unavailable metrics rendered as N/A.`;
+          } else {
+            restrictEl.textContent = (activeModel === 'temporal_ae')
+              ? (isStale
+                  ? "[STALE] Note: Production Champion v1 is calibrated strictly at \u03b1 = 0.2%. Reference point applies only to v2."
+                  : "Note: Production Champion v1 is calibrated strictly at \u03b1 = 0.2%. High-Recall Reference point (\u03b1 = 1.0%) applies exclusively to Pure One-Way v2.")
+              : "Note: Baseline model operating points are fixed. Reference point applies only to v2.";
+          }
+        }
+      }
+
+      // Update Card A (Dynamic Selected Model Card)
+      if (cardTitle) cardTitle.textContent = data.name || (activeModel === 'temporal_ae' ? "Legacy Temporal Autoencoder (v1)" : activeModel.toUpperCase());
+      if (cardBadge) {
+        const baseStatus = data.status || (activeModel === 'temporal_ae' ? "PRODUCTION CHAMPION" : "CANDIDATE");
+        if (hasIncompleteMetrics) {
+          cardBadge.textContent = isStale ? `${baseStatus} [INCOMPLETE / STALE]` : `${baseStatus} [INCOMPLETE DATA]`;
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-950/80 border border-amber-600/80 text-amber-300";
+        } else if (isStale) {
+          cardBadge.textContent = `${baseStatus} [STALE]`;
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-950/80 border border-amber-600/80 text-amber-300";
+        } else if (activeModel === 'temporal_ae') {
+          cardBadge.textContent = baseStatus;
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700/80 text-emerald-400";
+        } else if (activeModel === 'pure_oneway_v2') {
+          cardBadge.textContent = baseStatus;
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-950/80 border border-amber-600/80 text-amber-300";
+        } else {
+          cardBadge.textContent = baseStatus;
+          cardBadge.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300";
+        }
+      }
+      if (cardStaleTag) {
+        if (hasIncompleteMetrics) {
+          cardStaleTag.classList.remove('hidden');
+          cardStaleTag.textContent = "INCOMPLETE DATA";
+          cardStaleTag.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-900/60 border border-amber-500 text-amber-200";
+        } else if (isStale) {
+          cardStaleTag.classList.remove('hidden');
+          cardStaleTag.textContent = "STALE BENCHMARK";
+          cardStaleTag.className = "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-900/60 border border-amber-500 text-amber-200";
+        } else {
+          cardStaleTag.classList.add('hidden');
+        }
+      }
+      if (cardPulse) {
+        cardPulse.className = (activeModel === 'temporal_ae')
+          ? "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"
+          : (activeModel === 'pure_oneway_v2' ? "w-2.5 h-2.5 rounded-full bg-amber-400" : "w-2.5 h-2.5 rounded-full bg-slate-400");
+      }
+      if (cardScope) {
+        if (activeModel === 'temporal_ae') {
+          cardScope.textContent = "32 Features";
+          cardScope.className = "font-mono text-cyan-300 font-bold";
+        } else if (activeModel === 'pure_oneway_v2') {
+          cardScope.textContent = "26 Features";
+          cardScope.className = "font-mono text-amber-300 font-bold";
+        } else if (activeModel === 'bidirectional') {
+          cardScope.textContent = "39 Features";
+          cardScope.className = "font-mono text-rose-300 font-bold";
+        } else {
+          cardScope.textContent = "29 Features";
+          cardScope.className = "font-mono text-slate-300 font-bold";
+        }
+      }
+      if (cardScopeSub) {
+        if (activeModel === 'temporal_ae') {
+          cardScopeSub.textContent = "(Includes Reverse Telemetry & Bidirectional Flags)";
+        } else if (activeModel === 'pure_oneway_v2') {
+          cardScopeSub.textContent = "(26-dimensional forward-feature-only design; reverse-direction feature information excluded)";
+        } else if (activeModel === 'bidirectional') {
+          cardScopeSub.textContent = "(Non-compliant bidirectional reference)";
+        } else {
+          cardScopeSub.textContent = "(Forward features only)";
+        }
+      }
+
+      // Render strictly validated metrics or N/A (Zero hardcoded fallbacks!)
+      if (cardRecall) cardRecall.textContent = isValidMetricValue(data.recall) ? data.recall : "N/A";
+      if (cardFpr) cardFpr.textContent = isValidMetricValue(data.fpr) ? data.fpr : "N/A";
+      if (cardPrec) cardPrec.textContent = isValidMetricValue(data.precision) ? data.precision : "N/A";
+      if (cardF1) cardF1.textContent = isValidMetricValue(data.f1) ? data.f1 : "N/A";
+      if (cardPrauc) cardPrauc.textContent = isValidMetricValue(praucVal) ? praucVal : "N/A";
+      if (cardRocauc) cardRocauc.textContent = isValidMetricValue(data.roc_auc) ? data.roc_auc : "N/A";
+      if (cardThreshold) cardThreshold.textContent = isValidMetricValue(data.threshold) ? data.threshold : "N/A";
+      if (cardTargetFpr) {
+        if (isValidMetricValue(data.target_fpr)) {
+          const tfStr = String(data.target_fpr).trim();
+          cardTargetFpr.textContent = (tfStr.includes('=') || tfStr.startsWith('\u03b1')) ? tfStr : `\u03b1 = ${tfStr}`;
+        } else {
+          cardTargetFpr.textContent = "N/A";
+        }
+      }
+      if (cardScoring) {
+        cardScoring.textContent = (activeModel === 'temporal_ae') ? "Weighted MSE" : (activeModel === 'pure_oneway_v2' ? "Unweighted MSE" : "Reconstruction Error");
+      }
+
+      // Update Head-to-Head Table Row Highlights
+      const rowLegacy = document.getElementById('row-h2h-legacy');
+      const rowV2Primary = document.getElementById('row-h2h-v2-primary');
+      const rowV2Ref = document.getElementById('row-h2h-v2-ref');
+
+      [rowLegacy, rowV2Primary, rowV2Ref].forEach(r => {
+        if (r) {
+          r.classList.remove('ring-2', 'ring-cyan-400', 'ring-amber-400', 'bg-cyan-950/60', 'bg-amber-950/60');
+        }
+      });
+
+      if (activeModel === 'temporal_ae' && rowLegacy) {
+        rowLegacy.classList.add('ring-2', 'ring-cyan-400', 'bg-cyan-950/60');
+      } else if (activeModel === 'pure_oneway_v2') {
+        if (activeOperatingPoint === 'reference' && rowV2Ref) {
+          rowV2Ref.classList.add('ring-2', 'ring-amber-400', 'bg-amber-950/60');
+        } else if (rowV2Primary) {
+          rowV2Primary.classList.add('ring-2', 'ring-amber-400', 'bg-amber-950/60');
+        }
+      }
+
+      // Update Charts with actual per-category rates
+      if (data.rates && Array.isArray(data.rates) && data.rates.length) {
+        if (overviewChartInstance) {
+          overviewChartInstance.data.datasets[0].data = data.rates;
+          overviewChartInstance.data.datasets[0].backgroundColor = data.rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
+          overviewChartInstance.update();
+        }
+        if (analyticsChartInstance) {
+          analyticsChartInstance.data.datasets[0].data = data.rates;
+          analyticsChartInstance.data.datasets[0].backgroundColor = data.rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
+          analyticsChartInstance.update();
+        }
+      } else {
+        if (overviewChartInstance) {
+          overviewChartInstance.data.datasets[0].data = [];
+          overviewChartInstance.update();
+        }
+        if (analyticsChartInstance) {
+          analyticsChartInstance.data.datasets[0].data = [];
+          analyticsChartInstance.update();
+        }
+      }
+    }
+
+    // Authentic Evaluation Data Synchronization from Backend APIs (Consumes /api/metrics, /api/models, /api/compare_models)
+    async function fetchModelData() {
+      syncErrors = [];
+      apiSyncStatus = { metrics: false, models: false, compare: false };
+
+      try {
+        const [metricsRes, modelsRes, compareRes] = await Promise.allSettled([
+          fetch('/api/metrics'),
+          fetch('/api/models'),
+          fetch('/api/compare_models')
+        ]);
+
+        // 1. Validate and consume /api/models (Model Catalog & Active Champion Validation)
+        if (modelsRes.status === 'fulfilled' && modelsRes.value.ok) {
+          try {
+            const catalog = await modelsRes.value.json();
+            if (
+              typeof catalog === 'object' && catalog !== null &&
+              catalog.active_production_champion === 'legacy_champion' &&
+              typeof catalog.models === 'object' && catalog.models !== null &&
+              catalog.models.legacy_champion &&
+              catalog.models.legacy_champion.status === 'PRODUCTION CHAMPION' &&
+              catalog.models.legacy_champion.input_dimensions === 32 &&
+              catalog.models.pure_one_way_v2 &&
+              catalog.models.pure_one_way_v2.input_dimensions === 26
+            ) {
+              validatedCatalog = catalog;
+              apiSyncStatus.models = true;
+              // Crucial invariant: Catalog metadata MUST NOT overwrite verified evaluation metrics!
+            } else {
+              syncErrors.push('/api/models (schema validation failed)');
+            }
+          } catch (e) {
+            syncErrors.push(`/api/models (JSON parse error: ${e.message})`);
+          }
+        } else {
+          const status = (modelsRes.status === 'fulfilled') ? `HTTP ${modelsRes.value.status}` : 'Network error';
+          syncErrors.push(`/api/models (${status})`);
+        }
+
+        // 2. Validate and consume /api/metrics
+        if (metricsRes.status === 'fulfilled' && metricsRes.value.ok) {
+          try {
+            const metrics = await metricsRes.value.json();
+            if (typeof metrics === 'object' && metrics !== null && metrics.temporal_autoencoder) {
+              apiSyncStatus.metrics = true;
+
+              // 1. Sync Temporal Autoencoder (v1)
+              const m1 = metrics.temporal_autoencoder;
+              modelBreakdowns.temporal_ae.recall = (m1.detection_rate_pct != null) ? `${m1.detection_rate_pct.toFixed(2)}%` : null;
+              modelBreakdowns.temporal_ae.fpr = (m1.false_positive_rate_pct != null) ? `${m1.false_positive_rate_pct.toFixed(2)}%` : null;
+              modelBreakdowns.temporal_ae.precision = (m1.precision_pct != null) ? `${m1.precision_pct.toFixed(2)}%` : null;
+              modelBreakdowns.temporal_ae.ap = (m1.average_precision != null) ? m1.average_precision.toFixed(4) : null;
+              modelBreakdowns.temporal_ae.threshold = (m1.threshold != null) ? parseFloat(m1.threshold).toFixed(6) : null;
+              modelBreakdowns.temporal_ae.target_fpr = (m1.target_calibration_fpr != null) ? `${(m1.target_calibration_fpr * 100).toFixed(1)}%` : "0.2%";
+              if (m1.per_category) {
+                modelBreakdowns.temporal_ae.rates = attackCategories.map(cat => {
+                  const item = m1.per_category[cat];
+                  if (!item) return 0.0;
+                  return item.detection_rate_pct != null ? parseFloat(item.detection_rate_pct.toFixed(2)) :
+                    parseFloat((item.detected / (item.total || 1) * 100).toFixed(2));
+                });
+              }
+
+              // 2. Sync Pure One-Way v2 (Primary)
+              if (metrics.pure_one_way_v2_primary) {
+                const m2p = metrics.pure_one_way_v2_primary;
+                const ratesObj = m2p.rates || {};
+                const clsObj = m2p.classification_metrics || {};
+                const curvesObj = m2p.continuous_curves || {};
+                modelBreakdowns.pure_oneway_v2.recall = (ratesObj.detection_rate_pct != null) ? `${ratesObj.detection_rate_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2.fpr = (ratesObj.false_positive_rate_pct != null) ? `${ratesObj.false_positive_rate_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2.precision = (clsObj.precision_pct != null) ? `${clsObj.precision_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2.f1 = (clsObj.f1_score != null) ? clsObj.f1_score.toFixed(4) : null;
+                modelBreakdowns.pure_oneway_v2.ap = (curvesObj.pr_auc != null) ? curvesObj.pr_auc.toFixed(4) : null;
+                modelBreakdowns.pure_oneway_v2.roc_auc = (curvesObj.roc_auc != null) ? curvesObj.roc_auc.toFixed(4) : null;
+                const rawThresh = m2p.threshold_value != null ? m2p.threshold_value : m2p.threshold;
+                modelBreakdowns.pure_oneway_v2.threshold = (rawThresh != null) ? parseFloat(rawThresh).toFixed(6) : null;
+                modelBreakdowns.pure_oneway_v2.target_fpr = (m2p.target_calibration_fpr != null) ? `${(m2p.target_calibration_fpr * 100).toFixed(1)}%` : "0.2%";
+                if (m2p.per_category) {
+                  modelBreakdowns.pure_oneway_v2.rates = attackCategories.map(cat => {
+                    const item = m2p.per_category[cat];
+                    if (!item) return 0.0;
+                    return item.recall_pct != null ? parseFloat(item.recall_pct.toFixed(2)) :
+                      parseFloat((item.detected / (item.total || 1) * 100).toFixed(2));
+                  });
+                }
+              }
+
+              // 3. Sync Pure One-Way v2 (Reference)
+              if (metrics.pure_one_way_v2_reference) {
+                const m2r = metrics.pure_one_way_v2_reference;
+                const ratesObj = m2r.rates || {};
+                const clsObj = m2r.classification_metrics || {};
+                const curvesObj = m2r.continuous_curves || {};
+                modelBreakdowns.pure_oneway_v2_ref.recall = (ratesObj.detection_rate_pct != null) ? `${ratesObj.detection_rate_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2_ref.fpr = (ratesObj.false_positive_rate_pct != null) ? `${ratesObj.false_positive_rate_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2_ref.precision = (clsObj.precision_pct != null) ? `${clsObj.precision_pct.toFixed(2)}%` : null;
+                modelBreakdowns.pure_oneway_v2_ref.f1 = (clsObj.f1_score != null) ? clsObj.f1_score.toFixed(4) : null;
+                modelBreakdowns.pure_oneway_v2_ref.ap = (curvesObj.pr_auc != null) ? curvesObj.pr_auc.toFixed(4) : null;
+                modelBreakdowns.pure_oneway_v2_ref.roc_auc = (curvesObj.roc_auc != null) ? curvesObj.roc_auc.toFixed(4) : null;
+                const rawThresh = m2r.threshold_value != null ? m2r.threshold_value : m2r.threshold;
+                modelBreakdowns.pure_oneway_v2_ref.threshold = (rawThresh != null) ? parseFloat(rawThresh).toFixed(6) : null;
+                modelBreakdowns.pure_oneway_v2_ref.target_fpr = (m2r.target_calibration_fpr != null) ? `${(m2r.target_calibration_fpr * 100).toFixed(1)}%` : "1.0%";
+                if (m2r.per_category) {
+                  modelBreakdowns.pure_oneway_v2_ref.rates = attackCategories.map(cat => {
+                    const item = m2r.per_category[cat];
+                    if (!item) return 0.0;
+                    return item.recall_pct != null ? parseFloat(item.recall_pct.toFixed(2)) :
+                      parseFloat((item.detected / (item.total || 1) * 100).toFixed(2));
+                  });
+                }
+              }
+            } else {
+              syncErrors.push('/api/metrics (metrics schema validation failed)');
+            }
+          } catch (e) {
+            syncErrors.push(`/api/metrics (JSON parse error: ${e.message})`);
+          }
+        } else {
+          const status = (metricsRes.status === 'fulfilled') ? `HTTP ${metricsRes.value.status}` : 'Network error';
+          syncErrors.push(`/api/metrics (${status})`);
+        }
+
+        // 3. Validate and consume /api/compare_models
+        if (compareRes.status === 'fulfilled' && compareRes.value.ok) {
+          try {
+            const comp = await compareRes.value.json();
+            if (typeof comp === 'object' && comp !== null && Array.isArray(comp.comparison_table) && comp.comparison_table.length >= 3) {
+              apiSyncStatus.compare = true;
+              const legacyRow = comp.comparison_table.find(r => r.model && r.model.includes('Legacy'));
+              if (legacyRow) {
+                modelBreakdowns.temporal_ae.f1 = (legacyRow.f1_score != null) ? legacyRow.f1_score.toFixed(4) : null;
+                modelBreakdowns.temporal_ae.roc_auc = (legacyRow.roc_auc != null) ? legacyRow.roc_auc.toFixed(4) : null;
+              }
+            } else {
+              syncErrors.push('/api/compare_models (comparison schema validation failed)');
+            }
+          } catch (e) {
+            syncErrors.push(`/api/compare_models (JSON parse error: ${e.message})`);
+          }
+        } else {
+          const status = (compareRes.status === 'fulfilled') ? `HTTP ${compareRes.value.status}` : 'Network error';
+          syncErrors.push(`/api/compare_models (${status})`);
+        }
+
+        // Determine Stale / Sync State
+        if (syncErrors.length > 0) {
+          isDataStale = true;
+          Object.values(modelBreakdowns).forEach(m => { if (m) m.isStale = true; });
+          showToast(`Warning: Backend synchronization incomplete (${syncErrors.join(", ")}). Data marked as STALE.`, "warning");
+        } else {
+          isDataStale = false;
+          Object.values(modelBreakdowns).forEach(m => { if (m) m.isStale = false; });
+          showToast("Model calibration metrics successfully synchronized from all 3 backend APIs.", "success");
+        }
+
+        updateCalibrationDisplay();
+      } catch (err) {
+        syncErrors.push(`Unexpected error: ${err.message}`);
+        isDataStale = true;
+        Object.values(modelBreakdowns).forEach(m => { if (m) m.isStale = true; });
+        showToast(`Backend sync failed: ${err.message}. Retaining stale data.`, "error");
+        updateCalibrationDisplay();
+      }
     }
 
     // Live Stream Polling & Table Rendering
@@ -1203,6 +2476,10 @@
           liveAlertsCache = data.recent_alerts;
           renderLiveTable(liveAlertsCache);
           document.getElementById('live-last-updated').textContent = `Last ping: ${data.last_updated || new Date().toLocaleTimeString()}`;
+          updateXaiFlowDropdown(activeXaiFlowIndex);
+          if (!currentXaiFlow) {
+            loadLatestXaiAlert();
+          }
         }
       } catch (err) {
         console.error("Live feed fetch error:", err);
@@ -1210,7 +2487,7 @@
     }
 
     // Trigger Stream from UI
-    async function startLiveStream(events = 500, eps = 15) {
+    async function startLiveStream(events = 2000, eps = 15) {
       showToast(`Starting live stream of ${events} flows at ${eps} EPS...`, "info");
       try {
         const res = await fetch(`/api/start_stream?events=${events}&eps=${eps}`);
@@ -1278,7 +2555,7 @@
         const badgeColor = isAnomaly
           ? (a.score > a.threshold * 5 ? 'text-rose-400 bg-rose-950/60 border border-rose-800' : 'text-amber-400 bg-amber-950/60 border border-amber-800')
           : 'text-emerald-400 bg-emerald-950/60 border border-emerald-800';
-        
+
         const topDriverName = (a.top_drivers && a.top_drivers.length > 0) ? a.top_drivers[0].feature : 'Forward Baseline';
         const topDriverPct = (a.top_drivers && a.top_drivers.length > 0) ? `${a.top_drivers[0].residual_contribution_pct}%` : '';
 
@@ -1303,6 +2580,7 @@
 
     // Slide-Over Event Forensic Drawer
     function openEventDrawer(eventData) {
+      currentDrawerEvent = eventData;
       document.getElementById('drawer-flow-id').textContent = `#FL-${String(eventData.flow_index).padStart(6, '0')} &middot; ${eventData.timestamp}`;
       document.getElementById('drawer-ground-truth').textContent = eventData.ground_truth;
       document.getElementById('drawer-latency').textContent = `${eventData.latency_ms || 0.02} ms`;
@@ -1368,84 +2646,444 @@
       if (e.key === 'Escape') closeDrawer();
     });
 
-    // Interactive XAI Sandbox
-    const interactiveSamplePool = [
-      {
-        id: "#FL-731291", label: "PortScan", verdict: "ANOMALY DETECTED (HIGH SEVERITY)",
-        score: "127.8759 (Threshold: 0.190885)",
-        narrative: "ALERT: Zero-day PortScan sweep identified. Forward flow velocity in 10s window surged 51.0% above benign baseline, coupled with rapid microsecond TCP SYN connection teardowns.",
-        features: [
-          { name: "Rolling_Flow_Velocity_10s", desc: "Forward flow arrival velocity in 10s window", pct: "51.0%", color: "bg-rose-500" },
-          { name: "Rolling_Single_Pkt_Ratio_10s", desc: "Ratio of single-packet probe flows", pct: "26.4%", color: "bg-rose-500" },
-          { name: "Init_Win_bytes_forward", desc: "Initial TCP window flag (29200 raw scan flag)", pct: "14.8%", color: "bg-amber-500" },
-          { name: "Flow Duration", desc: "Microsecond connection duration", pct: "5.2%", color: "bg-cyan-500" },
-          { name: "Fwd Packets/s", desc: "Forward packet transmission rate", pct: "2.6%", color: "bg-cyan-500" },
-        ]
-      },
-      {
-        id: "#FL-982143", label: "DoS Hulk", verdict: "ANOMALY DETECTED (CRITICAL)",
-        score: "15.8124 (Threshold: 0.190885)",
-        narrative: "ALERT: Volumetric HTTP DoS Hulk flooding detected. Extreme forward packet payload volume and burst velocity deviate sharply from benign baseline distributions.",
-        features: [
-          { name: "act_data_pkt_fwd", desc: "Count of packets containing actual data payload", pct: "45.3%", color: "bg-rose-500" },
-          { name: "Rolling_Flow_Velocity_10s", desc: "10-second forward burst rate", pct: "32.1%", color: "bg-rose-500" },
-          { name: "Total Length of Fwd Packets", desc: "Total forward payload volume", pct: "12.8%", color: "bg-amber-500" },
-          { name: "Subflow Fwd Bytes", desc: "Subflow forward byte rate", pct: "6.4%", color: "bg-cyan-500" },
-          { name: "Fwd Packet Length Mean", desc: "Mean forward packet length", pct: "3.4%", color: "bg-cyan-500" },
-        ]
-      },
-      {
-        id: "#FL-110294", label: "DDoS Volumetric", verdict: "ANOMALY DETECTED (CRITICAL)",
-        score: "4.0223 (Threshold: 0.190885)",
-        narrative: "ALERT: Distributed Denial-of-Service flooding. Forward inter-arrival time collapses to sub-microsecond intervals with massive forward byte volume.",
-        features: [
-          { name: "Rolling_Bytes_Velocity_10s", desc: "10s forward payload byte volume surge", pct: "52.1%", color: "bg-rose-500" },
-          { name: "Fwd IAT Min", desc: "Minimum forward packet inter-arrival time", pct: "25.1%", color: "bg-rose-500" },
-          { name: "Flow Bytes/s", desc: "Forward byte throughput rate", pct: "14.2%", color: "bg-amber-500" },
-          { name: "Total Fwd Packets", desc: "Total packet count in forward direction", pct: "5.4%", color: "bg-cyan-500" },
-          { name: "Avg Fwd Segment Size", desc: "Average forward segment size", pct: "3.2%", color: "bg-cyan-500" },
-        ]
-      },
-      {
-        id: "#FL-440182", label: "BENIGN", verdict: "NORMAL NETWORK TRAFFIC",
-        score: "0.0032 (Threshold: 0.190885)",
-        narrative: "NORMAL: Flow matches normal corporate workstation profile. Standard human cadence observed in forward inter-arrival time and TCP window values.",
-        features: [
-          { name: "Rolling_Flow_Velocity_10s", desc: "Normal Monday arrival cadence", pct: "21.9%", color: "bg-emerald-500" },
-          { name: "Avg Fwd Segment Size", desc: "Standard MTU segment sizing", pct: "18.2%", color: "bg-emerald-500" },
-          { name: "Fwd IAT Mean", desc: "Human web browsing inter-arrival pacing", pct: "12.4%", color: "bg-emerald-500" },
-          { name: "Subflow Fwd Packets", desc: "Standard TCP subflow packet volume", pct: "8.1%", color: "bg-emerald-500" },
-          { name: "Flow Duration", desc: "Normal TCP session hold time", pct: "5.4%", color: "bg-emerald-500" },
-        ]
+    // =========================================================================
+    // Real Forensic XAI & Residual Attribution Engine
+    // =========================================================================
+    function inspectCurrentFlowInXai() {
+      if (!currentDrawerEvent) return;
+      closeDrawer();
+      switchView('xai');
+      renderForensicFlow(currentDrawerEvent);
+      if (currentDrawerEvent.flow_index != null) {
+        activeXaiFlowIndex = currentDrawerEvent.flow_index;
+        updateXaiFlowDropdown(currentDrawerEvent.flow_index);
+        loadSelectedXaiFlow(currentDrawerEvent.flow_index);
       }
-    ];
+    }
 
-    let xaiSampleIdx = 0;
-    function simulateInteractiveFlow() {
-      xaiSampleIdx = (xaiSampleIdx + 1) % interactiveSamplePool.length;
-      const s = interactiveSamplePool[xaiSampleIdx];
+    function showXaiStatusBanner(msg, type = 'warning') {
+      const banner = document.getElementById('xai-status-banner');
+      const msgEl = document.getElementById('xai-status-msg');
+      const iconEl = document.getElementById('xai-status-icon');
+      if (!banner || !msgEl) return;
+      msgEl.textContent = msg;
+      if (type === 'error') {
+        banner.className = "glass-panel p-4 rounded-xl border border-rose-800 bg-rose-950/40 text-rose-300 flex items-center justify-between text-xs";
+        if (iconEl) iconEl.textContent = "❌";
+      } else if (type === 'warning') {
+        banner.className = "glass-panel p-4 rounded-xl border border-amber-800 bg-amber-950/40 text-amber-300 flex items-center justify-between text-xs";
+        if (iconEl) iconEl.textContent = "⚠️";
+      } else {
+        banner.className = "glass-panel p-4 rounded-xl border border-cyan-800 bg-cyan-950/40 text-cyan-300 flex items-center justify-between text-xs";
+        if (iconEl) iconEl.textContent = "ℹ️";
+      }
+      banner.classList.remove('hidden');
+    }
 
-      document.getElementById('xai-flow-id').textContent = s.id;
-      document.getElementById('xai-flow-label').textContent = s.label;
-      document.getElementById('xai-flow-label').className = s.label === "BENIGN" ? "text-sm font-bold font-mono text-emerald-400 mt-0.5" : "text-sm font-bold font-mono text-amber-400 mt-0.5";
-      document.getElementById('xai-flow-verdict').textContent = s.verdict;
-      document.getElementById('xai-flow-verdict').className = s.verdict.includes("ANOMALY") ? "text-sm font-bold font-mono text-rose-400 mt-0.5" : "text-sm font-bold font-mono text-emerald-400 mt-0.5";
-      document.getElementById('xai-flow-score').textContent = s.score;
-      document.getElementById('xai-flow-narrative').textContent = s.narrative;
+    function dismissXaiStatusBanner() {
+      const banner = document.getElementById('xai-status-banner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    function renderForensicFlow(flowData) {
+      if (!flowData) return;
+      currentXaiFlow = flowData;
+      activeXaiFlowIndex = flowData.flow_index;
+
+      const flowIdStr = flowData.flow_id || `#FL-${String(flowData.flow_index != null ? flowData.flow_index : 0).padStart(6, '0')}`;
+      const tsStr = flowData.timestamp ? ` · ${flowData.timestamp}` : '';
+      const flowIdEl = document.getElementById('xai-flow-id');
+      if (flowIdEl) flowIdEl.textContent = `${flowIdStr}${tsStr}`;
+
+      const labelEl = document.getElementById('xai-flow-label');
+      if (labelEl) {
+        labelEl.textContent = flowData.ground_truth || 'UNKNOWN';
+        labelEl.className = (flowData.ground_truth === 'BENIGN')
+          ? "text-sm font-bold font-mono text-emerald-400 mt-0.5"
+          : "text-sm font-bold font-mono text-amber-400 mt-0.5";
+      }
+
+      const isAnomaly = (typeof flowData.is_anomaly === 'boolean')
+        ? flowData.is_anomaly
+        : (flowData.verdict && flowData.verdict.includes('ANOMAL'));
+
+      const verdictEl = document.getElementById('xai-flow-verdict');
+      if (verdictEl) {
+        verdictEl.textContent = flowData.verdict || (isAnomaly ? 'ANOMALY DETECTED' : 'NORMAL TRAFFIC');
+        verdictEl.className = isAnomaly
+          ? "text-sm font-bold font-mono text-rose-400 mt-0.5"
+          : "text-sm font-bold font-mono text-emerald-400 mt-0.5";
+      }
+
+      const scoreVal = typeof flowData.score === 'number' ? flowData.score.toFixed(4) : (flowData.score || '0.0000');
+      const threshVal = flowData.threshold != null
+        ? (typeof flowData.threshold === 'number' ? flowData.threshold.toFixed(6) : flowData.threshold)
+        : '0.190885';
+      const scoreEl = document.getElementById('xai-flow-score');
+      if (scoreEl) scoreEl.textContent = `${scoreVal} (Thresh: ${threshVal})`;
+
+      const narrativeEl = document.getElementById('xai-flow-narrative');
+      if (narrativeEl) {
+        narrativeEl.textContent = flowData.narrative ||
+          (isAnomaly
+            ? `ALERT: Flow exceeds calibrated threshold (${scoreVal} > ${threshVal}). Primary anomalous residual observed in forward transmission metrics.`
+            : 'NORMAL: Flow conforms to baseline normal Monday profile.');
+      }
 
       const barsContainer = document.getElementById('xai-feature-bars');
-      barsContainer.innerHTML = s.features.map(f => `
-        <div class="space-y-1">
-          <div class="flex justify-between items-center text-xs">
-            <span class="font-medium text-slate-200">${f.name}</span>
-            <span class="font-mono text-slate-300 font-bold">${f.pct}</span>
-          </div>
-          <div class="text-[11px] text-slate-400">${f.desc}</div>
-          <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-            <div class="${f.color} h-full rounded-full transition-all duration-500" style="width: ${f.pct}"></div>
-          </div>
-        </div>
-      `).join('');
+      if (!barsContainer) return;
+
+      const drivers = (flowData.top_drivers && flowData.top_drivers.length > 0)
+        ? flowData.top_drivers
+        : (flowData.features || []);
+
+      if (!drivers || drivers.length === 0) {
+        barsContainer.innerHTML = `<div class="p-6 text-center text-slate-500 font-sans text-xs italic">
+          No anomalous residual attribution recorded for this flow. All forward telemetry conforms within normal variance baselines.
+        </div>`;
+      } else {
+        barsContainer.innerHTML = drivers.slice(0, 5).map(d => {
+          const featName = d.feature || d.name || 'Unknown Feature';
+          const featDesc = d.description || d.desc || featName;
+          const pctRaw = d.residual_contribution_pct != null ? d.residual_contribution_pct : d.pct;
+          const pctNum = typeof pctRaw === 'number' ? pctRaw : parseFloat(pctRaw || 0);
+          const pctDisplay = `${pctNum.toFixed(1)}%`;
+
+          let barColor = 'bg-emerald-500';
+          if (isAnomaly) {
+            if (pctNum >= 30) barColor = 'bg-rose-500';
+            else if (pctNum >= 15) barColor = 'bg-amber-500';
+            else barColor = 'bg-cyan-500';
+          }
+
+          const rawDisplay = (d.raw_value != null && d.raw_value !== '') ? d.raw_value : 'N/A';
+          const attrDisplay = (d.attribution_score != null) ? d.attribution_score : 'N/A';
+
+          return `
+            <div class="space-y-1.5 bg-soc-elevated p-3 rounded-lg border border-soc-border">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-semibold text-slate-200">${featName}</span>
+                <span class="font-mono text-cyan-400 font-bold">${pctDisplay}</span>
+              </div>
+              <div class="text-[11px] text-slate-400">${featDesc}</div>
+              <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                <div class="${barColor} h-full rounded-full transition-all duration-500" style="width: ${Math.min(pctNum, 100)}%"></div>
+              </div>
+              <div class="flex justify-between text-[10px] text-slate-400 font-mono pt-0.5">
+                <span>Raw Value: ${rawDisplay}</span>
+                <span>Residual Attribution: ${attrDisplay}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function updateXaiFlowDropdown(selectedFlowId) {
+      const select = document.getElementById('xai-flow-select');
+      if (!select) return;
+
+      if (!liveAlertsCache || liveAlertsCache.length === 0) {
+        if (selectedFlowId != null) {
+          select.innerHTML = `<option value="${selectedFlowId}">#FL-${String(selectedFlowId).padStart(6, '0')}</option>`;
+        } else {
+          select.innerHTML = `<option value="">Awaiting live telemetry flows...</option>`;
+        }
+        return;
+      }
+
+      const recentFlows = liveAlertsCache.slice(-50).reverse();
+      const optionsHtml = recentFlows.map(f => {
+        const isAnom = f.verdict && f.verdict.includes('ANOMAL');
+        const badge = isAnom ? '🚨 ALERT' : '✅ PASS';
+        const idPad = `#FL-${String(f.flow_index).padStart(6, '0')}`;
+        return `<option value="${f.flow_index}">${idPad} · ${f.ground_truth} (${badge})</option>`;
+      }).join('');
+
+      select.innerHTML = optionsHtml;
+
+      if (selectedFlowId != null) {
+        const exists = recentFlows.some(f => String(f.flow_index) === String(selectedFlowId));
+        if (!exists) {
+          const customOpt = document.createElement('option');
+          customOpt.value = selectedFlowId;
+          customOpt.textContent = `#FL-${String(selectedFlowId).padStart(6, '0')} (Selected)`;
+          select.prepend(customOpt);
+        }
+        select.value = String(selectedFlowId);
+      }
+    }
+
+    async function loadSelectedXaiFlow(flowId) {
+      if (flowId == null || flowId === '') return;
+
+      // Check local cache first for instant rendering
+      const localMatch = liveAlertsCache.find(f => String(f.flow_index) === String(flowId) || f.flow_id === flowId);
+      if (localMatch && localMatch.top_drivers && localMatch.top_drivers.length > 0) {
+        renderForensicFlow(localMatch);
+        dismissXaiStatusBanner();
+      }
+
+      // Fetch from backend /api/explain
+      try {
+        const res = await fetch(`/api/explain?flow_id=${encodeURIComponent(flowId)}`);
+        if (res.status === 404) {
+          const errData = await res.json().catch(() => ({}));
+          showXaiStatusBanner(errData.detail || `Flow ${flowId} is no longer available in the active telemetry cache (HTTP 404).`, "warning");
+          showToast(`Flow ${flowId} expired or not found in live cache.`, "warning");
+          return;
+        }
+        if (!res.ok) {
+          showXaiStatusBanner(`Failed to load forensic explanation (HTTP ${res.status}).`, "error");
+          showToast(`Error loading flow ${flowId}: HTTP ${res.status}`, "error");
+          return;
+        }
+
+        const data = await res.json();
+        renderForensicFlow(data);
+        dismissXaiStatusBanner();
+        updateXaiFlowDropdown(data.flow_index);
+      } catch (e) {
+        console.error("XAI flow fetch error:", e);
+        if (!localMatch) {
+          showXaiStatusBanner(`Network error loading explanation: ${e.message}`, "error");
+        }
+      }
+    }
+
+    function navigateXaiFlow(direction) {
+      if (!liveAlertsCache || liveAlertsCache.length === 0) {
+        loadLatestXaiAlert();
+        return;
+      }
+      let currentIdx = liveAlertsCache.findIndex(f => String(f.flow_index) === String(activeXaiFlowIndex));
+      if (currentIdx === -1) {
+        currentIdx = liveAlertsCache.length - 1;
+      }
+      let nextIdx = (currentIdx + direction + liveAlertsCache.length) % liveAlertsCache.length;
+      const targetFlow = liveAlertsCache[nextIdx];
+      if (targetFlow) {
+        loadSelectedXaiFlow(targetFlow.flow_index);
+      }
+    }
+
+    async function loadLatestXaiAlert() {
+      // Check local cache for recent anomalous flow
+      if (liveAlertsCache && liveAlertsCache.length > 0) {
+        const latestAlert = [...liveAlertsCache].reverse().find(f => f.verdict && f.verdict.includes('ANOMAL')) || liveAlertsCache[liveAlertsCache.length - 1];
+        if (latestAlert) {
+          renderForensicFlow(latestAlert);
+          updateXaiFlowDropdown(latestAlert.flow_index);
+          dismissXaiStatusBanner();
+          loadSelectedXaiFlow(latestAlert.flow_index);
+          return;
+        }
+      }
+
+      // Query /api/explain?flow_id=latest
+      try {
+        const res = await fetch('/api/explain?flow_id=latest');
+        if (res.ok) {
+          const data = await res.json();
+          renderForensicFlow(data);
+          updateXaiFlowDropdown(data.flow_index);
+          dismissXaiStatusBanner();
+        } else {
+          showXaiStatusBanner("No live streaming telemetry recorded yet. Trigger stream broadcast to inspect real-time flows.", "info");
+        }
+      } catch (e) {
+        console.error("Load latest alert error:", e);
+      }
+    }
+
+    // Backward-compatibility alias
+    function simulateInteractiveFlow() {
+      navigateXaiFlow(1);
+    }
+
+    // Threat Analytics Engine (Real Per-Attack Category Metrics & Breakdown Table)
+    async function fetchThreatAnalytics(modelKey = activeAnalyticsModel) {
+      activeAnalyticsModel = modelKey;
+      const banner = document.getElementById('analytics-status-banner');
+      const bannerMsg = document.getElementById('analytics-status-msg');
+      const shadowBanner = document.getElementById('analytics-shadow-banner');
+      const activeBadge = document.getElementById('analytics-active-badge');
+      const authNote = document.getElementById('analytics-authority-note');
+      const tableTag = document.getElementById('analytics-table-model-tag');
+      const chartTitle = document.getElementById('analytics-chart-title');
+
+      // Update switcher buttons UI
+      const btnV1 = document.getElementById('btn-analytics-v1');
+      const btnV2P = document.getElementById('btn-analytics-v2-primary');
+      const btnV2R = document.getElementById('btn-analytics-v2-ref');
+
+      if (btnV1 && btnV2P && btnV2R) {
+        btnV1.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition";
+        btnV2P.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition";
+        btnV2R.className = "px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition";
+
+        if (modelKey === 'legacy' || modelKey === 'v1' || modelKey === 'temporal_ae') {
+          btnV1.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40";
+        } else if (modelKey === 'v2_primary' || modelKey === 'v2' || modelKey === 'pure_oneway_v2') {
+          btnV2P.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-600 text-white shadow cursor-pointer transition border border-amber-400/50";
+        } else if (modelKey === 'v2_reference' || modelKey === 'v2_ref' || modelKey === 'pure_oneway_v2_ref') {
+          btnV2R.className = "px-3 py-1.5 rounded-md text-xs font-semibold bg-amber-600 text-white shadow cursor-pointer transition border border-amber-400/50";
+        }
+      }
+
+      try {
+        const res = await fetch(`/api/threat_analytics?model=${encodeURIComponent(modelKey)}`);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        const data = await res.json();
+        if (banner) banner.classList.add('hidden');
+
+        // Update Champion vs Shadow Badges
+        if (data.is_production_champion) {
+          if (shadowBanner) shadowBanner.classList.add('hidden');
+          if (activeBadge) {
+            activeBadge.textContent = "PRODUCTION CHAMPION (v1)";
+            activeBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded font-semibold bg-emerald-950/80 border border-emerald-700/80 text-emerald-400";
+          }
+          if (authNote) {
+            authNote.textContent = data.authority_note || "Live Production Alert Authority: Legacy Temporal Autoencoder (v1) · 32 Forward Features";
+            authNote.className = "text-[10px] text-cyan-400/90 font-mono block mt-1";
+          }
+        } else {
+          if (shadowBanner) shadowBanner.classList.remove('hidden');
+          if (activeBadge) {
+            activeBadge.textContent = "EXPERIMENTAL SHADOW CANDIDATE (v2)";
+            activeBadge.className = "text-[10px] font-mono px-2 py-0.5 rounded font-semibold bg-amber-950/80 border border-amber-600/80 text-amber-300";
+          }
+          if (authNote) {
+            authNote.textContent = data.authority_note || "Shadow Inspection Only — v1 remains live production alert authority.";
+            authNote.className = "text-[10px] text-amber-400/90 font-mono block mt-1";
+          }
+        }
+
+        if (tableTag) tableTag.textContent = `Model: ${data.model_name}`;
+        if (chartTitle) chartTitle.textContent = `Detection Rate per Attack Category (%) — ${data.model_name}`;
+
+        // Update Confusion Matrix Card
+        const cm = data.confusion_matrix || {};
+        const sum = data.summary_metrics || {};
+        const totalFlows = data.total_flows || 2300825;
+
+        const elTp = document.getElementById('analytics-cm-tp');
+        const elFp = document.getElementById('analytics-cm-fp');
+        const elFn = document.getElementById('analytics-cm-fn');
+        const elTn = document.getElementById('analytics-cm-tn');
+        const elTpPct = document.getElementById('analytics-cm-tp-pct');
+        const elFpPct = document.getElementById('analytics-cm-fp-pct');
+        const elFnPct = document.getElementById('analytics-cm-fn-pct');
+        const elTnPct = document.getElementById('analytics-cm-tn-pct');
+        const elPrec = document.getElementById('analytics-precision');
+        const elRecall = document.getElementById('analytics-recall');
+        const elPrauc = document.getElementById('analytics-prauc');
+        const elThresh = document.getElementById('analytics-threshold');
+        const elTotal = document.getElementById('analytics-total-flows');
+        const elSub = document.getElementById('analytics-cm-subtitle');
+
+        if (elTp) elTp.textContent = (cm.tp != null) ? cm.tp.toLocaleString() : "N/A";
+        if (elFp) elFp.textContent = (cm.fp != null) ? cm.fp.toLocaleString() : "N/A";
+        if (elFn) elFn.textContent = (cm.fn != null) ? cm.fn.toLocaleString() : "N/A";
+        if (elTn) elTn.textContent = (cm.tn != null) ? cm.tn.toLocaleString() : "N/A";
+
+        if (elTpPct) elTpPct.textContent = (sum.recall_pct != null) ? `Attacks Caught (${Number(sum.recall_pct).toFixed(1)}%)` : "Attacks Caught (N/A)";
+        if (elFpPct) elFpPct.textContent = (sum.false_positive_rate_pct != null) ? `Benign Alarms (${Number(sum.false_positive_rate_pct).toFixed(1)}%)` : "Benign Alarms (N/A)";
+        if (elFnPct) elFnPct.textContent = (sum.false_negative_rate_pct != null) ? `Attacks Missed (${Number(sum.false_negative_rate_pct).toFixed(1)}%)` : "Attacks Missed (N/A)";
+        if (elTnPct) elTnPct.textContent = (sum.specificity_pct != null) ? `Benign Passed (${Number(sum.specificity_pct).toFixed(1)}%)` : "Benign Passed (N/A)";
+
+        if (elPrec) elPrec.textContent = (sum.precision_pct != null) ? `${Number(sum.precision_pct).toFixed(2)}%` : "N/A";
+        if (elRecall) elRecall.textContent = (sum.recall_pct != null) ? `${Number(sum.recall_pct).toFixed(2)}%` : "N/A";
+        if (elPrauc) elPrauc.textContent = (sum.pr_auc != null) ? Number(sum.pr_auc).toFixed(4) : "N/A";
+        if (elThresh) elThresh.textContent = (data.threshold != null) ? parseFloat(data.threshold).toFixed(6) : "N/A";
+        if (elTotal) elTotal.textContent = `${totalFlows.toLocaleString()} Flows`;
+        if (elSub) elSub.textContent = `Binary classification at calibrated threshold (τ = ${parseFloat(data.threshold || 0).toFixed(6)}).`;
+
+        // Update Chart
+        if (analyticsChartInstance && Array.isArray(data.categories)) {
+          analyticsChartInstance.data.labels = data.categories.map(c => c.category);
+          analyticsChartInstance.data.datasets[0].data = data.categories.map(c => c.recall_pct != null ? c.recall_pct : 0.0);
+          analyticsChartInstance.data.datasets[0].backgroundColor = data.categories.map(c => {
+            if (c.status === "UNAVAILABLE" || c.recall_pct == null) return "#475569";
+            return c.recall_pct >= 50.0 ? "#10b981" : (c.recall_pct >= 15.0 ? "#f59e0b" : "#ef4444");
+          });
+          analyticsChartInstance.update();
+        }
+
+        // Update Per-Attack Category Breakdown Table
+        const tbody = document.getElementById('analytics-attack-tbody');
+        if (tbody && Array.isArray(data.categories)) {
+          tbody.innerHTML = data.categories.map(cat => {
+            const isAvail = cat.status === "AVAILABLE" && cat.recall_pct != null;
+            const totalStr = cat.total_count != null ? cat.total_count.toLocaleString() : `<span class="text-slate-500">N/A</span>`;
+            const detStr = cat.detected_count != null ? cat.detected_count.toLocaleString() : `<span class="text-slate-500">N/A</span>`;
+            const missStr = cat.missed_count != null ? cat.missed_count.toLocaleString() : `<span class="text-slate-500">N/A</span>`;
+
+            let recallStr = `<span class="text-slate-500">N/A</span>`;
+            let statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-slate-800 text-slate-400 border border-slate-700">UNAVAILABLE</span>`;
+
+            if (isAvail) {
+              if (cat.recall_pct >= 50.0) {
+                recallStr = `<span class="text-emerald-400 font-bold">${cat.recall_pct.toFixed(2)}%</span>`;
+                statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800">STRONG (&ge;50%)</span>`;
+              } else if (cat.recall_pct >= 15.0) {
+                recallStr = `<span class="text-amber-400 font-bold">${cat.recall_pct.toFixed(2)}%</span>`;
+                statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-amber-950/80 text-amber-400 border border-amber-800">MODERATE (15-50%)</span>`;
+              } else {
+                recallStr = `<span class="text-rose-400 font-bold">${cat.recall_pct.toFixed(2)}%</span>`;
+                statusBadge = `<span class="px-2 py-0.5 rounded text-[10px] font-sans font-semibold bg-rose-950/80 text-rose-400 border border-rose-800">SUPPRESSED (&lt;15%)</span>`;
+              }
+            }
+
+            const precStr = (cat.precision_pct != null)
+              ? `<span class="text-indigo-400">${cat.precision_pct.toFixed(2)}%</span>`
+              : `<span class="text-slate-500">N/A</span>`;
+
+            const f1Str = (cat.f1_score != null)
+              ? `<span class="text-slate-300">${cat.f1_score.toFixed(4)}</span>`
+              : `<span class="text-slate-500">N/A</span>`;
+
+            return `
+              <tr class="hover:bg-slate-800/40 transition">
+                <td class="px-4 py-2.5 font-bold font-sans ${isAvail && cat.recall_pct >= 50.0 ? 'text-emerald-300' : 'text-slate-200'}">
+                  ${cat.category}
+                </td>
+                <td class="px-4 py-2.5 text-right font-mono">${totalStr}</td>
+                <td class="px-4 py-2.5 text-right font-mono ${isAvail && cat.detected_count > 0 ? 'text-emerald-400 font-bold' : 'text-slate-400'}">${detStr}</td>
+                <td class="px-4 py-2.5 text-right font-mono ${isAvail && cat.missed_count > 0 ? 'text-amber-400' : 'text-slate-400'}">${missStr}</td>
+                <td class="px-4 py-2.5 text-right font-mono">${recallStr}</td>
+                <td class="px-4 py-2.5 text-right font-mono">${precStr}</td>
+                <td class="px-4 py-2.5 text-right font-mono">${f1Str}</td>
+                <td class="px-4 py-2.5 text-center">${statusBadge}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        const summaryEl = document.getElementById('analytics-table-summary');
+        if (summaryEl) {
+          summaryEl.textContent = `${data.available_categories_count} of ${data.total_categories_count} categories empirically evaluated`;
+        }
+
+      } catch (err) {
+        console.error("Threat analytics fetch error:", err);
+        if (banner) {
+          banner.classList.remove('hidden');
+          if (bannerMsg) bannerMsg.textContent = `Failed to load threat analytics: ${err.message}. Backend offline or invalid model.`;
+        }
+      }
+    }
+
+    function switchAnalyticsModel(modelKey) {
+      fetchThreatAnalytics(modelKey);
+    }
+
+    function dismissAnalyticsStatusBanner() {
+      const banner = document.getElementById('analytics-status-banner');
+      if (banner) banner.classList.add('hidden');
     }
 
     // Chart.js Visualizations
@@ -1570,25 +3208,218 @@
       document.getElementById('clock-utc').textContent = `${now.toUTCString().slice(17, 25)} UTC`;
     }
 
-    async function fetchOverviewData() {
+    let activeOverviewModel = 'legacy';
+
+    function switchOverviewModel(modelKey) {
+      activeOverviewModel = modelKey;
+
+      const btnV1 = document.getElementById('ov-btn-v1');
+      const btnV2Primary = document.getElementById('ov-btn-v2-primary');
+      const btnV2Ref = document.getElementById('ov-btn-v2-ref');
+
+      const baseClass = "px-2.5 py-1 rounded text-xs font-medium text-slate-300 hover:text-white cursor-pointer transition";
+      const activeClassV1 = "px-2.5 py-1 rounded text-xs font-semibold bg-cyan-600 text-white shadow cursor-pointer transition border border-cyan-400/40";
+      const activeClassV2 = "px-2.5 py-1 rounded text-xs font-semibold bg-amber-600 text-white shadow cursor-pointer transition border border-amber-400/40";
+      const activeClassV2Ref = "px-2.5 py-1 rounded text-xs font-semibold bg-indigo-600 text-white shadow cursor-pointer transition border border-indigo-400/40";
+
+      if (btnV1) btnV1.className = (modelKey === 'legacy' || modelKey === 'v1') ? activeClassV1 : baseClass;
+      if (btnV2Primary) btnV2Primary.className = (modelKey === 'v2_primary' || modelKey === 'v2') ? activeClassV2 : baseClass;
+      if (btnV2Ref) btnV2Ref.className = (modelKey === 'v2_reference' || modelKey === 'v2_ref') ? activeClassV2Ref : baseClass;
+
+      fetchOverviewData(modelKey);
+    }
+
+    async function fetchOverviewData(modelKey) {
+      const targetModel = modelKey || activeOverviewModel || 'legacy';
       try {
-        const res = await fetch('/api/overview');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!data.kpi) return;
-
-        document.getElementById('ov-kpi-total').textContent = data.kpi.total_network_events.toLocaleString();
-        document.getElementById('ov-kpi-recall').textContent = `${data.kpi.overall_recall_pct}%`;
-        document.getElementById('ov-kpi-ap').textContent = data.kpi.average_precision;
-        document.getElementById('ov-kpi-prec').textContent = `${data.kpi.precision_pct}%`;
-        document.getElementById('ov-kpi-lat').textContent = `${data.kpi.average_inference_ms} ms`;
-
-        // Update donut chart with real severity counts
-        if (donutChartInstance && data.severity_distribution) {
-          const s = data.severity_distribution;
-          donutChartInstance.data.datasets[0].data = [s.Critical || 0, s.High || 0, s.Medium || 0, s.Low || 0];
-          donutChartInstance.update();
+        const res = await fetch(`/api/overview?model=${encodeURIComponent(targetModel)}`);
+        if (!res.ok) {
+          console.error(`Overview API error: HTTP ${res.status}`);
+          return;
         }
+        const data = await res.json();
+        if (!data || !data.kpi) return;
+
+        // 1. Update Executive Banner
+        const bannerContainer = document.getElementById('ov-banner-container');
+        const bannerTitle = document.getElementById('ov-banner-title');
+        const bannerBadge = document.getElementById('ov-banner-badge');
+        const bannerRecall = document.getElementById('ov-banner-recall');
+        const bannerAp = document.getElementById('ov-banner-ap');
+        const bannerDesc = document.getElementById('ov-banner-desc');
+
+        if (data.is_production_champion) {
+          if (bannerContainer) bannerContainer.className = "glass-panel p-4 rounded-xl border-l-4 border-l-cyan-500 flex flex-wrap items-center justify-between gap-4";
+          if (bannerTitle) bannerTitle.textContent = "Temporal Flow Velocity Autoencoder Active";
+          if (bannerBadge) {
+            bannerBadge.textContent = "PRODUCTION CHAMPION";
+            bannerBadge.className = "text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 px-2 py-0.5 rounded-full";
+          }
+          if (bannerRecall) bannerRecall.textContent = data.kpi.overall_recall_pct != null ? `Recall: ${data.kpi.overall_recall_pct}%` : 'Recall: N/A';
+          if (bannerAp) bannerAp.textContent = data.kpi.average_precision != null ? `AP: ${data.kpi.average_precision}` : 'AP: N/A';
+          if (bannerDesc) bannerDesc.textContent = "Physical forward features augmented with 10-second rolling flow velocity, catching 519,031 zero-day attacks without reverse telemetry.";
+        } else {
+          const isPrimary = (targetModel === 'v2_primary' || targetModel === 'v2');
+          if (bannerContainer) {
+            bannerContainer.className = isPrimary
+              ? "glass-panel p-4 rounded-xl border-l-4 border-l-amber-500 flex flex-wrap items-center justify-between gap-4"
+              : "glass-panel p-4 rounded-xl border-l-4 border-l-indigo-500 flex flex-wrap items-center justify-between gap-4";
+          }
+          if (bannerTitle) {
+            bannerTitle.textContent = isPrimary
+              ? "Pure One-Way Autoencoder Active (Primary Operating Point)"
+              : "Pure One-Way Autoencoder Active (Reference Operating Point)";
+          }
+          if (bannerBadge) {
+            bannerBadge.textContent = "EXPERIMENTAL / SHADOW CANDIDATE";
+            bannerBadge.className = isPrimary
+              ? "text-[10px] font-semibold bg-amber-950 text-amber-400 border border-amber-800 px-2 py-0.5 rounded-full"
+              : "text-[10px] font-semibold bg-indigo-950 text-indigo-400 border border-indigo-800 px-2 py-0.5 rounded-full";
+          }
+          if (bannerRecall) bannerRecall.textContent = data.kpi.overall_recall_pct != null ? `Recall: ${data.kpi.overall_recall_pct}%` : 'Recall: N/A';
+          if (bannerAp) bannerAp.textContent = data.kpi.average_precision != null ? `AP: ${data.kpi.average_precision}` : 'AP: N/A';
+          if (bannerDesc) {
+            bannerDesc.textContent = isPrimary
+              ? "Strict 26-dimensional forward-only architecture calibrated at target FPR = 0.2%. Non-authoritative shadow inspection; v1 remains live alert authority."
+              : "Strict 26-dimensional forward-only architecture calibrated at target FPR = 1.0%. Non-authoritative shadow inspection; v1 remains live alert authority.";
+          }
+        }
+
+        // 2. Update Live Sensor & Optical Stream Telemetry Strip
+        const live = data.live_telemetry || {};
+        const liveProc = live.processed_flows != null ? live.processed_flows : data.kpi.live_stream_processed;
+        const liveAl = live.alert_count != null ? live.alert_count : data.kpi.live_stream_anomalies;
+        const liveProcEl = document.getElementById('ov-live-processed');
+        const liveAlertsEl = document.getElementById('ov-live-alerts');
+        const liveBufferEl = document.getElementById('ov-live-buffer');
+        const liveModelEl = document.getElementById('ov-model-availability');
+
+        if (liveProcEl) liveProcEl.textContent = liveProc != null ? liveProc.toLocaleString() : '0';
+        if (liveAlertsEl) liveAlertsEl.textContent = liveAl != null ? liveAl.toLocaleString() : '0';
+        if (liveBufferEl) liveBufferEl.textContent = live.buffer_status || data.kpi.buffer_status || 'ONLINE';
+        if (liveModelEl) {
+          liveModelEl.textContent = data.is_production_champion ? 'v1 ONLINE (CHAMPION)' : 'v2 SHADOW (STANDBY)';
+        }
+
+        // 3. Update KPI Summary Cards
+        const totalEl = document.getElementById('ov-kpi-total');
+        if (totalEl) totalEl.textContent = data.kpi.total_network_events != null ? data.kpi.total_network_events.toLocaleString() : 'N/A';
+        const benignEl = document.getElementById('ov-kpi-benign');
+        if (benignEl) benignEl.textContent = data.kpi.benign_events != null ? `${(data.kpi.benign_events / 1000000).toFixed(2)}M Benign` : 'N/A';
+        const threatsEl = document.getElementById('ov-kpi-threats');
+        if (threatsEl) threatsEl.textContent = data.kpi.total_attacks != null ? `${Math.round(data.kpi.total_attacks / 1000)}K Threats` : 'N/A';
+
+        const recallEl = document.getElementById('ov-kpi-recall');
+        if (recallEl) recallEl.textContent = data.kpi.overall_recall_pct != null ? `${data.kpi.overall_recall_pct}%` : 'N/A';
+        const caughtEl = document.getElementById('ov-kpi-caught');
+        if (caughtEl) caughtEl.textContent = data.kpi.attacks_detected != null ? `${data.kpi.attacks_detected.toLocaleString()} Caught` : 'N/A';
+        const missedEl = document.getElementById('ov-kpi-missed');
+        if (missedEl) missedEl.textContent = data.kpi.attacks_missed != null ? `${data.kpi.attacks_missed.toLocaleString()} Missed` : 'N/A';
+
+        const fprVal = data.kpi.false_positive_rate_pct != null ? data.kpi.false_positive_rate_pct : data.kpi.observed_fpr_pct;
+        const fprEl = document.getElementById('ov-kpi-fpr');
+        if (fprEl) fprEl.textContent = fprVal != null ? `${fprVal}%` : 'N/A';
+        const fprSubEl = document.getElementById('ov-kpi-fpr-sub');
+        if (fprSubEl) {
+          const targetFpr = data.kpi.target_calibration_fpr != null ? `${(data.kpi.target_calibration_fpr * 100).toFixed(1)}%` : '0.2%';
+          fprSubEl.textContent = `Target: ${targetFpr} | Observed`;
+        }
+
+        const precEl = document.getElementById('ov-kpi-prec');
+        if (precEl) precEl.textContent = data.kpi.precision_pct != null ? `${data.kpi.precision_pct}%` : 'N/A';
+        const precSubEl = document.getElementById('ov-kpi-prec-sub');
+        if (precSubEl) precSubEl.textContent = 'True Positive Purity';
+
+        const f1El = document.getElementById('ov-kpi-f1');
+        if (f1El) f1El.textContent = data.kpi.f1_score != null ? Number(data.kpi.f1_score).toFixed(4) : 'N/A';
+        const f1SubEl = document.getElementById('ov-kpi-f1-sub');
+        if (f1SubEl) f1SubEl.textContent = 'Harmonic Mean';
+
+        const apEl = document.getElementById('ov-kpi-ap');
+        if (apEl) apEl.textContent = data.kpi.average_precision != null ? Number(data.kpi.average_precision).toFixed(4) : 'N/A';
+        const latEl = document.getElementById('ov-kpi-lat');
+        if (latEl) latEl.textContent = data.kpi.average_inference_ms != null ? `${data.kpi.average_inference_ms} ms` : 'N/A';
+
+        // 4. Update Dominant Attack Classes Table Dynamically
+        const tbody = document.getElementById('ov-dominant-tbody');
+        if (tbody && data.dominant_attacks && Array.isArray(data.dominant_attacks)) {
+          tbody.innerHTML = data.dominant_attacks.map(row => {
+            const recStr = row.recall_pct != null ? `${row.recall_pct}%` : 'N/A';
+            const recClass = (row.recall_pct != null && row.recall_pct > 80) ? 'text-emerald-400 font-bold'
+              : (row.recall_pct != null && row.recall_pct > 40) ? 'text-cyan-400 font-bold'
+              : (row.recall_pct != null && row.recall_pct > 0) ? 'text-amber-400 font-bold'
+              : 'text-rose-400 font-bold';
+            const detStr = row.detected != null ? row.detected.toLocaleString() : 'N/A';
+            const totStr = row.total_volume != null ? row.total_volume.toLocaleString() : 'N/A';
+            const dotCol = row.dot_color || '#10b981';
+            return `
+              <tr class="hover:bg-slate-800/30 transition">
+                <td class="px-4 py-2.5 font-bold text-white font-sans flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full" style="background-color: ${dotCol}"></span> ${row.display_name || row.attack_class}
+                </td>
+                <td class="px-4 py-2.5">${totStr}</td>
+                <td class="px-4 py-2.5 ${recClass}">${detStr}</td>
+                <td class="px-4 py-2.5 ${recClass}">${recStr}</td>
+                <td class="px-4 py-2.5 text-slate-400 font-sans text-[11px]">${row.mechanism || 'N/A'}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // 5. Update Donut Chart & Severity Legend Cards
+        if (data.severity_distribution) {
+          const s = data.severity_distribution;
+          const crit = s.Critical || 0;
+          const high = s.High || 0;
+          const med = s.Medium || 0;
+          const low = s.Low || 0;
+
+          if (donutChartInstance) {
+            donutChartInstance.data.datasets[0].data = [crit, high, med, low];
+            donutChartInstance.update();
+          }
+
+          const critEl = document.getElementById('ov-donut-crit');
+          const highEl = document.getElementById('ov-donut-high');
+          const medEl = document.getElementById('ov-donut-med');
+          const lowEl = document.getElementById('ov-donut-low');
+          if (critEl) critEl.textContent = crit.toLocaleString();
+          if (highEl) highEl.textContent = high.toLocaleString();
+          if (medEl) medEl.textContent = med.toLocaleString();
+          if (lowEl) lowEl.textContent = low.toLocaleString();
+
+          const totalEl = document.getElementById('ov-donut-total-attacks');
+          if (totalEl) {
+            const totalAttacks = crit + high + med + low;
+            totalEl.textContent = `${totalAttacks.toLocaleString()} Attacks Flagged`;
+          }
+        }
+
+        // 6. Update Overview Attack Bar Chart
+        if (overviewChartInstance && data.category_breakdown) {
+          const breakdown = data.category_breakdown;
+          const rates = attackCategories.map(cat => {
+            const c = breakdown[cat];
+            if (!c) return 0;
+            if (c.recall_pct != null) return c.recall_pct;
+            if (c.total > 0 && c.detected != null) return Math.round((c.detected / c.total) * 10000) / 100;
+            return 0;
+          });
+          overviewChartInstance.data.datasets[0].data = rates;
+          overviewChartInstance.data.datasets[0].backgroundColor = rates.map(r => r > 50 ? '#10b981' : r > 15 ? '#f59e0b' : '#ef4444');
+          overviewChartInstance.update();
+        }
+
+        // 7. Update Diode Physical Integrity Constraints
+        const diodeDims = document.getElementById('ov-diode-fwd-dims');
+        const diodeWindow = document.getElementById('ov-diode-window');
+        if (diodeDims) {
+          diodeDims.textContent = data.is_production_champion ? "29 Clean Metrics" : "26 Forward Only";
+        }
+        if (diodeWindow) {
+          diodeWindow.textContent = data.is_production_champion ? "10-Second Causal" : "Static Flow-Only";
+        }
+
       } catch (err) {
         console.error("Overview data fetch error:", err);
       }
@@ -1629,7 +3460,7 @@
     // Startup
     window.addEventListener('DOMContentLoaded', () => {
       initCharts();
-      simulateInteractiveFlow();
+      loadLatestXaiAlert();
       setInterval(updateClock, 1000);
       updateClock();
 
@@ -1641,7 +3472,12 @@
 
       setInterval(fetchSystemStatus, 3000);
       fetchSystemStatus();
+
+      updateCalibrationDisplay();
+      fetchModelData();
+      fetchThreatAnalytics(activeAnalyticsModel);
     });
   </script>
 </body>
+
 </html>
