@@ -1754,22 +1754,22 @@
         name: "Deep One-Way Autoencoder",
         status: "BASELINE",
         rates: [90.91, 99.86, 36.11, 22.10, 22.64, 13.00, 5.53, 0.0, 2.24, 0.0, 0.29, 8.70, 44.92],
-        recall: "48.76%", fpr: "6.13%", precision: "71.78%", ap: "0.7032",
-        tp: "271,889", fp: "106,893", fn: "285,757", tn: "1,636,286", threshold: "0.119703"
+        recall: "48.76%", fpr: "6.13%", precision: "71.78%", ap: "0.7032", f1: "0.5807",
+        tp: "271,889", fp: "106,893", fn: "285,757", tn: "1,636,286", threshold: "0.119703", target_fpr: "1.0%"
       },
       oneway_log: {
         name: "Enhanced One-Way Log-PCA",
         status: "BASELINE",
         rates: [100.0, 99.36, 36.11, 18.74, 15.21, 12.78, 5.26, 4.71, 2.49, 2.45, 0.14, 0.0, 0.0],
-        recall: "35.07%", fpr: "3.87%", precision: "74.36%", ap: "0.6582",
-        tp: "195,571", fp: "67,420", fn: "362,075", tn: "1,675,759", threshold: "0.258490"
+        recall: "35.07%", fpr: "3.87%", precision: "74.36%", ap: "0.6582", f1: "0.4766",
+        tp: "195,549", fp: "67,420", fn: "362,097", tn: "1,675,759", threshold: "0.258490", target_fpr: "1.0%"
       },
       bidirectional: {
         name: "Bidirectional 39-PCA (Reference)",
         status: "NON-COMPLIANT BASELINE",
         rates: [100.0, 0.20, 44.44, 32.83, 67.17, 31.42, 62.96, 4.84, 2.24, 2.91, 0.03, 0.0, 63.27],
-        recall: "44.22%", fpr: "2.45%", precision: "85.26%", ap: "0.6875",
-        tp: "246,566", fp: "42,644", fn: "311,080", tn: "1,700,535", threshold: "0.438088"
+        recall: "44.22%", fpr: "2.45%", precision: "85.26%", ap: "0.6875", f1: "0.5823",
+        tp: "246,566", fp: "42,644", fn: "311,080", tn: "1,700,535", threshold: "0.438088", target_fpr: "1.0%"
       }
     };
 
@@ -2049,19 +2049,20 @@
       // 7. Threshold, 8. Calibration target FPR
       // =========================================================================
       const praucVal = (data.ap !== undefined && data.ap !== null) ? data.ap : data.pr_auc;
+      const isHistoricalModel = (dataKey === 'oneway_ae' || dataKey === 'oneway_log' || dataKey === 'bidirectional');
       const requiredMetricFields = [
         { key: 'recall', name: 'Recall', val: data.recall },
         { key: 'fpr', name: 'Test FPR', val: data.fpr },
         { key: 'precision', name: 'Precision', val: data.precision },
         { key: 'f1', name: 'F1-score', val: data.f1 },
         { key: 'ap', name: 'PR-AUC', val: praucVal },
-        { key: 'roc_auc', name: 'ROC-AUC', val: data.roc_auc },
+        { key: 'roc_auc', name: 'ROC-AUC', val: data.roc_auc, optional: isHistoricalModel },
         { key: 'threshold', name: 'Threshold', val: data.threshold },
         { key: 'target_fpr', name: 'Calibration target FPR', val: data.target_fpr }
       ];
 
       const missingFields = requiredMetricFields
-        .filter(f => !isValidMetricValue(f.val))
+        .filter(f => !f.optional && !isValidMetricValue(f.val))
         .map(f => f.name);
 
       const hasIncompleteMetrics = missingFields.length > 0;
@@ -2232,6 +2233,9 @@
       if (cardF1) cardF1.textContent = isValidMetricValue(data.f1) ? data.f1 : "N/A";
       if (cardPrauc) cardPrauc.textContent = isValidMetricValue(praucVal) ? praucVal : "N/A";
       if (cardRocauc) cardRocauc.textContent = isValidMetricValue(data.roc_auc) ? data.roc_auc : "N/A";
+      if (cardRocauc && isHistoricalModel && !isValidMetricValue(data.roc_auc)) {
+        cardRocauc.textContent = "N/A — Not evaluated in Stage 1";
+      }
       if (cardThreshold) cardThreshold.textContent = isValidMetricValue(data.threshold) ? data.threshold : "N/A";
       if (cardTargetFpr) {
         if (isValidMetricValue(data.target_fpr)) {
@@ -2399,6 +2403,84 @@
                     const item = m2r.per_category[cat];
                     if (!item) return 0.0;
                     return item.recall_pct != null ? parseFloat(item.recall_pct.toFixed(2)) :
+                      parseFloat((item.detected / (item.total || 1) * 100).toFixed(2));
+                  });
+                }
+              }
+
+              // 4. Sync Deep One-Way Autoencoder (oneway_ae)
+              if (metrics.oneway_autoencoder && modelBreakdowns.oneway_ae) {
+                const moae = metrics.oneway_autoencoder;
+                if (moae.detection_rate_pct != null) modelBreakdowns.oneway_ae.recall = `${moae.detection_rate_pct.toFixed(2)}%`;
+                if (moae.false_positive_rate_pct != null) modelBreakdowns.oneway_ae.fpr = `${moae.false_positive_rate_pct.toFixed(2)}%`;
+                if (moae.precision_pct != null) modelBreakdowns.oneway_ae.precision = `${moae.precision_pct.toFixed(2)}%`;
+                if (moae.average_precision != null) modelBreakdowns.oneway_ae.ap = moae.average_precision.toFixed(4);
+                if (moae.threshold != null) modelBreakdowns.oneway_ae.threshold = parseFloat(moae.threshold).toFixed(6);
+                if (moae.target_calibration_fpr != null) {
+                  modelBreakdowns.oneway_ae.target_fpr = `${(moae.target_calibration_fpr * 100).toFixed(1)}%`;
+                }
+                const tp = moae.tp != null ? moae.tp : 271889;
+                const fp = moae.fp != null ? moae.fp : 106893;
+                const fn = moae.fn != null ? moae.fn : 285757;
+                const denom = 2 * tp + fp + fn;
+                modelBreakdowns.oneway_ae.f1 = (moae.f1_score != null) ? moae.f1_score.toFixed(4) : (denom > 0 ? ((2 * tp) / denom).toFixed(4) : "0.5807");
+                if (moae.per_category) {
+                  modelBreakdowns.oneway_ae.rates = attackCategories.map(cat => {
+                    const item = moae.per_category[cat];
+                    if (!item) return 0.0;
+                    return item.detection_rate_pct != null ? parseFloat(item.detection_rate_pct.toFixed(2)) :
+                      parseFloat((item.detected / (item.total || 1) * 100).toFixed(2));
+                  });
+                }
+              }
+
+              // 5. Sync Enhanced One-Way Log-PCA (oneway_log)
+              if (metrics.oneway_log_pca && modelBreakdowns.oneway_log) {
+                const molp = metrics.oneway_log_pca;
+                if (molp.detection_rate_pct != null) modelBreakdowns.oneway_log.recall = `${molp.detection_rate_pct.toFixed(2)}%`;
+                if (molp.false_positive_rate_pct != null) modelBreakdowns.oneway_log.fpr = `${molp.false_positive_rate_pct.toFixed(2)}%`;
+                if (molp.precision_pct != null) modelBreakdowns.oneway_log.precision = `${molp.precision_pct.toFixed(2)}%`;
+                if (molp.average_precision != null) modelBreakdowns.oneway_log.ap = molp.average_precision.toFixed(4);
+                if (molp.threshold != null) modelBreakdowns.oneway_log.threshold = parseFloat(molp.threshold).toFixed(6);
+                if (molp.target_calibration_fpr != null) {
+                  modelBreakdowns.oneway_log.target_fpr = `${(molp.target_calibration_fpr * 100).toFixed(1)}%`;
+                }
+                const tp = molp.tp != null ? molp.tp : 195549;
+                const fp = molp.fp != null ? molp.fp : 67420;
+                const fn = molp.fn != null ? molp.fn : 362097;
+                const denom = 2 * tp + fp + fn;
+                modelBreakdowns.oneway_log.f1 = (molp.f1_score != null) ? molp.f1_score.toFixed(4) : (denom > 0 ? ((2 * tp) / denom).toFixed(4) : "0.4766");
+                if (molp.per_category) {
+                  modelBreakdowns.oneway_log.rates = attackCategories.map(cat => {
+                    const item = molp.per_category[cat];
+                    if (!item) return 0.0;
+                    return item.detection_rate_pct != null ? parseFloat(item.detection_rate_pct.toFixed(2)) :
+                      parseFloat((item.detected / (item.total || 1) * 100).toFixed(2));
+                  });
+                }
+              }
+
+              // 6. Sync Bidirectional 39-PCA Reference
+              if (metrics.bidirectional_reference && modelBreakdowns.bidirectional) {
+                const mbdr = metrics.bidirectional_reference;
+                if (mbdr.detection_rate_pct != null) modelBreakdowns.bidirectional.recall = `${mbdr.detection_rate_pct.toFixed(2)}%`;
+                if (mbdr.false_positive_rate_pct != null) modelBreakdowns.bidirectional.fpr = `${mbdr.false_positive_rate_pct.toFixed(2)}%`;
+                if (mbdr.precision_pct != null) modelBreakdowns.bidirectional.precision = `${mbdr.precision_pct.toFixed(2)}%`;
+                if (mbdr.average_precision != null) modelBreakdowns.bidirectional.ap = mbdr.average_precision.toFixed(4);
+                if (mbdr.threshold != null) modelBreakdowns.bidirectional.threshold = parseFloat(mbdr.threshold).toFixed(6);
+                if (mbdr.target_calibration_fpr != null) {
+                  modelBreakdowns.bidirectional.target_fpr = `${(mbdr.target_calibration_fpr * 100).toFixed(1)}%`;
+                }
+                const tp = mbdr.tp != null ? mbdr.tp : 246566;
+                const fp = mbdr.fp != null ? mbdr.fp : 42644;
+                const fn = mbdr.fn != null ? mbdr.fn : 311080;
+                const denom = 2 * tp + fp + fn;
+                modelBreakdowns.bidirectional.f1 = (mbdr.f1_score != null) ? mbdr.f1_score.toFixed(4) : (denom > 0 ? ((2 * tp) / denom).toFixed(4) : "0.5823");
+                if (mbdr.per_category) {
+                  modelBreakdowns.bidirectional.rates = attackCategories.map(cat => {
+                    const item = mbdr.per_category[cat];
+                    if (!item) return 0.0;
+                    return item.detection_rate_pct != null ? parseFloat(item.detection_rate_pct.toFixed(2)) :
                       parseFloat((item.detected / (item.total || 1) * 100).toFixed(2));
                   });
                 }
