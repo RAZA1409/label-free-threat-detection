@@ -1,0 +1,115 @@
+{
+  "tp": 519031,
+  "fp": 217598,
+  "tn": 1525581,
+  "fn": 38615,
+  "detection_rate_pct": 93.08,
+  "false_positive_rate_pct": 12.48,
+  "precision_pct": 70.46,
+  "average_precision": 0.8783,
+  "per_category": {
+    "BENIGN": {
+      "total": 1743179,
+      "detected": 217598,
+      "missed": 1525581,
+      "detection_rate_pct": 12.48
+    },
+    "Bot": {
+      "total": 1966,
+      "detected": 45,
+      "missed": 1921,
+      "detection_rate_pct": 2.29
+    },
+    "DDoS": {
+      "total": 128027,
+      "detected": 125253,
+      "missed": 2774,
+      "detection_rate_pct": 97.83
+    },
+    "DoS GoldenEye": {
+      "total": 10293,
+      "detected": 1544,
+      "missed": 8749,
+      "detection_rate_pct": 15.0
+    },
+    "DoS Hulk": {
+      "total": 231073,
+      "detected": 230726,
+      "missed": 347,
+      "detection_rate_pct": 99.85
+    },
+    "DoS Slowhttptest": {
+      "total": 5499,
+      "detected": 1376,
+      "missed": 4123,
+      "detection_rate_pct": 25.02
+    },
+    "DoS slowloris": {
+      "total": 5796,
+      "detected": 1279,
+      "missed": 4517,
+      "detection_rate_pct": 22.07
+    },
+    "FTP-Patator": {
+      "total": 7938,
+      "detected": 180,
+      "missed": 7758,
+      "detection_rate_pct": 2.27
+    },
+    "Heartbleed": {
+      "total": 11,
+      "detected": 6,
+      "missed": 5,
+      "detection_rate_pct": 54.55
+    },
+    "Infiltration": {
+      "total": 36,
+      "detected": 21,
+      "missed": 15,
+      "detection_rate_pct": 58.33
+    },
+    "PortScan": {
+      "total": 158930,
+      "detected": 158601,
+      "missed": 329,
+      "detection_rate_pct": 99.79
+    },
+    "SSH-Patator": {
+      "total": 5897,
+      "detected": 0,
+      "missed": 5897,
+      "detection_rate_pct": 0.0
+    },
+    "Web Attack - Brute Force": {
+      "total": 1507,
+      "detected": 0,
+      "missed": 1507,
+      "detection_rate_pct": 0.0
+    },
+    "Web Attack - Sql Injection": {
+      "total": 21,
+      "detected": 0,
+      "missed": 21,
+      "detection_rate_pct": 0.0
+    },
+    "Web Attack - XSS": {
+      "total": 652,
+      "detected": 0,
+      "missed": 652,
+      "detection_rate_pct": 0.0
+    }
+  },
+  "model": "Temporal One-Way Autoencoder (Flow + Velocity Engine)",
+  "feature_set": "Strict One-Way + Forward Temporal Velocity",
+  "feature_count": 32,
+  "architecture": [
+    32,
+    24,
+    8,
+    24,
+    32
+  ],
+  "threshold": 0.190885,
+  "target_calibration_fpr": 0.002,
+  "elapsed_seconds": 27.6
+}

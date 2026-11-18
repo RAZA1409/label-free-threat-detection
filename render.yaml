@@ -1,0 +1,19 @@
+# Render Blueprint Configuration for AEGIS Threat Detection Dashboard
+# Documentation: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: aegis-threat-detection
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python dashboard/server.py
+    plan: free
+    region: oregon
+    branch: main
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PYTHONUNBUFFERED
+        value: "1"

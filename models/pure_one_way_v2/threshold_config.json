@@ -1,0 +1,22 @@
+{
+  "model_version": "2.0-pure-oneway",
+  "calibration": {
+    "calibration_rows": 166321,
+    "primary_alpha": 0.002,
+    "primary_threshold": 0.314036,
+    "primary_false_positives": 332,
+    "primary_empirical_fpr": 0.001996,
+    "reference_alpha": 0.01,
+    "reference_threshold": 0.099018,
+    "reference_false_positives": 1663,
+    "reference_empirical_fpr": 0.009999,
+    "quantile_method": "higher",
+    "scoring_formula": "mean((x - x_hat) ** 2)",
+    "decision_rule": "score > threshold",
+    "calibration_score_min": 0.000291,
+    "calibration_score_median": 0.005303,
+    "calibration_score_mean": 0.012346,
+    "calibration_score_p99": 0.099012,
+    "calibration_score_max": 2.145047
+  }
+}

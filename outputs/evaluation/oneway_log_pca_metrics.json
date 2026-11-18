@@ -1,0 +1,102 @@
+{
+  "tp": 195549,
+  "fp": 67420,
+  "tn": 1675759,
+  "fn": 362097,
+  "detection_rate_pct": 35.07,
+  "false_positive_rate_pct": 3.87,
+  "precision_pct": 74.36,
+  "average_precision": 0.6582,
+  "per_category": {
+    "BENIGN": {
+      "total": 1743179,
+      "detected": 67420,
+      "missed": 1675759,
+      "detection_rate_pct": 3.87
+    },
+    "Bot": {
+      "total": 1966,
+      "detected": 49,
+      "missed": 1917,
+      "detection_rate_pct": 2.49
+    },
+    "DDoS": {
+      "total": 128027,
+      "detected": 0,
+      "missed": 128027,
+      "detection_rate_pct": 0.0
+    },
+    "DoS GoldenEye": {
+      "total": 10293,
+      "detected": 541,
+      "missed": 9752,
+      "detection_rate_pct": 5.26
+    },
+    "DoS Hulk": {
+      "total": 231073,
+      "detected": 35146,
+      "missed": 195927,
+      "detection_rate_pct": 15.21
+    },
+    "DoS Slowhttptest": {
+      "total": 5499,
+      "detected": 703,
+      "missed": 4796,
+      "detection_rate_pct": 12.78
+    },
+    "DoS slowloris": {
+      "total": 5796,
+      "detected": 1086,
+      "missed": 4710,
+      "detection_rate_pct": 18.74
+    },
+    "FTP-Patator": {
+      "total": 7938,
+      "detected": 0,
+      "missed": 7938,
+      "detection_rate_pct": 0.0
+    },
+    "Heartbleed": {
+      "total": 11,
+      "detected": 11,
+      "missed": 0,
+      "detection_rate_pct": 100.0
+    },
+    "Infiltration": {
+      "total": 36,
+      "detected": 13,
+      "missed": 23,
+      "detection_rate_pct": 36.11
+    },
+    "PortScan": {
+      "total": 158930,
+      "detected": 157905,
+      "missed": 1025,
+      "detection_rate_pct": 99.36
+    },
+    "SSH-Patator": {
+      "total": 5897,
+      "detected": 8,
+      "missed": 5889,
+      "detection_rate_pct": 0.14
+    },
+    "Web Attack - Brute Force": {
+      "total": 1507,
+      "detected": 71,
+      "missed": 1436,
+      "detection_rate_pct": 4.71
+    },
+    "Web Attack - Sql Injection": {
+      "total": 21,
+      "detected": 0,
+      "missed": 21,
+      "detection_rate_pct": 0.0
+    },
+    "Web Attack - XSS": {
+      "total": 652,
+      "detected": 16,
+      "missed": 636,
+      "detection_rate_pct": 2.45
+    }
+  }
+}

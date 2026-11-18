@@ -1,15 +1,31 @@
+# Python virtual environments & bytecode caches
 .venv/
 venv/
 __pycache__/
 *.pyc
+*.py[cod]
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Local secrets & credentials
 .env
+
+# Raw datasets & heavy binary captures (never commit to git)
 dataset/
-*.csv
 *.pcap
 *.zip
 *.parquet
+
+# Models directory: ignore exploratory/heavy models by default,
+# but track Champion v1 and Candidate v2 production artifacts
 models/*
 !models/.gitkeep
-.ipynb_checkpoints/
-*.py[cod]
-outputs/
+!models/temporal_autoencoder_*
+!models/pure_one_way_v2/
+
+# Outputs directory: ignore heavy prediction dumps and raw tables,
+# but track verified evaluation JSON metrics and initial live stream feed
+outputs/*
+!outputs/evaluation/
+outputs/evaluation/*.parquet
+outputs/evaluation/*.csv

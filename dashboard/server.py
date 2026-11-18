@@ -9,9 +9,11 @@ import os
 import subprocess
 from pathlib import Path
 
-# Automatically re-execute inside project .venv if invoked with system python
+# Automatically re-execute inside project .venv if invoked with system python (Windows or Linux)
 _ROOT = Path(__file__).resolve().parents[1]
 _VENV_PYTHON = _ROOT / ".venv" / "Scripts" / "python.exe"
+if not _VENV_PYTHON.exists():
+    _VENV_PYTHON = _ROOT / ".venv" / "bin" / "python"
 if _VENV_PYTHON.exists() and Path(sys.executable).resolve() != _VENV_PYTHON.resolve():
     _res = subprocess.run([str(_VENV_PYTHON)] + sys.argv)
     sys.exit(_res.returncode)
@@ -35,7 +37,8 @@ try:
 except ImportError:
     from telemetry import safe_read_json, sanitize_for_json
 
-PORT = 8501
+HOST = os.environ.get("HOST", "0.0.0.0")
+PORT = int(os.environ.get("PORT", 8501))
 SERVER_START_TIME = time.time()
 STREAM_PROCESS = None
 EXPLAINER = None
@@ -288,6 +291,38 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
         if path in ("/", ""):
             self.path = "/index.html"
             return super().do_GET()
+
+        elif path == "/health":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            sock_name = self.server.socket.getsockname()
+            bound_host, bound_port = sock_name[0], sock_name[1]
+            health_payload = {
+                "status": "HEALTHY",
+                "service": "AEGIS Threat Detection Dashboard",
+                "uptime_seconds": int(time.time() - SERVER_START_TIME),
+                "host": HOST,
+                "port": PORT,
+                "bound_host": bound_host,
+                "bound_port": bound_port,
+                "models": {
+                    "champion_v1": {
+                        "name": LEGACY_ADAPTER.MODEL_NAME,
+                        "available": LEGACY_ADAPTER.is_available,
+                        "error": LEGACY_ADAPTER.load_error,
+                    },
+                    "candidate_v2": {
+                        "name": V2_ADAPTER.MODEL_NAME,
+                        "available": V2_ADAPTER.is_available,
+                        "error": V2_ADAPTER.load_error,
+                    },
+                },
+                "feed_available": (EVAL_DIR / "live_stream_feed.json").exists(),
+            }
+            self.wfile.write(json.dumps(health_payload).encode("utf-8"))
+            return
 
         elif path == "/api/metrics":
             self.send_response(200)
@@ -907,9 +942,10 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
                 return
 
             sim_script = SRC_DIR / "simulate_stream.py"
+            python_bin = str(_VENV_PYTHON) if _VENV_PYTHON.exists() else sys.executable
             try:
                 STREAM_PROCESS = subprocess.Popen(
-                    [str(_VENV_PYTHON), str(sim_script), "--events", str(events), "--eps", str(eps)],
+                    [python_bin, str(sim_script), "--events", str(events), "--eps", str(eps)],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
@@ -943,10 +979,14 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
 
 
 def main():
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", 8501))
     print("=" * 70, flush=True)
-    print("SIH 2026 — Premium Enterprise Threat Detection Dashboard Server", flush=True)
-    print(f"Starting server at: http://localhost:{PORT}", flush=True)
+    print("AEGIS — Enterprise Threat Detection Dashboard Server", flush=True)
+    print(f"Starting server at: http://{host}:{port}", flush=True)
+    print(f"Bound to interface: {host}, listening on port: {port}", flush=True)
     print("Serving dashboard/index.html with REST endpoints:", flush=True)
+    print("  • /health             (Service health & model readiness)", flush=True)
     print("  • /api/overview       (Executive KPIs & severity breakdowns)", flush=True)
     print("  • /api/metrics        (Model evaluation comparisons)", flush=True)
     print("  • /api/live_feed      (Real-time optical diode threat stream)", flush=True)
@@ -955,8 +995,15 @@ def main():
     print("  • /api/stop_stream    (Halt active streaming simulator)", flush=True)
     print("=" * 70, flush=True)
 
-    server_address = ("127.0.0.1", PORT)
-    httpd = HTTPServer(server_address, ThreatDetectionDashboardHandler)
+    server_address = (host, port)
+    try:
+        httpd = HTTPServer(server_address, ThreatDetectionDashboardHandler)
+        bound_host, bound_port = httpd.socket.getsockname()[:2]
+        print(f"[OK] AEGIS HTTP server listening on {bound_host}:{bound_port}", flush=True)
+    except Exception as e:
+        print(f"[FATAL] Failed to bind HTTP server to {host}:{port}: {e}", file=sys.stderr, flush=True)
+        sys.exit(1)
+
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
