@@ -16,8 +16,11 @@ import subprocess
 from pathlib import Path
 
 # Automatically re-execute inside project .venv if invoked with system python
+# Support both Windows (.venv/Scripts/python.exe) and Linux (.venv/bin/python)
 _ROOT = Path(__file__).resolve().parents[1]
 _VENV_PYTHON = _ROOT / ".venv" / "Scripts" / "python.exe"
+if not _VENV_PYTHON.exists():
+    _VENV_PYTHON = _ROOT / ".venv" / "bin" / "python"
 if _VENV_PYTHON.exists() and Path(sys.executable).resolve() != _VENV_PYTHON.resolve():
     _res = subprocess.run([str(_VENV_PYTHON)] + sys.argv)
     sys.exit(_res.returncode)
@@ -84,6 +87,7 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parents[1]
 TEST_FILE = ROOT / "outputs" / "experiment" / "test_tue_fri.parquet"
+REPLAY_FILE = ROOT / "outputs" / "evaluation" / "stream_replay_2000.json"
 LIVE_FEED_FILE = ROOT / "outputs" / "evaluation" / "live_stream_feed.json"
 LIVE_FEED_FILE.parent.mkdir(parents=True, exist_ok=True)
 
@@ -492,6 +496,7 @@ def run_stream_simulation(
     save_checkpoint_on_shutdown: bool = True,
     stop_after_events: Optional[int] = None,
     replay_scenario: str = "two_episode",
+    stop_event: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """
     Simulates a streaming network tap / data diode ingest with chronological playback
@@ -511,9 +516,20 @@ def run_stream_simulation(
     save_checkpoint_on_shutdown: Save final checkpoint upon stream completion/shutdown.
     stop_after_events: Optional early termination limit to test restart recovery midway.
     replay_scenario: Replay composition scenario ('two_episode' default or 'legacy_ddos').
+    stop_event: Optional threading.Event for cooperative thread cancellation.
     """
     feed_path = Path(live_feed_file) if live_feed_file else LIVE_FEED_FILE
-    parquet_path = Path(test_file) if test_file else TEST_FILE
+    if test_file:
+        data_path = Path(test_file)
+    elif REPLAY_FILE.exists():
+        data_path = REPLAY_FILE
+    elif TEST_FILE.exists():
+        data_path = TEST_FILE
+    else:
+        raise FileNotFoundError(
+            f"No streaming dataset found. Checked primary path '{TEST_FILE}' and fallback replay path '{REPLAY_FILE}'. "
+            "In production Render environments, ensure 'outputs/evaluation/stream_replay_2000.json' is present."
+        )
 
     valid_scenarios = {"two_episode", "legacy_ddos", "contiguous_burst"}
     if replay_scenario not in valid_scenarios:
@@ -572,8 +588,13 @@ def run_stream_simulation(
 
     # 3. Prepare Chronological Stream
     if verbose:
-        print(f"3. Loading and sorting chronological stream from {parquet_path.name}...")
-    df = pd.read_parquet(parquet_path)
+        print(f"3. Loading and sorting chronological stream from {data_path.name}...")
+    if data_path.suffix.lower() == ".json":
+        df = pd.read_json(data_path, orient="records")
+        if "CaptureDate" in df.columns:
+            df = df.drop(columns=["CaptureDate"])
+    else:
+        df = pd.read_parquet(data_path)
     df["Clean_Label"] = sanitize_labels(df["Label"])
 
     stream_pool = prepare_chronological_stream(
@@ -670,16 +691,43 @@ def run_stream_simulation(
                 if verbose:
                     print(f"   [!] Checkpoint rejected ({recovery_result.status.value}): {recovery_result.error_message}. Starting clean stream.")
 
-    def _build_feed_state(curr_timestamp: Optional[str] = None) -> Dict[str, Any]:
+    existing_feed_metadata = {}
+    if live_feed_file and Path(live_feed_file).exists():
+        try:
+            raw_existing = safe_read_json(Path(live_feed_file), default={})
+            managed_keys = {
+                "status", "last_updated", "total_processed", "total_anomalies",
+                "anomaly_rate_pct", "quarantine_summary", "recent_alerts",
+                "v2_shadow_summary", "telemetry_health"
+            }
+            existing_feed_metadata = {k: v for k, v in raw_existing.items() if k not in managed_keys}
+        except Exception:
+            existing_feed_metadata = {}
+
+    def _build_feed_state(curr_timestamp: Optional[str] = None, stream_status: Optional[str] = None) -> Dict[str, Any]:
         ts = curr_timestamp or time.strftime("%H:%M:%S")
-        st = {
+        target_events = stop_after_events if stop_after_events is not None else max_events
+        if stream_status is not None:
+            status_val = stream_status
+        elif stop_event is not None and stop_event.is_set():
+            status_val = "stopped"
+        elif target_events is not None and total_processed >= target_events:
+            status_val = "completed"
+        elif target_events is None and not stop_early:
+            status_val = "completed"
+        else:
+            status_val = "running"
+
+        st = dict(existing_feed_metadata)
+        st.update({
+            "status": status_val,
             "last_updated": ts,
             "total_processed": total_processed,
             "total_anomalies": total_anomalies,
             "anomaly_rate_pct": round((total_anomalies / total_processed) * 100, 2) if total_processed > 0 else 0.0,
             "quarantine_summary": quarantine_manager.get_metrics(),
             "recent_alerts": recent_alerts,
-        }
+        })
         if not v1_only and v2_adapter is not None:
             concordance = round(((v2_both_alert + v2_both_pass) / max(total_processed, 1)) * 100, 2)
             mean_v2_lat = round(float(np.mean(v2_latencies)), 3) if v2_latencies else 0.0
@@ -698,6 +746,9 @@ def run_stream_simulation(
         return st
 
     def _process_single_flow(flow_row: Dict[str, Any]) -> bool:
+        if stop_event is not None and stop_event.is_set():
+            return False
+
         nonlocal total_processed, total_anomalies
         nonlocal v2_primary_anomalies, v2_reference_anomalies
         nonlocal v2_degraded_count, v2_unavailable_count
@@ -858,8 +909,16 @@ def run_stream_simulation(
         if effective_limit and total_processed >= effective_limit:
             return False
 
+        if stop_event is not None and stop_event.is_set():
+            return False
+
         if delay > 0:
-            time.sleep(delay)
+            if stop_event is not None:
+                stop_event.wait(timeout=delay)
+                if stop_event.is_set():
+                    return False
+            else:
+                time.sleep(delay)
         return True
 
     # 5. Stream Replay Loop across Chunks with flush=False
@@ -870,11 +929,15 @@ def run_stream_simulation(
     stop_early = False
     try:
         for chunk_df in chunks:
-            if stop_early:
+            if stop_early or (stop_event is not None and stop_event.is_set()):
+                stop_early = True
                 break
 
             valid_rows = []
             for _, row in chunk_df.iterrows():
+                if stop_event is not None and stop_event.is_set():
+                    stop_early = True
+                    break
                 row_dict = row.to_dict()
                 is_val, reason, sanitized_row = validate_and_sanitize_flow_record(
                     row_dict,
@@ -971,22 +1034,42 @@ def run_stream_simulation(
                 flush=False,
             )
             for _, row in augmented_chunk.iterrows():
+                if stop_event is not None and stop_event.is_set():
+                    stop_early = True
+                    break
                 flow_dict = row.to_dict()
                 if not _process_single_flow(flow_dict):
                     stop_early = True
                     break
     finally:
-        # 6. Shutdown flush of trailing pending timestamp group
-        final_batch = engine.context.flush()
-        if len(final_batch) > 0:
-            for _, row in final_batch.iterrows():
-                flow_dict = row.to_dict()
-                if not _process_single_flow(flow_dict):
-                    break
+        is_cancelled = stop_event is not None and stop_event.is_set()
+        # 6. Shutdown flush of trailing pending timestamp group (only if not cancelled)
+        if not is_cancelled:
+            final_batch = engine.context.flush()
+            if len(final_batch) > 0:
+                for _, row in final_batch.iterrows():
+                    if stop_event is not None and stop_event.is_set():
+                        is_cancelled = True
+                        break
+                    flow_dict = row.to_dict()
+                    if not _process_single_flow(flow_dict):
+                        break
+
+        is_cancelled = is_cancelled or (stop_event is not None and stop_event.is_set())
+        target_events = stop_after_events if stop_after_events is not None else max_events
+
+        if is_cancelled:
+            final_status = "stopped"
+        elif target_events is not None and total_processed >= target_events:
+            final_status = "completed"
+        elif target_events is None and not stop_early:
+            final_status = "completed"
+        else:
+            final_status = "incomplete"
 
         # 7. Final telemetry flush to ensure complete and accurate final state on disk
         if write_feed:
-            final_feed_state = _build_feed_state()
+            final_feed_state = _build_feed_state(stream_status=final_status)
             telemetry_mgr.flush(final_feed_state)
 
         # 8. Final checkpoint save on graceful shutdown
@@ -1015,6 +1098,7 @@ def run_stream_simulation(
             print(f"Context degraded events: {v2_degraded_count} | Dropped overflow events: {engine.total_dropped_overflow_events}")
 
     summary_result = {
+        "status": final_status,
         "total_processed": total_processed,
         "total_anomalies": total_anomalies,
         "anomaly_rate_pct": round((total_anomalies / total_processed) * 100, 2) if total_processed > 0 else 0.0,

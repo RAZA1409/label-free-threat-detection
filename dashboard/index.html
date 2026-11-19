@@ -723,9 +723,15 @@
             </select>
 
             <!-- Trigger Stream Button -->
-            <button onclick="startLiveStream(2000, 15)"
+            <button id="btn-start-stream" onclick="startLiveStream(2000, 15)"
               class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow transition flex items-center gap-1.5 cursor-pointer">
               <span>▶ Start Stream (2000)</span>
+            </button>
+
+            <!-- Stop Stream Button -->
+            <button id="btn-stop-stream" onclick="stopLiveStream()"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 shadow transition flex items-center gap-1.5 cursor-pointer">
+              <span>⏹ Stop Stream</span>
             </button>
 
             <!-- Pause / Resume Button -->
@@ -2548,16 +2554,23 @@
         if (!res.ok) return;
         const data = await res.json();
 
-        if (data.total_processed) {
-          document.getElementById('stream-total').textContent = data.total_processed.toLocaleString();
-          document.getElementById('stream-alerts').textContent = data.total_anomalies.toLocaleString();
-          document.getElementById('stream-rate').textContent = `${data.anomaly_rate_pct}%`;
+        if (data.total_processed !== undefined && data.total_processed !== null) {
+          document.getElementById('stream-total').textContent = Number(data.total_processed).toLocaleString();
+          document.getElementById('stream-alerts').textContent = Number(data.total_anomalies || 0).toLocaleString();
+          document.getElementById('stream-rate').textContent = `${data.anomaly_rate_pct !== undefined ? data.anomaly_rate_pct : 0.0}%`;
         }
 
         if (data.recent_alerts && data.recent_alerts.length > 0) {
           liveAlertsCache = data.recent_alerts;
           renderLiveTable(liveAlertsCache);
           document.getElementById('live-last-updated').textContent = `Last ping: ${data.last_updated || new Date().toLocaleTimeString()}`;
+
+          const latestAlert = data.recent_alerts[data.recent_alerts.length - 1];
+          if (latestAlert && latestAlert.latency_ms !== undefined) {
+            const latEl = document.getElementById('stream-latency');
+            if (latEl) latEl.textContent = `${latestAlert.latency_ms} ms`;
+          }
+
           updateXaiFlowDropdown(activeXaiFlowIndex);
           if (!currentXaiFlow) {
             loadLatestXaiAlert();
@@ -2570,14 +2583,61 @@
 
     // Trigger Stream from UI
     async function startLiveStream(events = 2000, eps = 15) {
-      showToast(`Starting live stream of ${events} flows at ${eps} EPS...`, "info");
+      showToast(`Initiating live stream (${events} flows, ${eps} EPS)...`, "info");
       try {
         const res = await fetch(`/api/start_stream?events=${events}&eps=${eps}`);
         const data = await res.json();
-        showToast(data.message || "Stream broadcast started", "success");
-        pollLiveFeed();
+        if (data.status === "started") {
+          showToast(data.message || "Live stream broadcast started.", "success");
+        } else if (data.status === "already_running") {
+          showToast(data.message || "Stream worker is already active.", "warning");
+        } else {
+          showToast(data.message || data.error || "Failed to start live stream.", "error");
+        }
+        setTimeout(pollLiveFeed, 300);
       } catch (err) {
-        showToast("Error starting live stream", "error");
+        showToast(`Error starting live stream: ${err.message || err}`, "error");
+      }
+    }
+
+    // Stop Stream from UI
+    async function stopLiveStream() {
+      try {
+        const res = await fetch('/api/stop_stream');
+        const data = await res.json();
+        if (data.status === "stopping") {
+          showToast(data.message || "Stop signal sent. Halting stream worker...", "info");
+          // Poll /api/stream_status for confirmed stopped state before reporting stopped
+          let attempts = 0;
+          const pollInterval = setInterval(async () => {
+            attempts++;
+            try {
+              const stRes = await fetch('/api/stream_status');
+              if (stRes.ok) {
+                const stData = await stRes.json();
+                if (stData.status === "stopped" || (!stData.thread_alive && stData.status !== "running" && stData.status !== "stopping")) {
+                  clearInterval(pollInterval);
+                  showToast("Stream simulation confirmed stopped.", "warning");
+                  pollLiveFeed();
+                  return;
+                }
+              }
+            } catch (e) {
+              console.error("Error polling stream status after stop:", e);
+            }
+            if (attempts >= 25) {
+              clearInterval(pollInterval);
+              pollLiveFeed();
+            }
+          }, 200);
+        } else if (data.status === "not_running") {
+          showToast(data.message || "No active stream to stop.", "info");
+          pollLiveFeed();
+        } else {
+          showToast(data.message || data.error || "Failed to stop live stream.", "error");
+        }
+      } catch (err) {
+        showToast(`Error stopping live stream: ${err.message || err}`, "error");
       }
     }
 

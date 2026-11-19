@@ -21,6 +21,7 @@ if _VENV_PYTHON.exists() and Path(sys.executable).resolve() != _VENV_PYTHON.reso
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 import json
 import time
+import threading
 from urllib.parse import urlparse, parse_qs
 
 DASHBOARD_DIR = Path(__file__).resolve().parent
@@ -33,15 +34,125 @@ RESULTS_DIR = ROOT_DIR / "reports" / "phase_2_operational_results"
 sys.path.append(str(SRC_DIR))
 from model_adapters import LegacyModelAdapter, PureOneWayV2Adapter
 try:
-    from src.telemetry import safe_read_json, sanitize_for_json
+    from src.telemetry import safe_read_json, sanitize_for_json, atomic_write_json
 except ImportError:
-    from telemetry import safe_read_json, sanitize_for_json
+    from telemetry import safe_read_json, sanitize_for_json, atomic_write_json
 
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", 8501))
 SERVER_START_TIME = time.time()
-STREAM_PROCESS = None
 EXPLAINER = None
+
+# ---------------------------------------------------------------------------
+# Stream State — replaces subprocess sentinel (subprocess.Popen is unreliable
+# on Render: .venv may not exist, parquet is not deployed, stderr is silenced).
+# A single background thread runs run_stream_simulation() in-process.
+# ---------------------------------------------------------------------------
+STREAM_STATE = {
+    "status": "idle",        # idle | running | completed | stopped | error
+    "thread": None,          # threading.Thread reference
+    "events": 0,
+    "eps": 0.0,
+    "started_at": None,
+    "finished_at": None,
+    "error_message": None,
+}
+_STREAM_LOCK = threading.Lock()
+_STOP_EVENT = threading.Event()
+
+
+def get_live_feed_path() -> Path:
+    """Return configured live feed file path, supporting test isolation via env."""
+    env_path = os.environ.get("AEGIS_LIVE_FEED_FILE")
+    if env_path:
+        return Path(env_path)
+    return EVAL_DIR / "live_stream_feed.json"
+
+
+def _run_stream_in_thread(events: int, eps: float) -> None:
+    """
+    Worker executed inside a daemon thread by /api/start_stream.
+
+    Calls run_stream_simulation() in-process with cooperative thread cancellation
+    via _STOP_EVENT. No subprocess, no .venv path dependency, works on Render as-is.
+
+    Life-cycle:
+        idle → starting → running → (completed | stopped | incomplete | error)
+    """
+    global STREAM_STATE
+    live_path = get_live_feed_path()
+
+    with _STREAM_LOCK:
+        # Check if stop was requested while in 'starting' state
+        if _STOP_EVENT.is_set():
+            STREAM_STATE["status"] = "stopped"
+            STREAM_STATE["finished_at"] = time.strftime("%H:%M:%S")
+            return
+        STREAM_STATE["status"] = "running"
+        STREAM_STATE["started_at"] = time.strftime("%H:%M:%S")
+        STREAM_STATE["finished_at"] = None
+        STREAM_STATE["error_message"] = None
+
+    # Initialize a fresh run's counters and alerts while preserving existing feed structure & metadata
+    try:
+        existing = safe_read_json(live_path, default={})
+        existing["status"] = "running"
+        existing["total_processed"] = 0
+        existing["total_anomalies"] = 0
+        existing["anomaly_rate_pct"] = 0.0
+        existing["recent_alerts"] = []
+        existing["last_updated"] = time.strftime("%H:%M:%S")
+        atomic_write_json(live_path, existing)
+    except Exception as e:
+        print(f"[!] Warning: Failed to initialize live stream feed: {e}")
+
+    try:
+        from simulate_stream import run_stream_simulation, TEST_FILE, REPLAY_FILE
+
+        if not TEST_FILE.exists() and not REPLAY_FILE.exists():
+            raise FileNotFoundError(
+                f"No streaming dataset found. Checked primary path '{TEST_FILE}' and fallback replay path '{REPLAY_FILE}'. "
+                "In production Render environments, ensure 'outputs/evaluation/stream_replay_2000.json' is present."
+            )
+
+        sim_res = run_stream_simulation(
+            speed_eps=eps,
+            max_events=events,
+            inject_attacks=True,
+            live_feed_file=live_path,
+            write_feed=True,
+            verbose=False,
+            stop_event=_STOP_EVENT,
+        )
+
+        with _STREAM_LOCK:
+            if _STOP_EVENT.is_set():
+                STREAM_STATE["status"] = "stopped"
+            elif sim_res and sim_res.get("status") in ("completed", "stopped", "incomplete"):
+                STREAM_STATE["status"] = sim_res["status"]
+            elif STREAM_STATE["status"] == "running":
+                processed = sim_res.get("total_processed", 0) if sim_res else 0
+                if events > 0 and processed >= events:
+                    STREAM_STATE["status"] = "completed"
+                else:
+                    STREAM_STATE["status"] = "incomplete"
+            STREAM_STATE["finished_at"] = time.strftime("%H:%M:%S")
+
+    except Exception as exc:
+        err = f"{type(exc).__name__}: {exc}"
+        with _STREAM_LOCK:
+            STREAM_STATE["status"] = "error"
+            STREAM_STATE["error_message"] = err
+            STREAM_STATE["finished_at"] = time.strftime("%H:%M:%S")
+        try:
+            existing = safe_read_json(live_path, default={})
+            existing["status"] = "error"
+            existing["error"] = err
+            existing["last_updated"] = time.strftime("%H:%M:%S")
+            atomic_write_json(live_path, existing)
+        except Exception:
+            pass
+
 
 # Initialize model adapters safely with isolated state
 LEGACY_ADAPTER = LegacyModelAdapter()
@@ -284,7 +395,6 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
         self.do_GET()
 
     def do_GET(self):
-        global STREAM_PROCESS
         parsed = urlparse(self.path)
         path = parsed.path
 
@@ -612,7 +722,7 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
                 "The cause has not yet been established."
             )
 
-            is_streaming = STREAM_PROCESS is not None and STREAM_PROCESS.poll() is None
+            is_streaming = STREAM_STATE["status"] == "running"
             buffer_state = "ONLINE" if is_streaming else "IDLE"
             model_avail = "AVAILABLE" if (V2_ADAPTER.is_available if not is_champ else True) else "OFFLINE"
 
@@ -739,7 +849,7 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
 
-            live_path = EVAL_DIR / "live_stream_feed.json"
+            live_path = get_live_feed_path()
             default_feed = {
                 "status": "idle",
                 "total_processed": 0,
@@ -765,7 +875,7 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
                 or params.get("index", [None])[0]
             )
 
-            live_path = EVAL_DIR / "live_stream_feed.json"
+            live_path = get_live_feed_path()
             feed_data = safe_read_json(live_path, default=None)
             if feed_data is None:
                 self.send_response(404)
@@ -876,18 +986,13 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
 
-            live_path = EVAL_DIR / "live_stream_feed.json"
-            stream_active = False
-            last_event_time = "N/A"
-            if STREAM_PROCESS is not None and STREAM_PROCESS.poll() is None:
-                stream_active = True
-            elif live_path.exists():
-                try:
-                    mtime = os.path.getmtime(live_path)
-                    stream_active = (time.time() - mtime) < 15.0
-                except Exception:
-                    pass
+            live_path = get_live_feed_path()
+            with _STREAM_LOCK:
+                curr_status = STREAM_STATE["status"]
+                curr_thread = STREAM_STATE["thread"]
+                stream_active = (curr_thread is not None and curr_thread.is_alive()) or curr_status in ("starting", "running", "stopping")
 
+            last_event_time = "N/A"
             ld = safe_read_json(live_path, default={})
             last_event_time = ld.get("last_updated", "N/A")
 
@@ -933,31 +1038,65 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             events = int(query.get("events", ["2000"])[0])
             eps = float(query.get("eps", ["15"])[0])
 
-            if STREAM_PROCESS is not None and STREAM_PROCESS.poll() is None:
-                self.wfile.write(json.dumps({
-                    "status": "already_running",
-                    "pid": STREAM_PROCESS.pid,
-                    "message": "Stream simulation is already actively running."
-                }).encode("utf-8"))
-                return
+            thread_to_join = None
+            with _STREAM_LOCK:
+                curr_status = STREAM_STATE["status"]
+                curr_thread = STREAM_STATE["thread"]
 
-            sim_script = SRC_DIR / "simulate_stream.py"
-            python_bin = str(_VENV_PYTHON) if _VENV_PYTHON.exists() else sys.executable
-            try:
-                STREAM_PROCESS = subprocess.Popen(
-                    [python_bin, str(sim_script), "--events", str(events), "--eps", str(eps)],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
+                # Active states: starting, running, stopping, or alive thread
+                is_active = (curr_thread is not None and curr_thread.is_alive()) or curr_status in ("starting", "running", "stopping")
+                if is_active:
+                    self.wfile.write(json.dumps({
+                        "status": "already_running",
+                        "message": f"Stream worker is currently active (state: {curr_status}).",
+                        "stream_status": curr_status,
+                        "events": STREAM_STATE["events"],
+                        "eps": STREAM_STATE["eps"],
+                    }).encode("utf-8"))
+                    return
+
+                # If a previous dead thread exists, save reference to join outside the lock
+                if curr_thread is not None:
+                    thread_to_join = curr_thread
+
+            # Always release lock before joining a worker
+            if thread_to_join is not None:
+                thread_to_join.join(timeout=2.0)
+
+            with _STREAM_LOCK:
+                curr_thread = STREAM_STATE["thread"]
+                if (curr_thread is not None and curr_thread.is_alive()) or STREAM_STATE["status"] in ("starting", "running", "stopping"):
+                    self.wfile.write(json.dumps({
+                        "status": "already_running",
+                        "message": f"Previous worker has not yet terminated (state: {STREAM_STATE['status']}).",
+                        "stream_status": STREAM_STATE["status"],
+                    }).encode("utf-8"))
+                    return
+
+                # Reset state and clear stop event for a fresh run
+                _STOP_EVENT.clear()
+                STREAM_STATE["status"] = "starting"
+                STREAM_STATE["events"] = events
+                STREAM_STATE["eps"] = eps
+                STREAM_STATE["started_at"] = time.strftime("%H:%M:%S")
+                STREAM_STATE["finished_at"] = None
+                STREAM_STATE["error_message"] = None
+
+                t = threading.Thread(
+                    target=_run_stream_in_thread,
+                    args=(events, eps),
+                    name="aegis-stream-worker",
+                    daemon=True,
                 )
-                self.wfile.write(json.dumps({
-                    "status": "started",
-                    "pid": STREAM_PROCESS.pid,
-                    "events": events,
-                    "eps": eps,
-                    "message": f"Broadcasting {events} network flows at {eps} EPS."
-                }).encode("utf-8"))
-            except Exception as e:
-                self.wfile.write(json.dumps({"status": "error", "message": str(e)}).encode("utf-8"))
+                STREAM_STATE["thread"] = t
+                t.start()
+
+            self.wfile.write(json.dumps({
+                "status": "started",
+                "events": events,
+                "eps": eps,
+                "message": f"Broadcasting {events} network flows at {eps} EPS.",
+            }).encode("utf-8"))
             return
 
         elif path == "/api/stop_stream":
@@ -966,13 +1105,43 @@ class ThreatDetectionDashboardHandler(SimpleHTTPRequestHandler):
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
 
-            if STREAM_PROCESS is not None and STREAM_PROCESS.poll() is None:
-                STREAM_PROCESS.terminate()
-                STREAM_PROCESS = None
-                self.wfile.write(json.dumps({"status": "stopped", "message": "Stream simulation terminated."}).encode("utf-8"))
-            else:
-                STREAM_PROCESS = None
-                self.wfile.write(json.dumps({"status": "not_running", "message": "No active stream to stop."}).encode("utf-8"))
+            with _STREAM_LOCK:
+                current_status = STREAM_STATE["status"]
+                current_thread = STREAM_STATE["thread"]
+                # Allow stop requests during both starting and running states
+                is_active = (current_thread is not None and current_thread.is_alive()) or current_status in ("starting", "running")
+
+                if is_active:
+                    _STOP_EVENT.set()
+                    STREAM_STATE["status"] = "stopping"
+                    msg = "Stream simulation stop signal sent. Processing will halt promptly."
+                    status_resp = "stopping"
+                else:
+                    msg = f"No active stream to stop (current state: {current_status})."
+                    status_resp = "not_running"
+
+            self.wfile.write(json.dumps({
+                "status": status_resp,
+                "message": msg,
+            }).encode("utf-8"))
+            return
+
+        elif path == "/api/stream_status":
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            with _STREAM_LOCK:
+                payload = {
+                    "status": STREAM_STATE["status"],
+                    "events": STREAM_STATE["events"],
+                    "eps": STREAM_STATE["eps"],
+                    "started_at": STREAM_STATE["started_at"],
+                    "finished_at": STREAM_STATE["finished_at"],
+                    "error_message": STREAM_STATE["error_message"],
+                    "thread_alive": STREAM_STATE["thread"] is not None and STREAM_STATE["thread"].is_alive(),
+                }
+            self.wfile.write(json.dumps(payload).encode("utf-8"))
             return
 
         return super().do_GET()
